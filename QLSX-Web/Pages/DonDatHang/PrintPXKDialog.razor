@@ -1,0 +1,176 @@
+﻿@using Blazored.LocalStorage
+@using Microsoft.Extensions.Configuration
+@using QLSX.Shared.Models.Request
+@inject IDialogService DialogService
+@inject IDonDatHangsService<PhieuNhapXuatAllModel> donDatHangService
+@inject ILocalStorageService localStorageService
+@inject IConfiguration configuration
+@inject IJSRuntime jSRuntime
+
+<style>
+    .styleDialog .mud-input > input.mud-input-root-outlined {
+        padding: 7px;
+    }
+
+    .mud-grid-spacing-xs-3 > .mud-grid-item {
+        padding: 0 5px;
+    }
+
+    .styleDialog .mud-icon-button-edge-end {
+        margin-inline-end: 0px;
+    }
+
+    .mud-dialog .mud-dialog-title {
+        padding: 5px;
+    }
+
+    .styleDialog .mud-button {
+        padding: 8px;
+    }
+
+    .mud-input > textarea.mud-input-root-outlined {
+        margin: 10px 5px;
+    }
+</style>
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid Class="styleDialog">
+            <MudItem xs="12" sm="6" Class="mt-3">
+                <MudTextField @bind-Value="PrintPXKModel.SoPhieuXuat" Label="Số phiếu xuất" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="0" sm="6"></MudItem>
+            <MudItem xs="12" sm="6" Class="mt-2">
+                <MudDatePicker @bind-Date="PrintPXKModel.Ngay" Label="Ngày" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="6" Class="mt-2">
+                <MudTimePicker @bind-Time="PrintPXKModel.ThoiGian" Label="Thời gian" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="6" Class="mt-2">
+                <MudTextField @bind-Value="PrintPXKModel.SoTienHang" Label="Số tiền hàng" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="6" Class="mt-2">
+                <MudTextField @bind-Value="PrintPXKModel.TyLeVat" Label="Tỷ lệ VAT" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="6" Class="mt-2">
+                <MudTextField @bind-Value="PrintPXKModel.GiamCongNo" Label="Giảm công nợ" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="6" Class="mt-2">
+                <MudTextField @bind-Value="PrintPXKModel.SoTienVat" Label="Số tiền VAT" Disabled="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="6" Class="mt-2">
+                <MudTextField @bind-Value="PrintPXKModel.PhiVanChuyen" Label="Phí vận chuyển" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="6" Class="mt-2">
+                <MudTextField @bind-Value="PrintPXKModel.SoTienTT" Label="Số tiền TT" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="6" Class="mt-2">
+                <MudTextField @bind-Value="PrintPXKModel.ChietKhau" Label="Chiết khấu" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="0" sm="6"></MudItem>
+            <MudItem xs="12" sm="6" Class="mt-2">
+                <MudTextField @bind-Value="PrintPXKModel.TongThanhToan" Label="Tổng thanh toán" Disabled="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="12" Class="mt-2">
+                <MudTextField @bind-Value="PrintPXKModel.GhiChu" Label="Ghi chú" Lines="2" Variant="Variant.Outlined" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudGrid Justify="Justify.Center" Spacing="0" Class="styleDialog mt-2">
+            <MudButton OnClick="Submit" Size="Size.Medium" Class="mr-2" Color="Color.Primary" Variant="Variant.Filled">Chấp nhận</MudButton>
+            <MudButton OnClick="Cancel" Size="Size.Medium" Color="Color.Primary" Variant="Variant.Filled">Bỏ qua</MudButton>
+        </MudGrid>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public PrintPXKModel PrintPXKModel { get; set; }
+
+    private async Task Submit()
+    {
+        var parameters = new DialogParameters();
+        DanhSachDonHangTraNoModel danhSachDonHangTraNoModel = new DanhSachDonHangTraNoModel
+            {
+                MaDonVi = PrintPXKModel.MaDonVi,
+                TenDonVi = PrintPXKModel.TenDonVi,
+                SoPhieuXuat = PrintPXKModel.SoPhieuXuat,
+            };
+        parameters.Add("DanhSachDonHangTraNoModel", danhSachDonHangTraNoModel);
+
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Large };
+        var dialog = DialogService.Show<DanhSachDonHangTraNoDialog>("Danh sách đơn hàng", parameters, options);
+        var result = await dialog.Result;
+
+        if (result.Data != null && (bool)result.Data == false)
+        {
+            MudDialog.Cancel();
+            return;
+        }
+        var ngayCt = PrintPXKModel.Ngay.Value.Add(PrintPXKModel.ThoiGian.Value);
+
+        // Save NhapXuatThongTin
+        var nhapXuatThongTin = new NhapXuatThongTinModel()
+            {
+                LoaiPhieu = "",
+                SoTienGiam = PrintPXKModel.GiamCongNo,
+                SoTienCK = PrintPXKModel.ChietKhau,
+                SoTienVc = PrintPXKModel.PhiVanChuyen,
+                TyLeVat = PrintPXKModel.TyLeVat,
+                SoTienVat = PrintPXKModel.SoTienVat,
+                SoTienTT = PrintPXKModel.SoTienTT,
+                SoTien = PrintPXKModel.SoTienHang,
+                NgayCt = ngayCt,
+                SoCt = PrintPXKModel.SoPhieuXuat,
+                TongCong = PrintPXKModel.TongThanhToan,
+                GhiChu = PrintPXKModel.GhiChu,
+                CreateBy = await localStorageService.GetItemAsync<string>("hoTen"),
+                UpdateBy = await localStorageService.GetItemAsync<string>("hoTen"),
+                IdId = string.Join(",", PrintPXKModel.IdIdList),
+            };
+        var saveNhapXuatThongTinResult = await donDatHangService.SaveNhapXuatThongTinAsync(nhapXuatThongTin);
+
+        // Update TrangThaiDonHang
+        int trangThai = 3;
+        string spx = string.Empty;
+        await UpdateTrangThai(trangThai, PrintPXKModel.IdIdList, ngayCt, spx);
+
+        // Open report
+        string fileName = "PhieuXK";
+        string idIds = string.Join(",", PrintPXKModel.IdIdList);
+        string hostReport = configuration.GetValue<string>("AppSettings:ReportUrlPublic");
+        string formattedDate = PrintPXKModel.Ngay?.ToString("yy/MM/dd");
+        await ReportAction(fileName, idIds, hostReport, formattedDate);
+
+        // Reload socket by idid list
+        await donDatHangService.ReloadSocketPage(new ReloadSocketPageRequest()
+            {
+                IdIdList = PrintPXKModel.IdIdList
+            });
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    void Cancel() => MudDialog.Cancel();
+
+
+    private async Task ReportAction(string fileName, string listIdId, string hostReport, string formattedDate)
+    {
+        string param = string.Format("Reports/Viewer?ReportFileName={0}&idids={1}&mdvsd=1&&ngay={2}", fileName, listIdId, formattedDate);
+        string strURL = hostReport + param;
+        await jSRuntime.InvokeVoidAsync("open", strURL, "_blank");
+    }
+
+    private async Task UpdateTrangThai(int trangThai, List<int> selectedIds, DateTime ngay, string spx)
+    {
+        var request = new UpdateTrangThaiRequest
+            {
+                TrangThai = trangThai,
+                IdIdList = selectedIds,
+                Ngay = ngay,
+                Spx = spx
+            };
+
+        var success = await donDatHangService.UpdateTrangThaiDonHangAsync(request);
+    }
+}

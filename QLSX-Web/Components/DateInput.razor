@@ -1,0 +1,66 @@
+﻿@namespace QLSX.Web.Components
+
+<style>
+    #myInput[type="date"] {
+        margin-top: 3px;
+        border: 0;
+        position: absolute;
+        width: 24px;
+        height: 24px;
+    }
+
+        #myInput[type="date"]::-webkit-inner-spin-button {
+            display: none;
+        }
+
+        #myInput[type="date"]::-webkit-calendar-picker-indicator {
+            margin: 0;
+            position: absolute;
+        }
+
+    #myInput[type=date]::-webkit-datetime-edit,
+    #myInput[type=date]::-webkit-datetime-edit-fields-wrapper {
+        -webkit-appearance: none;
+        display: none;
+        margin: 0;
+        padding: 0;
+    }
+</style>
+<input value="@this.Value.ToString(this.Format)" @onchange="this.DateChangedAsync" class="@Class" style="display:inline-block;margin-right: -38px;" />
+<input id="myInput" type="date" value="@Value" @onchange="this.DateChangedAsync" style="display:inline-block; " />
+ 
+@code {
+    [Parameter]
+        public string Format { get; set; }
+
+        [Parameter]
+        public DateTime Value { get; set; }
+
+        [Parameter]
+        public EventCallback<DateTime> ValueChanged { get; set; }
+
+        [Parameter]
+        public string Class { get; set; }
+
+    
+        protected override void OnParametersSet()
+        {
+            if (string.IsNullOrWhiteSpace(Format))
+            {
+                this.Format = "yyyy-MM-dd";
+            }
+        }
+
+        private async Task DateChangedAsync(ChangeEventArgs args)
+        {
+            string text = args.Value.ToString();
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return;
+            }
+
+            this.Value = DateTime.Parse(text);
+            await this.ValueChanged.InvokeAsync(this.Value);
+        }
+}

@@ -1,0 +1,19 @@
+﻿<MudOverlay @bind-Visible="IsLoading" DarkBackground="true" ZIndex="9999">
+    <MudProgressCircular Color="Color.Secondary" Size="Size.Large"  Indeterminate="true" />
+</MudOverlay>
+
+@code {
+    [Parameter]
+    public bool IsLoading { get; set; } = true;
+
+    protected override void OnInitialized()
+	{
+		 
+		base.OnInitialized();
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		base.OnAfterRender(firstRender);
+	}
+}

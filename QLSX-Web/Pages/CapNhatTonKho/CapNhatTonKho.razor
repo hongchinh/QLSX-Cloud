@@ -1,0 +1,139 @@
+﻿@page "/CapNhatTonKho"
+@using QLSX.Web.Data
+@using QLSX.Web.Services
+@using Blazored.LocalStorage
+@using System.Security.Claims
+@using System.Globalization
+
+@inject ICapNhatTonKhoService itemService
+@inject IDMKhoHangService<DanhMucKhoHangModel> dmkhohangService
+
+@inject ISettingService<QLSX.Shared.Models.SettingModel> SettingService
+
+@inject IUserService userService
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService localStorageService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+@attribute [Authorize]
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject NavigationManager NavigationManager
+
+@namespace QLSX.Web.Pages.CapNhatTonKho
+
+<AuthorizeView Roles="Admin">
+    <Authorized>
+        <MudGrid>
+            <MudItem xs="12">
+                <EditForm Model="item" OnValidSubmit="SaveClick" Context="ctx">
+                    <DataAnnotationsValidator />
+                    <MudPaper Elevation="25">
+                        <MudGrid Spacing="1" Class="mt-10">
+                            <MudItem xs="12" md="3">
+                                <MudSelect T="int" Margin="Margin.Dense" Label="Kho hàng" AnchorOrigin="Origin.BottomCenter" @bind-Value="@item.DMKhoHangId" Variant="Variant.Outlined">
+                                    <MudSelectItem Value="@(0)">Tất cả kho hàng</MudSelectItem>
+                                    @if (lstKhoHang != null)
+                                    {
+                                        @foreach (var cnt in lstKhoHang)
+                                        {
+                                            <MudSelectItem Value="@cnt.Id">@cnt.TenKho</MudSelectItem>
+                                        }
+                                    }
+                                </MudSelect>
+                            </MudItem>
+
+                            <MudItem xs="12" md="2">
+                                <div class="required">
+                                    <MudDatePicker Margin="Margin.Dense" Label="Từ Tháng" @bind-Date="item.TuNgay" Required=true FixDay="1" OpenTo="OpenTo.Month" DateFormat="MM/yyyy" Culture="@CultureInfo.GetCultureInfo("vi-VN")" TitleDateFormat="MM/yyyy" Editable="true" Variant="Variant.Outlined"></MudDatePicker>
+                                    <ValidationMessage For="(() => item.TuNgay)" />
+                                </div>
+                            </MudItem>
+
+                            <MudItem xs="12" md="2">
+                                <div class="required">
+                                    <MudDatePicker Margin="Margin.Dense" Label="Đến Tháng" @bind-Date="item.DenNgay" Required=true FixDay="1" OpenTo="OpenTo.Month" DateFormat="MM/yyyy" Culture="@CultureInfo.GetCultureInfo("vi-VN")" TitleDateFormat="MM/yyyy" Editable="true" Variant="Variant.Outlined"></MudDatePicker>
+                                    <ValidationMessage For="(() => item.DenNgay)" />
+                                </div>
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                    <MudToolBar>
+                        <MudButton Variant="Variant.Filled" ButtonType="ButtonType.Submit" StartIcon="@Icons.Material.Filled.Save" Size="Size.Large" Color="Color.Info">Cập nhật</MudButton>
+                    </MudToolBar>
+
+                </EditForm>
+            </MudItem>
+        </MudGrid>
+    </Authorized>
+    <NotAuthorized>
+        <NotPermission></NotPermission>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    ClaimsPrincipal userAuth;
+
+    public QLSX.Shared.Models.CapNhatRequest item { get; set; } = new QLSX.Shared.Models.CapNhatRequest();
+
+    public List<DanhMucKhoHangModel> lstKhoHang { get; set; }
+
+    public int DMKhoHangId { get; set; } = 0;
+    public int EndOfMonth { get; set; } = 1;
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+    }
+
+    protected override bool ShouldRender()
+    {
+        base.ShouldRender();
+        return true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var seting = await SettingService.GetCurrentAsync();
+            item.TuNgay = seting.NgayBatDauSuDung ?? DateTime.Now;
+            item.DenNgay = DateTime.Now;
+            lstKhoHang = await dmkhohangService.GetAllAsync();
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public void Dispose()
+    {
+    }
+    private async Task SaveClick()
+    {
+
+        await itemService.CapNhatTonKho(item);
+
+    }
+
+}

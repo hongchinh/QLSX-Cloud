@@ -1,0 +1,170 @@
+﻿@using QLSX.Shared.Data.Responses
+@using QLSX.Shared.Data.Responses.BaoCao
+
+@model ReportResponseBase<SoQuyTienMatResponse>
+
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<link rel="stylesheet" href="@Model.Host/lib/bootstrap/dist/css/bootstrap.css" />
+	<link rel="stylesheet" href="@Model.Host/lib/bootstrap/dist/css/bootstrap-grid.css" />
+	<link rel="stylesheet" href="@Model.Host/lib/bootstrap/dist/css/bootstrap-reboot.css" />
+	<link rel="stylesheet" href="@Model.Host/lib/bootstrap/dist/css/bootstrap-theme.css" />
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="@Model.Host/css/report.css" />
+	<title>Sổ quỹ</title>
+</head>
+<body>
+
+@if (Model.ListData.Count > 0)
+{
+	@foreach(var group in Model.ListData.GroupBy(x=>x.TenLoaiTien, (key, grp) => new { Name= key,List= grp})){
+	
+		Html.RenderPartial("Header", @Model.ThongTin);
+		@if (Model.ListData.Count > 0)
+		{
+			<div class="row" style="margin-top:10px !important">
+		   <div class="col-md-12 classs" style="text-align:center"> Sổ quỹ @Model.ListData?.First()?.TenLoaiTien </div>
+		  </div>
+		  <div class="row" style="margin-top:5px !important">
+		   <div class="col-md-12" style="text-align:center"> <i> @Model.ListData?.First()?.ThoiGian </i></div>
+		  </div>
+		}else{
+			<div class="row" style="margin-top:10px !important">
+		   <div class="col-md-12" style="text-align:center"> <h1>Sổ quỹ </h1> </div>
+		  </div>
+		  <div class="row" style="margin-top:5px !important">
+		   <div class="col-md-12" style="text-align:center"> <i> </i></div>
+		  </div>
+		}
+	  <table class="table table-bordered">
+	   <thead>
+		<tr>
+			 <th rowspan="2" class="text-center">Ngày CT</th>
+			 <th rowspan="2" class="text-center">Số phiếu</th>
+			 <th rowspan="2" class="text-center w35">DIỄN GIẢI</th>
+			 <th colspan="2" class="text-center ">Số tiền</th>
+			 <th rowspan="2" class="text-center">Số tồn</th>
+		</tr>
+		<tr>
+			 <th class="text-center" style="min-width:15% !important "> Thu</th>
+			 <th class="text-center" style="min-width:15% !important "> Chi</th>
+		</tr>
+		<tr>
+			 <th style="font-weight:normal; text-align: center">1</th>
+			 <th style="font-weight:normal; text-align: center">2</th>
+			 <th style="font-weight:normal; text-align: center">3</th>
+			 <th style="font-weight:normal; text-align: center">4</th>
+			 <th style="font-weight:normal; text-align: center">5</th>
+			 <th style="font-weight:normal; text-align: center">6</th>
+		</tr>
+	   </thead>
+	   <tbody>
+			<tr>
+			 <th> </th>
+			 <th> </th>
+			 <th> Số dư đầu kỳ </th>
+			 <th style="font-weight:normal; text-align: right"></th>
+			 <th style="font-weight:normal; text-align: right"></th>
+			 <th style="font-weight:bold; text-align: right"> @group.List?.First()?.SoDauKy.ToString("###,###.##")</th>
+			</tr>
+				@foreach (var item in group.List)
+				{
+				<tr>
+						<th style="font-weight:normal">@item.NgayCT.ToString("dd/MM/yyyy") </th>
+						<th style="font-weight:normal;">@item.SoPhieu </th>
+						<th style="font-weight:normal;">@item.DienGiai </th>
+						<th style="font-weight:normal; text-align: right;">@item.SoTienThu.ToString("###,###.##") </th>
+						<th style="font-weight:normal; text-align: right;">@item.SoTienChi.ToString("###,###.##")</th>
+						<th style="font-weight:normal; text-align: right;">@item.SoTienTon.ToString("###,###.##")</th>
+				</tr>
+				}
+				<tr>
+					<th style="font-weight:bold; text-align: right" colspan="3"> Tổng cộng phát sinh </th>
+					<th style="font-weight:bold; text-align: right">@group.List?.Sum(x=> x.SoTienThu).ToString("###,###.##") </th>
+					<th style="font-weight:bold; text-align: right">@group.List?.Sum(x=> x.SoTienChi).ToString("###,###.##") </th>
+					<th style="font-weight:normal; text-align: right"></th>
+				</tr>
+				<tr>
+					<th style="font-weight:bold;text-align: right" colspan="3"> Số dư cuối kỳ</th>
+					<th style="font-weight:normal;"></th>
+					<th style="font-weight:normal;"></th>
+					<th style="font-weight:bold; text-align: right"> @group.List?.First()?.SoDuCuoi.ToString("###,###.##")</th>
+				</tr>
+					 
+	   </tbody>
+	  </table>
+	  <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; font-family:Tahoma">
+		 <tr>
+			 <td width="33%">  </td>
+			 <td width="33%">  </td>
+			 <td width="33%"> @Model.ThongTin.NgayThangLB </td>
+		 </tr>
+		  <tr>
+			 <td> <b> @Model.ThongTin.ChucDanhThuTruong</b> </td>
+			 <td> <b>@Model.ThongTin.ChucDanhKeToan</b> </td>
+			 <td> <b>@Model.ThongTin.ChucDanhLapBieu </b></td>
+		 </tr>
+	 </table>
+}
+}
+else
+{
+	
+	Html.RenderPartial("Header", @Model.ThongTin);
+	
+	<div class="row" style="margin-top:10px !important">
+		<div class="col-md-12" style="text-align:center"> <h1>Sổ quỹ </h1> </div>
+	</div>
+	<div class="row" style="margin-top:5px !important">
+		<div class="col-md-12" style="text-align:center"> <i> </i></div>
+	</div>
+
+	<table class="table table-bordered">
+	   <thead>
+		<tr>
+			 <th rowspan="2" class="text-center">Ngày CT</th>
+			 <th rowspan="2" class="text-center">Số phiếu</th>
+			 <th rowspan="2" class="text-center w35">DIỄN GIẢI</th>
+			 <th colspan="2" class="text-center ">Số tiền</th>
+			 <th rowspan="2" class="text-center">Số tồn</th>
+		</tr>
+		<tr>
+			 <th class="text-center" style="min-width:15% !important "> Thu</th>
+			 <th class="text-center" style="min-width:15% !important "> Chi</th>
+		</tr>
+		<tr>
+			 <th style="font-weight:normal; text-align: center">1</th>
+			 <th style="font-weight:normal; text-align: center">2</th>
+			 <th style="font-weight:normal; text-align: center">3</th>
+			 <th style="font-weight:normal; text-align: center">4</th>
+			 <th style="font-weight:normal; text-align: center">5</th>
+			 <th style="font-weight:normal; text-align: center">6</th>
+		</tr>
+	   </thead>
+	   <tbody>
+		<tr><td colspan="6" style="font-weight:bold; text-align: center"> Không có dữ liệu </td> </tr>
+	   </tbody>
+	  </table>
+	  <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; font-family:Tahoma">
+		 <tr>
+			 <td width="33%">  </td>
+			 <td width="33%">  </td>
+			 <td width="33%"> @Model.ThongTin.NgayThangLB </td>
+		 </tr>
+		  <tr>
+			 <td> <b>@Model.ThongTin.ChucDanhThuTruong</b> </td>
+			 <td> <b>@Model.ThongTin.ChucDanhKeToan</b> </td>
+			 <td> <b>@Model.ThongTin.ChucDanhLapBieu </b></td>
+		 </tr>
+	 </table>
+}
+
+
+	
+	  
+</body>
+</html>

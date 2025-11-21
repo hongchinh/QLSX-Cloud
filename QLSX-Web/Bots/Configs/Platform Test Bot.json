@@ -1,0 +1,491 @@
+{
+  "BotName": "Platform Test Bot",
+  "ModelFile": "Bots\\Models\\sample.zip",
+  "BotGreeting": "Hi! Welcome to chattr.  chattr is an easy-to-use chatbot platform which easily lets you build and deploy chatbots.  The platform supports exact phrase matches and machine learning to classify a request.",
+  "UnsupervisedLearning": false,
+  "Conversations": [
+    {
+      "Actions": [
+      ],
+      "ID": "b4e5f601-9de6-47f5-be59-edc58de95133",
+      "Name": "helpSample",
+      "StartNode": {
+        "Utterances": [
+          {
+            "ID": "966565a6-f6ce-4aae-b625-4aeb4f62cd46",
+            "Statement": "help"
+          },
+          {
+            "ID": "05832b4c-b696-419d-8283-62be0db7f28d",
+            "Statement": "!help"
+          },
+          {
+            "ID": "ba387694-e802-4444-931d-0eac526baec0",
+            "Statement": "what can I ask you"
+          },
+          {
+            "ID": "ba0ab378-0547-4521-9640-78d2eb9f796b",
+            "Statement": "halp"
+          },
+          {
+            "ID": "c2c85369-4f00-4f43-858e-ffbe542c844d",
+            "Statement": "what can you do"
+          },
+          {
+            "ID": "de4288aa-f030-4f67-8823-4e93130750b1",
+            "Statement": "what can I ask"
+          }
+        ],
+        "Synonyms": [
+        ],
+        "ID": "20595e0a-1e30-4e6d-9c2a-53392b242f4a",
+        "Name": null,
+        "NextNodeID": "00000000-0000-0000-0000-000000000000"
+      },
+      "ReplyNode": {
+        "Responses": [
+          {
+            "ID": "08a143b9-a54a-4a9d-928d-257ae3739f57",
+            "Statement": "This is a sample use case -- you can ask me what chattr is. I also understand various hello/goodbye phrases."
+          }
+        ],
+        "SelectedResponse": null,
+        "ID": "21f9f982-3e0c-49ed-bb31-3b3ea249989b",
+        "Name": null,
+        "NextNodeID": "00000000-0000-0000-0000-000000000000"
+      }
+    },
+    {
+      "Actions": [
+      ],
+      "ID": "617e164b-9a66-4629-8713-2ddc8b546cb9",
+      "Name": "gitSample",
+      "StartNode": {
+        "Utterances": [
+          {
+            "ID": "16e8d662-71a7-437e-800c-31835ec5326b",
+            "Statement": "what is github"
+          },
+          {
+            "ID": "709a8950-53fb-4da9-9554-308c457e2e90",
+            "Statement": "whats github"
+          },
+          {
+            "ID": "1feafe30-bd78-4f1b-8f32-26c4e76537dc",
+            "Statement": "define github"
+          },
+          {
+            "ID": "76164f45-6d5a-4908-93b6-b5558a5b506c",
+            "Statement": "github"
+          },
+          {
+            "ID": "e65f25d3-d6c7-4e41-b457-dca7feccc12a",
+            "Statement": "tell me about github"
+          }
+        ],
+        "Synonyms": [
+        ],
+        "ID": "128251af-318f-4652-96be-990cbfa56d91",
+        "Name": null,
+        "NextNodeID": "00000000-0000-0000-0000-000000000000"
+      },
+      "ReplyNode": {
+        "Responses": [
+          {
+            "ID": "b8633804-6f2d-4ec9-b15c-c6fd7fa06e3d",
+            "Statement": "GitHub brings together the world's largest community of developers to discover, share, and build better software."
+          }
+        ],
+        "SelectedResponse": null,
+        "ID": "8fc0b835-942a-4558-a08c-38759fee1014",
+        "Name": null,
+        "NextNodeID": "00000000-0000-0000-0000-000000000000"
+      }
+    },
+    {
+      "Actions": [
+      ],
+      "ID": "0c8ce181-4374-4e16-aad0-b144c4551dde",
+      "Name": "stackFAQ",
+      "StartNode": {
+        "Utterances": [
+          {
+            "ID": "18db7ecc-e53c-4eb7-a83f-4b716dd5d42a",
+            "Statement": "tell me about the stack"
+          },
+          {
+            "ID": "1ac56cf0-ac40-4894-a857-7ecc61878aaf",
+            "Statement": "what software stack is this"
+          },
+          {
+            "ID": "81d8b6ad-bfd5-492f-a379-0ef9cd967ad8",
+            "Statement": "what is running this"
+          },
+          {
+            "ID": "f779909d-a66e-4d21-b0ca-78265444f9ff",
+            "Statement": "what powers this application"
+          },
+          {
+            "ID": "ad41beb9-2b04-4ce8-83a9-f21c8cef1b6f",
+            "Statement": "what is powering this app"
+          }
+        ],
+        "Synonyms": [
+        ],
+        "ID": "16f0bae1-5cac-4d1d-93aa-bbb600ad6e8a",
+        "Name": null,
+        "NextNodeID": "00000000-0000-0000-0000-000000000000"
+      },
+      "ReplyNode": {
+        "Responses": [
+          {
+            "ID": "197f6972-5543-4ff9-98ee-86ef8e3a577e",
+            "Statement": "This application is powered by C# -- ML.NET and Blazor!"
+          }
+        ],
+        "SelectedResponse": null,
+        "ID": "8897efa2-86b9-41f3-bfc3-7f795b34e22a",
+        "Name": null,
+        "NextNodeID": "00000000-0000-0000-0000-000000000000"
+      }
+    },
+    {
+      "Actions": [
+      ],
+      "ID": "a7803f43-6818-4cf9-8cc9-67fc304f6a94",
+      "Name": "greetingSample",
+      "StartNode": {
+        "Utterances": [
+          {
+            "ID": "98f61ac0-150f-4b16-991d-9e251a916b27",
+            "Statement": "hello"
+          },
+          {
+            "ID": "7ea3ed4c-7568-4747-bacf-f4d8e37c6344",
+            "Statement": "hi"
+          },
+          {
+            "ID": "c5168d67-835f-44a0-9d2e-790f65d01559",
+            "Statement": "hi!"
+          },
+          {
+            "ID": "bfda7e94-448a-4a61-aed8-38e21ed01d75",
+            "Statement": "hey"
+          },
+          {
+            "ID": "4aaf3352-ddde-4091-8744-d8d7909081a0",
+            "Statement": "good morning"
+          },
+          {
+            "ID": "66ca71fd-a632-4e22-8705-9ee024630b3f",
+            "Statement": "whats up"
+          },
+          {
+            "ID": "32b11c66-c13d-4f62-a3a9-a3d4bcb3d2f3",
+            "Statement": "how are you?"
+          },
+          {
+            "ID": "4f4c7140-73f8-4fd9-9d03-cc45564f9932",
+            "Statement": "Hi! How can I help you today?"
+          }
+        ],
+        "Synonyms": [
+        ],
+        "ID": "370ec59d-24f3-493f-b212-2ce175d2cc40",
+        "Name": null,
+        "NextNodeID": "00000000-0000-0000-0000-000000000000"
+      },
+      "ReplyNode": {
+        "Responses": [
+          {
+            "ID": "21a5b824-fecf-4e5d-b073-2aaf29d6b0d0",
+            "Statement": "Hi! How can I help you today?"
+          },
+          {
+            "ID": "3dbadf67-0e5a-403c-a41a-27358aa5ab6e",
+            "Statement": "Hey!"
+          },
+          {
+            "ID": "0b47e0a0-fc7f-48f0-a8aa-60e3f17cce2c",
+            "Statement": "Hello. What can I do for you?"
+          }
+        ],
+        "SelectedResponse": null,
+        "ID": "970ef30b-c941-4d58-9354-7cc1bdb0bcfb",
+        "Name": null,
+        "NextNodeID": "00000000-0000-0000-0000-000000000000"
+      }
+    },
+    {
+      "Actions": [
+      ],
+      "ID": "9c697995-4dad-433a-a2bb-150a1e0e6962",
+      "Name": "farewellSample",
+      "StartNode": {
+        "Utterances": [
+          {
+            "ID": "28aab23d-a336-4719-b818-2542fffc858c",
+            "Statement": "goodbye"
+          },
+          {
+            "ID": "4a4f964c-1dbe-4eac-ac61-e7e66ed894cb",
+            "Statement": "bye"
+          },
+          {
+            "ID": "1bc55b3f-93ae-49f4-bbef-0ebacb9c1a96",
+            "Statement": "later"
+          },
+          {
+            "ID": "bac43a60-81ac-4135-9118-75d6b6b6b9aa",
+            "Statement": "see ya"
+          },
+          {
+            "ID": "25efbfc5-5216-4b14-9a41-0e117623d3f7",
+            "Statement": "c ya"
+          },
+          {
+            "ID": "f3881ce9-b067-424f-ae58-6af3df08634f",
+            "Statement": "lates"
+          },
+          {
+            "ID": "2f833574-4858-4b66-82e6-4b1663975b2b",
+            "Statement": "Bye!"
+          },
+          {
+            "ID": "f93abf5c-faea-455b-bd91-a2e2b35bbf41",
+            "Statement": "ttyl"
+          }
+        ],
+        "Synonyms": [
+        ],
+        "ID": "5ce24399-1218-4765-87de-53759b584367",
+        "Name": null,
+        "NextNodeID": "00000000-0000-0000-0000-000000000000"
+      },
+      "ReplyNode": {
+        "Responses": [
+          {
+            "ID": "dab8d8c4-6f8a-4fe7-9b64-bca45e5b5258",
+            "Statement": "Take Care!"
+          }
+        ],
+        "SelectedResponse": null,
+        "ID": "903f7fe7-2137-4581-b1af-e5dd625549d1",
+        "Name": null,
+        "NextNodeID": "00000000-0000-0000-0000-000000000000"
+      }
+    },
+    {
+      "Actions": [
+      ],
+      "ID": "b332fbbf-ca5c-4515-ac4d-c75da4b7e533",
+      "Name": "chatterFAQ",
+      "StartNode": {
+        "Utterances": [
+          {
+            "ID": "deff8d64-4315-47cf-8147-d819a6da4c65",
+            "Statement": "What is chattr"
+          },
+          {
+            "ID": "0fa4f59a-1203-47c5-976c-5166fdbbafcb",
+            "Statement": "Whats chattr"
+          },
+          {
+            "ID": "a2701769-1a25-4eb9-943e-edad854d483b",
+            "Statement": "tell me about chattr"
+          }
+        ],
+        "Synonyms": [
+          {
+            "ID": "cfb3ff61-a2eb-4f58-8963-6fb91a0a1dde",
+            "FAQWord": "chattr",
+            "SynonymWord": "this platform"
+          }
+        ],
+        "ID": "a4472987-fc93-41f6-8837-df1518f87975",
+        "Name": null,
+        "NextNodeID": "00000000-0000-0000-0000-000000000000"
+      },
+      "ReplyNode": {
+        "Responses": [
+          {
+            "ID": "bb32aba9-1cfe-40a0-9b00-a921f41e16ca",
+            "Statement": "chattr is a free and open source platform to build chatbots!"
+          }
+        ],
+        "SelectedResponse": null,
+        "ID": "072f6446-6882-4e76-93ab-35e066be0388",
+        "Name": null,
+        "NextNodeID": "00000000-0000-0000-0000-000000000000"
+      }
+    },
+    {
+      "Actions": [
+        {
+          "$type": "QLSX.Web.Models.Bots.Actions.ReplyAction, QLSX.Web",
+          "Responses": [
+            {
+              "ID": "70a41db3-64e2-45c1-9db0-c06f52a2d08a",
+              "Statement": "The weather is 85 degrees in Florida"
+            }
+          ],
+          "SelectedResponse": null,
+          "ID": "7c044f86-fdc3-417a-8521-a5fb5d5c9f78",
+          "Name": null,
+          "NextNodeID": "1cb2dbeb-fac1-4227-b5c2-909baa6b8813"
+        },
+        {
+          "$type": "QLSX.Web.Models.Bots.Actions.ReplyAction, QLSX.Web",
+          "Responses": [
+            {
+              "ID": "73281d84-ba32-4bfa-9728-d620c18f2417",
+              "Statement": "The weather is 70 degrees in New York"
+            }
+          ],
+          "SelectedResponse": null,
+          "ID": "1cb2dbeb-fac1-4227-b5c2-909baa6b8813",
+          "Name": null,
+          "NextNodeID": "00000000-0000-0000-0000-000000000000"
+        }
+      ],
+      "ID": "571b5c1f-3469-4898-bb1f-b0da0e6e1c52",
+      "Name": "weatherRequest",
+      "StartNode": {
+        "Utterances": [
+          {
+            "ID": "f09a3468-17e6-4fe4-b054-d75346d81478",
+            "Statement": "Check the weather"
+          },
+          {
+            "ID": "b33cbb2d-ba81-4350-8415-30a11f72bbe8",
+            "Statement": "Weather check"
+          },
+          {
+            "ID": "6cadbe3f-8a87-406d-82dd-63596a185c71",
+            "Statement": "weather"
+          },
+          {
+            "ID": "af14980b-af48-4452-9748-13688e7ac54c",
+            "Statement": "Check Weather"
+          }
+        ],
+        "Synonyms": [
+        ],
+        "ID": "696f0c07-c4dc-4875-bc0b-172885fae664",
+        "Name": "weatherStart",
+        "NextNodeID": "7c044f86-fdc3-417a-8521-a5fb5d5c9f78"
+      },
+      "ReplyNode": {
+        "Responses": [
+        ],
+        "SelectedResponse": null,
+        "ID": "9daa4c89-720f-4ca3-8a89-2dff62a3ca49",
+        "Name": null,
+        "NextNodeID": "00000000-0000-0000-0000-000000000000"
+      }
+    },
+    {
+      "Actions": [
+        {
+          "$type": "QLSX.Web.Models.Bots.Actions.InputAction, QLSX.Web",
+          "UserSays": null,
+          "StoreInContext": true,
+          "ContextVariableName": "colorpref",
+          "EnforceValidation": true,
+          "AcceptableValues": [
+            "red",
+            "blue",
+            "green"
+          ],
+          "Responses": [
+            {
+              "ID": "e5d7d0d2-0b33-4a19-8489-42d09b26692c",
+              "Statement": "Ok, tell me your color preference and I will store it between conversations.  What is your favorite color?  You can say 'red', 'blue', or 'green'.  I will not allow any other values."
+            }
+          ],
+          "SelectedResponse": null,
+          "ID": "8c56910a-ff69-4be3-a564-564b01dbd095",
+          "Name": "favoriteColor",
+          "NextNodeID": "bf387150-2c22-4f0a-8487-6b369baccde7"
+        },
+        {
+          "$type": "QLSX.Web.Models.Bots.Actions.ReplyAction, QLSX.Web",
+          "Responses": [
+            {
+              "ID": "dfbfd1bb-5d30-4a11-824c-f38abe49d4ef",
+              "Statement": "Ok, I now know your favorite color which is {colorpref}.  You can ask me this same question again and I will reply it back to you!"
+            }
+          ],
+          "SelectedResponse": null,
+          "ID": "bf387150-2c22-4f0a-8487-6b369baccde7",
+          "Name": "replyPrefSet",
+          "NextNodeID": "00000000-0000-0000-0000-000000000000"
+        },
+        {
+          "$type": "QLSX.Web.Models.Bots.Actions.ReplyAction, QLSX.Web",
+          "Responses": [
+            {
+              "ID": "c5a27690-c493-4d51-bdae-ca63c55377bb",
+              "Statement": "Ha! I remember you told my that your favorite color is {colorpref}."
+            }
+          ],
+          "SelectedResponse": null,
+          "ID": "35956811-139c-4cce-b936-e56ff37cf18a",
+          "Name": "replyPrefKnown",
+          "NextNodeID": "00000000-0000-0000-0000-000000000000"
+        },
+        {
+          "$type": "QLSX.Web.Models.Bots.Actions.IfAction, QLSX.Web",
+          "IfTests": [
+            {
+              "IfTestID": "47fdb61e-84d3-4d1c-8000-a45636541082",
+              "IfType": 8,
+              "Value1": "",
+              "Value2": "colorpref",
+              "NextNodeID": "35956811-139c-4cce-b936-e56ff37cf18a",
+              "CaseSensitiveTest": false
+            }
+          ],
+          "ID": "2233f926-6c10-4a66-a58b-e0c876fb4b9c",
+          "Name": "colorCheck",
+          "NextNodeID": "8c56910a-ff69-4be3-a564-564b01dbd095"
+        }
+      ],
+      "ID": "c41ca88a-30a4-4096-a68e-4d46d845308d",
+      "Name": "favoriteColorPref",
+      "StartNode": {
+        "Utterances": [
+          {
+            "ID": "91a2d194-0538-4c2d-9767-aa13acc61f73",
+            "Statement": "What color do I prefer?"
+          },
+          {
+            "ID": "6f78397f-0e8b-477f-8d66-f19cf1f4a420",
+            "Statement": "Ask me my favorite color"
+          },
+          {
+            "ID": "c7c2437d-1545-4db4-b99b-730c49c66901",
+            "Statement": "Ask what my favorite color is"
+          },
+          {
+            "ID": "51f11434-a69c-4dbf-b806-86b2a25150ff",
+            "Statement": "Ask me my color preference"
+          }
+        ],
+        "Synonyms": [
+        ],
+        "ID": "705dfc12-5243-4343-a048-a709f84d7c2e",
+        "Name": "favoriteColorPrefStart",
+        "NextNodeID": "2233f926-6c10-4a66-a58b-e0c876fb4b9c"
+      },
+      "ReplyNode": {
+        "Responses": [
+        ],
+        "SelectedResponse": null,
+        "ID": "f994187e-468a-4a54-aa13-9e9c01126141",
+        "Name": null,
+        "NextNodeID": "00000000-0000-0000-0000-000000000000"
+      }
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+﻿@page "/thongkeloaitien"
+
+@using QLSX.Web.Extensions
+@using ChartJs.Blazor
+@using ChartJs.Blazor.Common
+@using ChartJs.Blazor.Common.Axes
+@using ChartJs.Blazor.Common.Axes.Ticks
+@using ChartJs.Blazor.Common.Enums
+@using ChartJs.Blazor.Common.Handlers
+@using ChartJs.Blazor.Common.Time
+@using ChartJs.Blazor.Util
+@using ChartJs.Blazor.Interop
+@using System.Drawing
+@using ChartJs.Blazor.PieChart
+@using static QLSX.Shared.Ultils.ChartUtils
+@inject IThongKeService thongkeService
+
+<MudPaper Elevation="25" Class="py-8 px-8" Style="padding-top:2px !important">
+    <MudGrid>
+        <MudItem xs="12" sm="3">
+            <MudDatePicker Label="Ngày xem" Editable="true" @bind-Date="CurrentDate" Placeholder="Chọn ngày" />
+        </MudItem>
+        <MudItem xs="12" sm="3">
+            <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Secondary" Size="MudBlazor.Size.Large" OnClick="RebindingDate">Xem</MudButton>
+        </MudItem>
+        <MudItem xs="12" sm="6">
+        </MudItem>
+
+        <MudItem xs="12" sm="6">
+            <Chart Config="_config" @ref="_chart"></Chart>
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudTable Items="@lstData" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">Biểu đồ cơ cấu các loại quỹ đến ngày @CurrentDate</MudText>
+                    <MudSpacer />
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Loại Quỹ</MudTh>
+                    <MudTh>Số dư</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Loại tiền">@context.TenLoaiTien</MudTd>
+                    <MudTd DataLabel="Số dư" Style="text-align:right">@context.SoDuCuoi.ToString("###,###")</MudTd>
+                </RowTemplate>
+                <FooterContent>
+                    <MudTd Class="mud-table-cell-custom-group mud-table-cell-custom-group-footer">Tổng cộng</MudTd>
+                    <MudTd Class="mud-table-cell-custom-group mud-table-cell-custom-group-footer" Style="text-align:right">@lstData.Sum(x=>x.SoDuCuoi).ToString("###,###")</MudTd>
+                </FooterContent>
+            </MudTable>
+        </MudItem>
+
+    </MudGrid>
+</MudPaper>
+@code {
+    private PieConfig _config;
+    private Random _rng = new Random();
+    private Chart _chart;
+    private DateTime? CurrentDate { get; set; } = DateTime.Now;
+
+    public static List<ThongKeLoaiTien> lstData { get; set; } = new List<ThongKeLoaiTien>();
+
+    protected override async void OnInitialized()
+    {
+        _config = new PieConfig
+            {
+                Options = new PieOptions
+                {
+                    Responsive = true,
+                    Title = new OptionsTitle
+                    {
+                        Display = true,
+                        Text = "Biểu đồ loại quỹ đến ngày " + CurrentDate.ToString(),
+                    }
+                }
+            };
+        PieDataset<double> dataset = new PieDataset<double>(RandomScalingFactor(5))
+            {
+                BackgroundColor = ChartColors.All.Take(5).Select(ColorUtil.FromDrawingColor).ToArray()
+            };
+
+        _config.Data.Datasets.Add(dataset);
+
+        _config.Data.Labels.AddRange(Months.Take(5));
+
+
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            lstData = await thongkeService.ThongKeLoaiTienAsync(CurrentDate ?? DateTime.Now);
+            GetDataForChart();
+            StateHasChanged();
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private void GetDataForChart()
+    {
+        var groupValue = lstData.Select(x => x.SoDuCuoi).ToList();
+        _config.Data.Datasets.Clear();
+        PieDataset<double> dataset = new PieDataset<double>(groupValue)
+            {
+                BackgroundColor = ChartColors.All.Take(2).Select(ColorUtil.FromDrawingColor).ToArray()
+            };
+        _config.Data.Datasets.Add(dataset);
+
+
+        _config.Data.Labels.Clear();
+        var grpLable = lstData.Select(x => x.TenLoaiTien).ToList();
+        _config.Data.Labels.AddRange(grpLable);
+        _chart.Update();
+    }
+
+    private async Task RebindingDate()
+    {
+        lstData = await thongkeService.ThongKeLoaiTienAsync(CurrentDate ?? DateTime.Now);
+        GetDataForChart();
+        StateHasChanged();
+    }
+
+}

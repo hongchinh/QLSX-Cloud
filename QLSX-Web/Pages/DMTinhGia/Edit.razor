@@ -1,0 +1,58 @@
+﻿@inject ILogger<Edit> Logger
+@inject IJSRuntime JSRuntime
+@inject IDMTinhGiaService<QLSX.Shared.Models.DMTinhGia> itemService
+@inherits QLSX.Web.Helpers.BlazorComponent
+
+
+@namespace QLSX.Web.Pages.DMTinhGiaPage
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Edit" Class="mr-3 mb-n1" />
+            Tạo mới
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <EditForm Model="server">
+            <DataAnnotationsValidator />
+            <MudPaper Elevation="25" Class="py-8 px-8" Style="padding-top:2px !important">
+                <ValidationSummary></ValidationSummary>
+                <MudGrid Spacing="1">
+                    <MudItem xs="6" sm="3">
+                        <MudTextField Margin="Margin.Dense" @bind-Value="@server.TenGia" Label="Loại giá" Variant="Variant.Outlined" />
+                        <ValidationMessage For="(() => server.TenGia)" />
+                    </MudItem>
+                    <MudItem xs="6" sm="9">
+                        <MudTextField Margin="Margin.Dense" @bind-Value="@server.CongThuc" Label="Đơn vị tính" Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="6" sm="12">
+                        <MudTextField Margin="Margin.Dense" @bind-Value="@server.GhiChu" Label="Ghi chú" Variant="Variant.Outlined" />
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </EditForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel" Variant="Variant.Filled" Color="Color.Error" >Bỏ qua</MudButton>
+        <MudButton Class="me-3" StartIcon="@Icons.Material.Filled.Save" Color="Color.Primary" Variant="Variant.Filled" OnClick="@(() => SaveClick())">Lưu</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public QLSX.Shared.Models.DMTinhGia server { get; set; } = new QLSX.Shared.Models.DMTinhGia();
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private async Task SaveClick()
+    {
+        var itemEdit = await itemService.UpdateAsync(server.Id, server);
+        MudDialog.Close(DialogResult.Ok(itemEdit.Id > 0));
+    }
+
+}
+

@@ -1,0 +1,76 @@
+﻿@inject ILogger<Delete> Logger
+@inject IJSRuntime JSRuntime
+@inject IDMKhachHangService<DanhMucKhachHangModel> khachhangService
+
+@inherits QLSX.Web.Helpers.BlazorComponent
+
+@namespace QLSX.Web.Pages.DMKhachHangPage
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.DeleteForever" Class="mr-3 mb-n1" />
+            Xóa
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12" sm="2">
+                <MudTextField Value="@server.Id.ToString()" Margin="Margin.Dense" Label="Id" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="2">
+                <MudTextField Value="@server.MaDonVi" Margin="Margin.Dense" Label="Mã đơn vị" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="5">
+                <MudTextField Value="@server.TenDonVi" Margin="Margin.Dense" Label="Tên đơn vị" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="3">
+                <MudTextField Value="@server.DienThoai" Margin="Margin.Dense" Label="Điện thoại" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+
+            <MudItem xs="12" sm="2">
+                <MudTextField Value="@server.MaSoThue"  Margin="Margin.Dense" Label="Mã số thuế" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="2">
+                <MudTextField Value="@server.SoTaiKhoan" Margin="Margin.Dense" Label="Số tài khoản" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="5">
+                <MudTextField Value="@server.TenNganHang" Margin="Margin.Dense" Label="Tên ngân hàng" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="3">
+                <MudTextField Value="@server.HanMucDuNo" Margin="Margin.Dense" Label="Hạn mức dư nợ" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+
+
+            <MudItem xs="12" sm="6">
+                <MudTextField Value="@server.DiaChi" Margin="Margin.Dense" Label="Địa chỉ" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="3">
+                <MudTextField Value="@server.DMTinhThanhs?.TenTinh" Margin="Margin.Dense" Label="Tên tỉnh" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="3">
+                <MudTextField Value="@server.DMNhomKhachHangs?.TenNhom" Margin="Margin.Dense" Label="Tên nhóm" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel" Variant="Variant.Filled" Color="Color.Error" >Bỏ qua</MudButton>
+        <MudButton StartIcon="@Icons.Material.Filled.Delete" Color="Color.Primary" Variant="Variant.Filled" OnClick="@(() => DeleteClick(server.Id))" Class="me-3">Xóa</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public DanhMucKhachHangModel server { get; set; } = new DanhMucKhachHangModel();
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    private async Task DeleteClick(int id)
+    {
+        var isdelete = await khachhangService.DeleteAsync(id);
+        MudDialog.Close(DialogResult.Ok(isdelete));
+    }
+ }

@@ -1,0 +1,229 @@
+﻿@using System.Net
+@using System.Text
+@using QLSX.Web.Helpers
+@using QLSX.Shared.Models;
+@using System.Net.Http.Json
+@inject ILogger<DialogHangHoa> Logger
+@inject IJSRuntime jsRuntime
+@inject IDMHangHoaService<DanhMucHangHoaModel> productServicece
+@inherits QLSX.Web.Helpers.BlazorComponent
+
+@inject IDMNhomHangService<DanhMucNhomHangModel> nhomhangService
+@inject IDMChungLoaiService<DanhMucChungLoaiModel> chungloaiService
+@inject IDMDoDayService<DanhMucDoDayModel> dodayService
+@inject IDMKieuSongService<DanhMucKieuSongModel> kieusongService
+@inject IDMLoaiTonService<DanhMucLoaiTonModel> loaitonService
+@inject IDMMauSacService<DanhMucMauSacModel> mausacService
+
+@inject IDialogService DialogService
+
+@namespace Dialogs
+<MudDialog DisableSidePadding="true" DefaultFocus="DefaultFocus.LastChild">
+    <DialogContent>
+        <MudContainer Style="overflow-y: scroll">
+            <MudTable ServerData="@(new Func<TableState, Task<TableData<DanhMucHangHoaModel>>>(ServerReload))" FixedHeader="true" Height="400px"
+                      Dense="true" Hover="true" Bordered="true" Striped="true" Loading="@Loading" @ref="table" RowClassFunc="@SelectedRowClassFunc"
+                      OnRowClick="@RowClickEvent"
+                      T="DanhMucHangHoaModel"
+                      SelectOnRowClick="true"
+                      @bind-SelectedItem="selectedItem1">
+                <ToolBarContent>
+                    <MudIconButton Icon="@Icons.Material.Filled.Add" OnClick="AddNewClick"> Thêm </MudIconButton>
+                    <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Tìm kiếm" Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Mã Hàng Hóa</MudTh>
+                    <MudTh>Tên hàng hóa</MudTh>
+                    <MudTh>DVT</MudTh>
+                    <MudTh>Giá nhập</MudTh>
+                    <MudTh>Giá xuất</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="MaHangHoa">
+                        <div @onclick:stopPropagation="true"
+                             @ondblclick="@( (x) => DoSelectedRow(context))">
+                            @context.MaHangHoa
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="TenHangHoa">
+                        <div @onclick:stopPropagation="true"
+                             @ondblclick="@( (x) => DoSelectedRow(context))">
+                            @context.TenHangHoa
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="DonViTinh">
+                        <div @onclick:stopPropagation="true"
+                             @ondblclick="@( (x) => DoSelectedRow(context))">
+                            @context.DonViTinh
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="GiaNhap">
+                        <div @onclick:stopPropagation="true"
+                             @ondblclick="@( (x) => DoSelectedRow(context))">
+                            @context.GiaNhap.ToString("###,###")
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="GiaXuat">
+                        <div @onclick:stopPropagation="true"
+                             @ondblclick="@( (x) => DoSelectedRow(context))">
+                            @context.GiaXuat.ToString("###,###")
+                        </div>
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText>Không có bản ghi nào tìm thấy</MudText>
+                </NoRecordsContent>
+                <LoadingContent>
+                    <MudText>Đang tải dữ liệu...</MudText>
+                </LoadingContent>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="Cancel">Bỏ qua</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    public GetAllResponsePaged<DanhMucHangHoaModel> lsResponses { get; set; }
+
+    private string searchString1 = "";
+
+    public List<DanhMucChungLoaiModel> lstChungLoai { get; set; }
+    public List<DanhMucDoDayModel> lstDoDay { get; set; }
+    public List<DanhMucKieuSongModel> lstKieuSong { get; set; }
+    public List<DanhMucLoaiTonModel> lstLoaiTon { get; set; }
+    public List<DanhMucMauSacModel> lstMauSac { get; set; }
+    public List<DanhMucNhomHangModel> lstNhomHang { get; set; }
+
+    public HangHoaSearchRequest itemRequest { get; set; } =
+      new HangHoaSearchRequest
+          {
+              MaHangHoa = "",
+              TenHangHoa = "",
+              DonViTinh = "",
+              Page = 0,
+              PageSize = 10,
+              TotalPages = 0
+          };
+
+    public List<DanhMucHangHoaModel> productsList { get; set; }
+    private DanhMucHangHoaModel selectedItem1 = null;
+    public List<DanhMucHangHoaModel> filteredproductsList { get; set; }
+    private IEnumerable<DanhMucHangHoaModel> pagedData;
+    private MudTable<DanhMucHangHoaModel> table;
+    private int totalItems;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    private string searchString { get; set; } = "";
+    private bool Loading { get; set; } = false;
+    private List<string> clickedEvents = new();
+    void Cancel() => MudDialog.Cancel();
+
+    private void Ok()
+    {
+        MudDialog.Close(DialogResult.Ok<DanhMucHangHoaModel>(selectedItem1));
+    }
+    private void OnButtonSelect(DanhMucHangHoaModel item)
+    {
+        selectedItem1 = item;
+        Ok();
+    }
+    /// <summary>
+    /// Here we simulate getting the paged, filtered and ordered data from the server
+    /// </summary>
+    private async Task<TableData<DanhMucHangHoaModel>> ServerReload(TableState state)
+    {
+        Loading = true;
+        itemRequest.SortLable = state.SortLabel;
+        itemRequest.SortDirection = (QLSX.Shared.Enums.SortDirection)state.SortDirection;
+        itemRequest.Page = state.Page;
+        itemRequest.PageSize = state.PageSize;
+        if (!string.IsNullOrEmpty(searchString))
+        {
+            itemRequest.SearchText = searchString;
+        }
+        else
+        {
+            itemRequest.SearchText = "";
+        }
+        lsResponses = new GetAllResponsePaged<DanhMucHangHoaModel>();
+        lsResponses = await productServicece.GetAllPagedDialogAsync(itemRequest);
+        IEnumerable<DanhMucHangHoaModel> data = lsResponses.Items; ;
+        totalItems = lsResponses.TotalRecords;
+        if (data == null)
+        {
+            data = new List<DanhMucHangHoaModel>();
+        }
+        pagedData = data;
+        Loading = false;
+        return new TableData<DanhMucHangHoaModel>() { TotalItems = totalItems, Items = pagedData };
+    }
+
+    private DanhMucHangHoaModel DoSelectedRow(DanhMucHangHoaModel ctx)
+    {
+        selectedItem1 = ctx;
+        Ok();
+        return ctx;
+    }
+    private async Task OnSearch(string text)
+    {
+        searchString = text;
+        await table.ReloadServerData();
+    }
+
+    private void RowClickEvent(TableRowClickEventArgs<DanhMucHangHoaModel> tableRowClickEventArgs)
+    {
+        // clickedEvents.Add("Row has been clicked");
+        selectedItem1 = tableRowClickEventArgs.Item;
+    }
+    private int selectedRowNumber = -1;
+    private string SelectedRowClassFunc(DanhMucHangHoaModel element, int rowNumber)
+    {
+        return string.Empty;
+
+    }
+    private async Task AddNewClick()
+    {
+        lstChungLoai = await chungloaiService.GetAllAsync();
+        lstDoDay = await dodayService.GetAllAsync();
+        lstKieuSong = await kieusongService.GetAllAsync();
+        lstLoaiTon = await loaitonService.GetAllAsync();
+        lstMauSac = await mausacService.GetAllAsync();
+        lstNhomHang = await nhomhangService.GetAllAsync();
+
+        var item = new DanhMucHangHoaModel();
+        var parameters = new DialogParameters
+            {
+                ["server"] = item,
+                ["lstChungLoai"] = lstChungLoai,
+                ["lstDoDay"] = lstDoDay,
+                ["lstKieuSong"] = lstKieuSong,
+                ["lstLoaiTon"] = lstLoaiTon,
+                ["lstMauSac"] = lstMauSac,
+                ["lstNhomHang"] = lstNhomHang,
+            };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<QLSX.Web.Pages.DMHangHoaPage.Create>("Thêm", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var deletedServer = (DanhMucHangHoaModel)result.Data;
+            if (deletedServer.Id > 0)
+            {
+                searchString = deletedServer.MaHangHoa;
+                await table.ReloadServerData();
+            }
+        }
+    }
+}

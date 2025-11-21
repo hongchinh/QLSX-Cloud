@@ -1,0 +1,125 @@
+@using QLSX.Shared.Data.Responses
+@using QLSX.Shared.Data.Responses.BaoCao
+
+@model ReportResponseBase<BaoCaoDoanhThuResponse>
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link
+      rel="stylesheet"
+      href="@Model.Host/lib/bootstrap/dist/css/bootstrap.css"
+    />
+    <link
+      rel="stylesheet"
+      href="@Model.Host/lib/bootstrap/dist/css/bootstrap-grid.css"
+    />
+    <link
+      rel="stylesheet"
+      href="@Model.Host/lib/bootstrap/dist/css/bootstrap-reboot.css"
+    />
+    <link
+      rel="stylesheet"
+      href="@Model.Host/lib/bootstrap/dist/css/bootstrap-theme.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+    />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="@Model.Host/css/report.css" />
+    <title>Báo Cáo Doanh Thu</title>
+  </head>
+  <body>
+    Html.RenderPartial("Header", @Model.ThongTin);
+    <div class="row" style="margin-top: 10px !important">
+      <div class="col-md-12" style="text-align: center">
+        <h1 style="color: blue">Báo Cáo Doanh Thu</h1>
+      </div>
+    </div>
+    <div class="row" style="margin-top: 10px !important">
+      <div class="col-md-12" style="text-align: center">
+        <span><i>Từ ngày   Đến ngày:  </i></span>
+      </div>
+    </div>
+    <div>
+      @if (Model.ListData.Count > 0)
+      {
+        var stt = 0;
+        @foreach(var group in Model.ListData.GroupBy(x=>x.TenKhachHang, (key, grp) => new { Name= key,List= grp})) {
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th style="vertical-align: middle !important" rowspan="1" class="text-center">STT</th>
+              <th style="vertical-align: middle !important" rowspan="1" class="text-center">Mã hàng hóa</th>
+              <th style="vertical-align: middle !important" rowspan="1" class="text-center w35">Tên hàng hóa</th>
+              <th style="vertical-align: middle !important" rowspan="1" class="text-center">ĐVT</th>
+              <th style="vertical-align: middle !important" rowspan="1" class="text-center">Số lượng</th>
+              <th style="vertical-align: middle !important" rowspan="1" class="text-center">Đơn giá</th>
+              <th style="vertical-align: middle !important" rowspan="1" class="text-center">Số tiền</th>
+              <th style="vertical-align: middle !important" rowspan="1" class="text-center">Ghi chú</th>
+            </tr>
+          </thead>
+          <tbody>
+           
+            @foreach (var item in group.List)
+            {
+             stt = stt + 1;
+            <tr>
+              <th colspan="4" style="border-right: none">
+                Nhóm 
+              </th>
+              <th style="font-weight: bold; text-align: right; border-left: none; border-right: none" colspan="1">
+                55000000
+              </th>
+              <th colspan="2"  style="font-weight: bold; text-align: right;border-left: none;"> 666444666</th> 
+              <th></th>
+            </tr>
+            <tr>
+              <th>@stt</th>
+              <th>@item.MaHangHoa</th>
+              <th>@item.TenHangHoa</th>
+              <th>@item.DonViTinh</th>
+              <th>@item.SoLuong</th>
+              <th>@item.DonGia.ToString("###,###.##")</th>
+              <th>@item.SoTien.ToString("###,###.##")</th>
+              <th>@item.GhiChu</th>
+            </tr>
+            }
+          </tbody>
+        </table>
+        }
+      } else {
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th style="vertical-align: middle !important" class="text-center">STT</th>
+              <th style="vertical-align: middle !important" class="text-center">Mã hàng hóa</th>
+              <th style="vertical-align: middle !important" class="text-center">Tên hàng hóa</th>
+              <th style="vertical-align: middle !important" class="text-center">ĐVT</th>
+              <th style="vertical-align: middle !important" class="text-center">Số lượng</th>
+              <th style="vertical-align: middle !important" class="text-center">Đơn giá</th>
+              <th style="vertical-align: middle !important" class="text-center">Số tiền</th>
+              <th style="vertical-align: middle !important" class="text-center">Ghi chú</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th style="font-weight: bold; text-align: center" colspan="8">
+                Không có dữ liệu
+              </th>
+            </tr>
+          </tbody>
+        </table>
+      }
+      <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; font-family:Tahoma">
+         <tr>
+          <td colspan="3" class="text-right"><b>@Model.ThongTin.ChucDanhLapBieu </b></td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>
+

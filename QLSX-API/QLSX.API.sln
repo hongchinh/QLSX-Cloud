@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34511.84
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QLSX.API", "QLSX.API\QLSX.API.csproj", "{2485D910-C200-4503-B3EA-74CD7045A044}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QLSX.Shared", "QLSX.Shared\QLSX.Shared.csproj", "{20ADF651-7F96-47D2-BBA3-FA09940006FA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2485D910-C200-4503-B3EA-74CD7045A044}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2485D910-C200-4503-B3EA-74CD7045A044}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2485D910-C200-4503-B3EA-74CD7045A044}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2485D910-C200-4503-B3EA-74CD7045A044}.Release|Any CPU.Build.0 = Release|Any CPU
+		{20ADF651-7F96-47D2-BBA3-FA09940006FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{20ADF651-7F96-47D2-BBA3-FA09940006FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{20ADF651-7F96-47D2-BBA3-FA09940006FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{20ADF651-7F96-47D2-BBA3-FA09940006FA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9A9428E5-501C-4DC4-A913-587186B4E69A}
+	EndGlobalSection
+EndGlobal

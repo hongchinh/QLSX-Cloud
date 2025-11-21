@@ -1,0 +1,342 @@
+﻿@page "/SoQuyTongHop"
+
+@using QLSX.Shared.Models
+@using QLSX.Web.Data
+@using QLSX.Web.Services
+@using Blazored.LocalStorage
+@using QLSX.Web.Shared;
+@using QLSX.Shared.Models.Request
+
+@inject IUserService userService
+@inject ICustomersService<TongHopDongTien> cusService
+@inject ILocalStorageService localStorageService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+@attribute [Authorize(Roles="Admin")]
+@inherits QLSX.Web.Helpers.BlazorComponent
+
+@namespace QLSX.Web.Pages.CongNo
+ 
+<div class="col-12">
+    <h4><b>Tổng hợp dòng tiền</b></h4>
+   
+    <div class="row">
+        <div class="col-12">
+            <EditForm Model="@itemRequest" OnValidSubmit="@SearchClick">
+                <div class="col-md-1">
+                    Từ ngày
+                </div>
+                <div class="col-md-2">
+                    <InputDate @bind-Value="itemRequest.From" />
+                </div>
+                <div class="col-md-1">
+                    Đến ngày
+                </div>
+                <div class="col-md-2">
+                    <InputDate @bind-Value="itemRequest.To" />
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary">
+                        Tìm
+                    </button>
+                </div>
+
+            </EditForm>
+        </div>
+    </div>
+
+    <SpinLoader IsLoading="isLoading">
+        <LoadingTemplate>
+            <MudProgressCircular Color="Color.Tertiary" Size="Size.Large" Indeterminate="true"/>
+        </LoadingTemplate>
+        <ContentTemplate>
+            @if (filteredUsersList != null)
+            {
+
+        <div class="col-12 row">
+            <table class="table table-bordered table-striped mb-0">
+                <thead class="bg-info">
+                    <tr>
+                        <th>
+                            <div class="col-12 row">
+                                Loại tiền
+                            </div>
+                        </th>
+                        <th>
+                            <div class="col-12 row">
+                                Số đầu kỳ
+                            </div>
+                        </th>
+                        <th>
+                            <div class="col-12 row">
+                                Số tiền mua
+                            </div>
+                        </th>
+                        <th>
+                            <div class="col-12 row">
+                                Số tiền trả
+                            </div>
+                        </th>
+                        <th>
+                            <div class="col-12 row">
+                                Số cuối kỳ
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var itemUser in filteredUsersList)
+                    {
+                <tr>
+                    <td>@itemUser.TENLOAITIEN </td>
+                    <td style="text-align:right !important">@itemUser.SODUDAUKY.ToString("###,##0.##")  </td>
+                    <td style="text-align:right !important">@itemUser.SOTIENTHU.ToString("###,##0.##")  </td>
+                    <td style="text-align:right !important">@itemUser.SOTIENCHI.ToString("###,##0.##")  </td>
+                    <td style="text-align:right !important"> @( itemUser.SODUCUOIKY.ToString("###,##0.##") )  </td>
+
+                </tr>}
+
+                    <tr>
+                        <td width="40%" style="color: orangered;font-weight:bold">
+                            Tổng quỹ
+                        </td>
+                        <td width="15%" style="text-align:right !important ; color: orangered;font-weight:bold">
+                            @itemsList.Where(x => x.LOAITIEN != 15).Sum(item => item.SODUDAUKY).ToString("###,##0.##")
+                        </td>
+                        <td width="15%" style="text-align:right !important ; color: orangered;font-weight:bold">
+                            @itemsList.Where(x => x.LOAITIEN != 15).Sum(item => item.SOTIENTHU).ToString("###,##0.##")
+                        </td>
+                        <td width="15%" style="text-align:right !important ; color: orangered;font-weight:bold">
+                            @itemsList.Where(x => x.LOAITIEN != 15).Sum(item => item.SOTIENCHI).ToString("###,##0.##")
+                        </td>
+                        <td width="15%" style="text-align:right !important ; color: orangered;font-weight:bold">
+                            @itemsList.Where(x => x.LOAITIEN != 15).Sum(item => item.SODUCUOIKY).ToString("###,##0.##")
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Công nợ phải thu
+                        </td>
+                        <td style="text-align:right !important">
+                            @itemsList.FirstOrDefault()?.PHAITHU_DAU.ToString("###,##0.##")
+                        </td>
+                        <td style="text-align:right !important">
+                            @itemsList.FirstOrDefault()?.PHAITHU_PS1.ToString("###,##0.##")
+                        </td>
+                        <td style="text-align:right !important">
+                            @itemsList.FirstOrDefault()?.PHAITHU_PS2.ToString("###,##0.##")
+                        </td>
+                        <td style="text-align:right !important">
+                            @itemsList.FirstOrDefault()?.PHAITHU_CUOI.ToString("###,##0.##")
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Công nợ phải trả
+                        </td>
+                        <td style="text-align:right !important">
+                            @itemsList.FirstOrDefault()?.PHAITRA_DAU.ToString("###,##0.##")
+                        </td>
+                        <td style="text-align:right !important">
+                            @itemsList.FirstOrDefault()?.PHAITRA_PS1.ToString("###,##0.##")
+                        </td>
+                        <td style="text-align:right !important">
+                            @itemsList.FirstOrDefault()?.PHAITRA_PS2.ToString("###,##0.##")
+                        </td>
+                        <td style="text-align:right !important">
+                            @itemsList.FirstOrDefault()?.PHAITRA_CUOI.ToString("###,##0.##")
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="color: orangered;font-weight:bold">
+                            Tổng cộng dòng tiền
+                        </td>
+                        <td style="color: orangered; text-align: right !important">
+                            @itemsList.FirstOrDefault()?.TONG_DAU.ToString("###,##0.##")
+                        </td>
+                        <td style="color: orangered; text-align: right !important">
+                            @itemsList.FirstOrDefault()?.TONG_PS1.ToString("###,##0.##")
+                        </td>
+                        <td style="color: orangered; text-align: right !important">
+                            @itemsList.FirstOrDefault()?.TONG_PS2.ToString("###,##0.##")
+                        </td>
+                        <td style="color: orangered; text-align: right !important">
+                            @itemsList.FirstOrDefault()?.TONG_CUOI.ToString("###,##0.##")
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="color: forestgreen; font-weight:bold">
+                            Tổng cộng dòng tiền( Trừ TK ký quỹ)
+                        </td>
+                        <td style="color: forestgreen; text-align: right !important">
+                            @itemsList.FirstOrDefault()?.TONG_DAU_NOT1.ToString("###,##0.##")
+                        </td>
+                        <td style="color: forestgreen; text-align: right !important">
+                            @itemsList.FirstOrDefault()?.TONG_PS1_NOT1.ToString("###,##0.##")
+                        </td>
+                        <td style="color: forestgreen; text-align: right !important">
+                            @itemsList.FirstOrDefault()?.TONG_PS2_NOT1.ToString("###,##0.##")
+                        </td>
+                        <td style="color: forestgreen; text-align: right !important">
+                            @itemsList.FirstOrDefault()?.TONG_CUOI_NOT1.ToString("###,##0.##")
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color:blue; font-weight:bold;">
+                            Tổng cộng dòng tiền( Trừ công nợ vay Mua Oto)
+                        </td>
+                        <td style="color: blue; text-align: right !important">
+                            @itemsList.FirstOrDefault()?.TONG_DAU_NOT2.ToString("###,##0.##")
+                        </td>
+                        <td style="color: blue; text-align: right !important">
+                            @itemsList.FirstOrDefault()?.TONG_PS1_NOT2.ToString("###,##0.##")
+                        </td>
+                        <td style="color: blue; text-align: right !important">
+                            @itemsList.FirstOrDefault()?.TONG_PS2_NOT2.ToString("###,##0.##")
+                        </td>
+                        <td style="color: blue; text-align: right !important">
+                            @itemsList.FirstOrDefault()?.TONG_CUOI_NOT2.ToString("###,##0.##")
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+
+                           }
+        </ContentTemplate>
+    </SpinLoader>
+
+
+    <br />
+     
+</div>
+
+@code { [Parameter]
+    public int UserId { get; set; }
+
+    TongHopDongTienRequest request = new TongHopDongTienRequest();
+    public List<TongHopDongTien> itemsList { get; set; }
+    public List<TongHopDongTien> filteredUsersList { get; set; }
+    public SoQuyTongHopRequest itemRequest { get; set; }
+
+    public bool IsVisible { get; set; }
+    public bool Result { get; set; }
+    public string RecordName { get; set; }
+    public string[] Cities { get; set; }
+    public bool IsGridViewFiltered { get; set; }
+    bool isLoading = true;
+
+    //private Edit EditComponent { get; set; }
+
+
+    protected override void OnInitialized()
+    {
+        Console.WriteLine("Customer - OnInitialized");
+        base.OnInitialized();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine("Customer - OnInitializedAsync");
+
+        itemsList = new List<TongHopDongTien>();
+
+        itemRequest = new SoQuyTongHopRequest();
+        itemRequest.From = DateTime.Now;
+        itemRequest.To = DateTime.Now;
+        request.mdvsd = "01";
+        request.tmptblOK = "zzzaabc";
+        await base.OnInitializedAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        Console.WriteLine("Customers - OnParametersSet");
+        base.OnParametersSet();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Console.WriteLine("Customers - OnParametersSetAsync");
+        await base.OnParametersSetAsync();
+    }
+
+    protected override bool ShouldRender()
+    {
+        base.ShouldRender();
+        Console.WriteLine("Customers - ShouldRender");
+
+        return true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Console.WriteLine("Customers - OnAfterRender - firstRender = " + firstRender);
+        base.OnAfterRender(firstRender);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        Console.WriteLine("Customers - OnAfterRenderAsync - firstRender = " + firstRender);
+
+        if (firstRender)
+        {
+            itemRequest = new SoQuyTongHopRequest();
+            itemRequest.From = DateTime.Now;
+            itemRequest.To = DateTime.Now;
+            request.mdvsd = "01";
+            request.tmptblOK = "zzzaabc";
+            await LoadCustomers();
+            isLoading = false;
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public void Dispose()
+    {
+        Console.WriteLine("Customers - Dispose");
+    }
+
+    private async Task LoadCustomers()
+    {
+        await Task.Delay(500);
+        List<TongHopDongTien> item = new List<TongHopDongTien>();
+
+        request.date1 = itemRequest.From?.ToString("yyyy-MM-dd");
+        request.date2 = itemRequest.To?.ToString("yyyy-MM-dd");
+        request.mdvsd = "01";
+        request.tmptblOK = "zzzaabc";
+        item = await cusService.SoQuyTongHopAsync(request);
+        itemsList = filteredUsersList = item.ToList();
+        StateHasChanged();
+
+    }
+    private void OnCustomerSearchTextChanged(ChangeEventArgs changeEventArgs, string columnTitle)
+    {
+        string searchText = changeEventArgs.Value.ToString();
+        IsGridViewFiltered = true;
+
+    }
+    private async Task ReloadListItems()
+    {
+        IsGridViewFiltered = true;
+        await LoadCustomers();
+
+    }
+
+    private async Task SearchClick()
+    {
+        request.date1 = itemRequest.From?.ToString("yyyy-MM-dd");
+        request.date2 = itemRequest.To?.ToString("yyyy-MM-dd");
+        request.mdvsd = "01";
+        request.tmptblOK = "zzzaabc";
+
+        await LoadCustomers();
+
+    }
+    }

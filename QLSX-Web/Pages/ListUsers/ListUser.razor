@@ -1,0 +1,356 @@
+﻿@page "/ListUser/{UserId:int}"
+@page "/ListUser"
+
+@using QLSX.Shared.Models
+@using QLSX.Web.Services
+@using Blazored.LocalStorage
+@using QLSX.Web.Shared
+@using OfficeOpenXml
+@using OfficeOpenXml.Style
+
+@inject IEmloyeeService<UserModel> listService
+@inject IRoleService<Role> roleService
+@inject IDMPhongBanService<QLSX.Shared.Models.DMPhongBan> phongbanService
+@inject IUserService userService
+@inject ILocalStorageService localStorageService
+@inject IJSRuntime JSRuntime
+@inject AppService AppService
+@implements IDisposable
+@attribute [Authorize]
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject IToastService toastService
+@inject IDialogService DialogService
+
+
+@namespace QLSX.Web.Pages.ListUsers
+
+<AuthorizeView Roles="Admin">
+    <Authorized>
+        <div class="col-12">
+            <MudBreadcrumbs Items="_items" Style="padding:0px !important"></MudBreadcrumbs>
+            <div class="row">
+                <div class="col-12 pr-45">
+                    <div class="area-search py-3 px-3">
+                        <EditForm Model="@itemRequest" OnValidSubmit="@SearchClick" Context="ctx">
+                            <MudPaper Elevation="25" Class="py-8 px-8" Style="padding-top:2px !important">
+                                <MudGrid Spacing="1">
+                                    <MudItem xs="6" sm="6">
+                                        <MudTextField @bind-Value="itemRequest.Keywords" Label="Tìm kiếm" Variant="Variant.Outlined"></MudTextField>
+                                    </MudItem>
+                                    <MudItem xs="6" sm="2">
+                                        <MudButton Class="mt-3" ButtonType="ButtonType.Submit" Size="Size.Large" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Search" Color="Color.Primary">Tìm kiếm</MudButton>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudPaper>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+
+            <MudToolBar>
+                <MudButton Variant="Variant.Filled" @onclick="@(() => CreateClick())" StartIcon="@Icons.Material.Filled.Create" Color="Color.Primary">Tạo mới</MudButton>
+                <MudButton Class="ml-1" Variant="Variant.Filled" @onclick="@(async() => await ExportExcel())" StartIcon="@Icons.Material.Filled.ImportExport" Color="Color.Secondary">Excel</MudButton>
+            </MudToolBar>
+
+            <div class="form-group">
+                <MudTable ServerData="@(new Func<TableState, Task<TableData<UserModel>>>(ServerReload))" Breakpoint="Breakpoint.Sm"
+                          Dense="true" Hover="true" Bordered="true" Striped="true" Loading="@isLoading"
+                          @ref="table" HorizontalScrollbar="true">
+                    <ColGroup>
+                        <col />
+                        <col />
+                    </ColGroup>
+                    <HeaderContent>
+                        <MudTh><MudTableSortLabel SortLabel="EmailAddress" T="UserModel">Email</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortLabel="FirstName" T="UserModel">Họ tên</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortLabel="RoleName" T="UserModel">Quyền</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortLabel="IsActive" T="UserModel">Đang hoạt động</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortLabel="PhongBan" T="UserModel">Phòng ban</MudTableSortLabel></MudTh>
+                        <MudTh>#</MudTh>
+                    </HeaderContent>
+                    <RowTemplate Context="ctx1">
+                        <MudTd DataLabel="EmailAddress">@ctx1.EmailAddress</MudTd>
+                        <MudTd DataLabel="FirstName">@ctx1.FirstName</MudTd>
+                        <MudTd DataLabel="RoleName">@ctx1.Role?.RoleDesc</MudTd>
+                        <MudTd DataLabel="IsActive">@ctx1.IsActive</MudTd>
+                        <MudTd DataLabel="PhongBan">@ctx1.DMPhongBans?.TenPhong</MudTd>
+                        <MudTd>
+                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Primary" aria-label="Xóa" @onclick="@(()=> DeleteClick(@ctx1))"></MudIconButton>
+                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" aria-label="Sửa" @onclick="@(()=> EditClick(@ctx1))">EditClick</MudIconButton>
+                        </MudTd>
+                    </RowTemplate>
+                    <NoRecordsContent>
+                        <MudText>Không có bản ghi nào tìm thấy</MudText>
+                    </NoRecordsContent>
+                    <LoadingContent>
+                        <MudText>Đang tải dữ liệu...</MudText>
+                    </LoadingContent>
+                    <PagerContent>
+                        <MudTablePager RowsPerPageString="Số dòng mỗi trang" />
+                    </PagerContent>
+                </MudTable>
+
+            </div>
+
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <NotPermission></NotPermission>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [Parameter]
+    public int UserId { get; set; }
+    bool isLoading = true;
+    public GetAllResponsePaged<UserModel> lsResponses { get; set; }
+    public QLSX.Shared.Models.BaseSearchRequest itemRequest { get; set; } = new QLSX.Shared.Models.BaseSearchRequest();
+
+    public List<Role> lstRoles { get; set; } = new List<Role>();
+    public List<QLSX.Shared.Models.DMPhongBan> lstPhongBans { get; set; } = new List<QLSX.Shared.Models.DMPhongBan>();
+
+    private IEnumerable<UserModel> pagedData;
+    private MudTable<UserModel> table;
+    private int totalItems;
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Home", href: "/"),
+        new BreadcrumbItem("Danh sách user",href: null, disabled: true)
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        itemRequest = new QLSX.Shared.Models.BaseSearchRequest()
+            {
+                DMDonViSuDungId = AppService.DMDonViSuDungId,
+                PageSize = 10,
+                Page = 0,
+                TotalPages = 0
+            };
+        lsResponses = new GetAllResponsePaged<UserModel>();
+
+        await base.OnInitializedAsync();
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isLoading = true;
+            lstRoles = await roleService.GetAllAsync();
+            lstPhongBans = await phongbanService.GetAllAsync();
+            isLoading = false;
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+    public void Dispose()
+    {
+        Console.WriteLine("Customers - Dispose");
+    }
+    /// <summary>
+    /// Here we simulate getting the paged, filtered and ordered data from the server
+    /// </summary>
+    private async Task<TableData<UserModel>> ServerReload(TableState state)
+    {
+        isLoading = true;
+        itemRequest.SortLable = state.SortLabel;
+        itemRequest.SortDirection = (QLSX.Shared.Enums.SortDirection)state.SortDirection;
+        itemRequest.Page = state.Page;
+        itemRequest.PageSize = state.PageSize;
+
+        lsResponses = new GetAllResponsePaged<UserModel>();
+        lsResponses = await listService.GetAllPagedAsync(itemRequest);
+
+        IEnumerable<UserModel> data = lsResponses.Items;
+
+        totalItems = lsResponses.TotalRecords;
+
+        if (data == null)
+        {
+            data = new List<UserModel>();
+        }
+        pagedData = data;
+        isLoading = false;
+        StateHasChanged();
+        return new TableData<UserModel>() { TotalItems = totalItems, Items = pagedData };
+    }
+
+    private async Task EditClick(UserModel item)
+    {
+        var parameters = new DialogParameters
+            {
+                ["server"] = item,
+                ["lstRoles"] = lstRoles,
+                ["lstPhongBans"] = lstPhongBans
+            };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<Edit>("Sửa", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var deletedServer = (bool)result.Data;
+            if (deletedServer)
+            {
+
+                await table.ReloadServerData();
+                toastService.ShowToast(ToastLevel.Success, "Xóa thành công", "Thông báo");
+            }
+            else
+            {
+                toastService.ShowToast(ToastLevel.Error, "Xảy ra lỗi khi xóa", "Thông báo");
+            }
+        }
+    }
+
+    private async Task ReloadCatalogItems()
+    {
+        await table.ReloadServerData();
+    }
+
+    private async Task DeleteClick(UserModel item)
+    {
+        var parameters = new DialogParameters { ["server"] = item };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<Delete>("Xóa", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var deletedServer = (bool)result.Data;
+            if (deletedServer)
+            {
+
+                await table.ReloadServerData();
+                toastService.ShowToast(ToastLevel.Success, "Xóa thành công", "Thông báo");
+            }
+            else
+            {
+                toastService.ShowToast(ToastLevel.Error, "Xảy ra lỗi khi xóa", "Thông báo");
+            }
+        }
+    }
+
+    private async Task CreateClick()
+    {
+        var item = new UserModel();
+        var parameters = new DialogParameters
+            {
+                ["server"] = item,
+                ["lstRoles"] = lstRoles,
+                ["lstPhongBans"] = lstPhongBans
+            };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<Create>("Tạo mới", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var deletedServer = (bool)result.Data;
+            if (deletedServer)
+            {
+
+                await table.ReloadServerData();
+                toastService.ShowToast(ToastLevel.Success, "Xóa thành công", "Thông báo");
+            }
+            else
+            {
+                toastService.ShowToast(ToastLevel.Error, "Xảy ra lỗi khi xóa", "Thông báo");
+            }
+        }
+    }
+    private async Task SearchClick()
+    {
+        await table.ReloadServerData();
+    }
+    private async Task ExportExcel()
+    {
+        byte[] fileContents;
+        MemoryStream stream = new();
+        var listData = await listService.ExportToExcelAsync(itemRequest);
+        if (listData != null)
+        {
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+            using (var package = new ExcelPackage())
+            {
+                var workSheet = package.Workbook.Worksheets.Add("User_Sheet_1");
+
+                // Set default width cho tất cả column
+                workSheet.DefaultColWidth = 20;
+                // Tự động xuống hàng khi text quá dài
+                workSheet.Cells.Style.WrapText = true;
+
+                #region Header excel
+                workSheet.Cells[1, 1].Value = "Email";
+                workSheet.Cells[1, 1].Style.Font.Size = 12;
+                workSheet.Cells[1, 1].Style.Font.Bold = true;
+                workSheet.Cells[1, 1].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 2].Value = "Họ tên";
+                workSheet.Cells[1, 2].Style.Font.Size = 12;
+                workSheet.Cells[1, 2].Style.Font.Bold = true;
+                workSheet.Cells[1, 2].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 3].Value = "Quyền";
+                workSheet.Cells[1, 3].Style.Font.Size = 12;
+                workSheet.Cells[1, 3].Style.Font.Bold = true;
+                workSheet.Cells[1, 3].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 4].Value = "Đang hoạt động";
+                workSheet.Cells[1, 4].Style.Font.Size = 12;
+                workSheet.Cells[1, 4].Style.Font.Bold = true;
+                workSheet.Cells[1, 4].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 5].Value = "Phòng ban";
+                workSheet.Cells[1, 5].Style.Font.Size = 12;
+                workSheet.Cells[1, 5].Style.Font.Bold = true;
+                workSheet.Cells[1, 5].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                #endregion
+
+                #region Body excel
+                int rowIndex = 2;
+                foreach (var item in listData.Items)
+                {
+                    workSheet.Cells[rowIndex, 1].Value = item.EmailAddress;
+                    workSheet.Cells[rowIndex, 1].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 1].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 1].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 2].Value = item.FirstName;
+                    workSheet.Cells[rowIndex, 2].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 2].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 2].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 3].Value = item.Role;
+                    workSheet.Cells[rowIndex, 3].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 3].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 3].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 4].Value = item.IsActive;
+                    workSheet.Cells[rowIndex, 4].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 4].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 4].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 5].Value = item.DMPhongBans != null ? item.DMPhongBans.TenPhong : "";
+                    workSheet.Cells[rowIndex, 5].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 5].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 5].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    rowIndex++;
+                }
+                #endregion
+
+                fileContents = await package.GetAsByteArrayAsync();
+            };
+
+            await JSRuntime.InvokeAsync<QLSX.Shared.Models.UserModel>(
+                "saveAsFile",
+                $"User_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.xlsx",
+                Convert.ToBase64String(fileContents)
+            );
+        }
+    }
+ }

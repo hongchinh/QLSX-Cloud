@@ -1,0 +1,104 @@
+﻿@namespace QLSX.Web.Pages.SettingsPage
+
+<div class="container" style="width:auto !important">
+	 
+	<div class="row" style="margin-top:5px">
+		<label class="control-label col-md-2">Mã đơn vị</label>
+		<div class="col-md-4">
+			<InputText class="form-control" @bind-Value="itemForm.MaDonVi" placeholder="Mã nhóm" />
+			<ValidationMessage For="(() => itemForm.MaDonVi)" />
+		</div>
+
+		<label class="control-label col-md-2">Ngày tạo</label>
+		<label class="control-label col-md-4">@itemForm.CreatedDate.ToString("dd/MM/yyyy HH:mm:ss")</label>
+
+	</div>
+	<div class="row" style="margin-top:5px">
+		<label class="control-label col-md-2">Tên đơn vị</label>
+		<div class="col-md-10">
+			<InputText class="form-control" @bind-Value="itemForm.TenDonVi" placeholder="Tên đơn vị" />
+			<ValidationMessage For="(() => itemForm.TenDonVi)" />
+		</div>
+	</div>
+	<div class="row" style="margin-top:5px">
+		<label class="control-label col-md-2">Địa chỉ</label>
+		<div class="col-md-6">
+			<InputText class="form-control" @bind-Value="itemForm.DiaChi" placeholder="Địa chỉ" />
+			<ValidationMessage For="(() => itemForm.DiaChi)" />
+		</div>
+		<label class="control-label col-md-2">Điện thoại</label>
+		<div class="col-md-2">
+			<InputText class="form-control" @bind-Value="itemForm.DienThoai" placeholder="Điện thoại" />
+			<ValidationMessage For="(() => itemForm.DienThoai)" />
+		</div>
+	</div>
+	<div class="row" style="margin-top:5px">
+		<label class="control-label col-md-2">Email</label>
+		<div class="col-md-4">
+			<InputText class="form-control" @bind-Value="itemForm.Email" placeholder="Email" />
+			<ValidationMessage For="(() => itemForm.Email)" />
+		</div>
+		<label class="control-label col-md-2">Mã số thuế</label>
+		<div class="col-md-4">
+			<InputText class="form-control" @bind-Value="itemForm.MASOTHUE" placeholder="Mã số thuế" />
+			<ValidationMessage For="(() => itemForm.MASOTHUE)" />
+		</div>
+	</div>
+	<div class="row" style="margin-top:5px">
+		<label class="control-label col-md-2">Người lập biểu</label>
+		<div class="col-md-4">
+			<InputText class="form-control" @bind-Value="itemForm.CHUCDANHLAPBIEU" placeholder="Chức danh người lập biểu" />
+			<ValidationMessage For="(() => itemForm.CHUCDANHLAPBIEU)" />
+		</div>
+		<label class="control-label col-md-2">Họ tên</label>
+		<div class="col-md-4">
+			<InputText class="form-control" @bind-Value="itemForm.HOTENNGUOILAPBIEU" placeholder="Họ tên người lập biểu" />
+			<ValidationMessage For="(() => itemForm.HOTENNGUOILAPBIEU)" />
+		</div>
+	</div>
+	<div class="row" style="margin-top:5px">
+		<label class="control-label col-md-2">Kế toán</label>
+		<div class="col-md-4">
+			<InputText class="form-control" @bind-Value="itemForm.CHUCDANHKETOAN" placeholder="Chức danh kế toán" />
+			<ValidationMessage For="(() => itemForm.CHUCDANHKETOAN)" />
+		</div>
+		<label class="control-label col-md-2">Họ tên</label>
+		<div class="col-md-4">
+			<InputText class="form-control" @bind-Value="itemForm.HOTENKETOAN" placeholder="Họ tên kế toán" />
+			<ValidationMessage For="(() => itemForm.HOTENKETOAN)" />
+		</div>
+	</div>
+	<div class="row" style="margin-top:5px">
+		<label class="control-label col-md-2">Người lập biểu</label>
+		<div class="col-md-4">
+			<InputText class="form-control" @bind-Value="itemForm.CHUCDANHTHUTRUONG" placeholder="Chức danh thủ trưởng" />
+			<ValidationMessage For="(() => itemForm.CHUCDANHTHUTRUONG)" />
+		</div>
+		<label class="control-label col-md-2">Họ tên</label>
+		<div class="col-md-4">
+			<InputText class="form-control" @bind-Value="itemForm.HOTENTHUTRUONG" placeholder="Họ tên thủ trưởng" />
+			<ValidationMessage For="(() => itemForm.HOTENTHUTRUONG)" />
+		</div>
+	</div>
+	<div class="row" style="margin-top:5px">
+		<label class="control-label col-md-2">Nội dung</label>
+		<div class="col-md-10">
+			<InputTextArea class="form-control" @bind-Value="itemForm.NOIDUNGNGHE" placeholder="Nội dung ngành nghề" />
+			<ValidationMessage For="(() => itemForm.NOIDUNGNGHE)" />
+		</div>
+		 
+	</div>
+	<div class="row" style="margin-top:5px">
+		<label class="control-label col-md-2">Ngày lập</label>
+		<div class="col-md-10">
+			<InputText class="form-control" @bind-Value="itemForm.NGAYTHANGLB" placeholder="Chức danh thủ trưởng" />
+			<ValidationMessage For="(() => itemForm.NGAYTHANGLB)" />
+		</div>
+	</div>
+</div>
+
+@code {
+	[Parameter]
+	public QLSX.Shared.Models.SettingModel itemForm { get; set; }
+
+}

@@ -1,0 +1,234 @@
+﻿@* @page "/testnew"
+@using IgniteUI.Blazor.Controls
+@using System.Collections.ObjectModel
+@using Blazored.Toast
+
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject INhapXuatsService<NhapXuatModel> nhapxuatService
+@inject AppService AppService
+@inject IToastService toastService
+@inject IJSRuntime JSRuntime
+@namespace QLSX.Web.Pages.TesttPage
+
+<IgbGrid AutoGenerate="false" Height="100%" Width="100%"
+         Data="pagedDataGrid"
+         PrimaryKey="Name"
+         Name="grid1"
+         @ref="grid1">
+    
+    <IgbColumn Field="Id"
+               Header="Id"
+               DataType="GridColumnDataType.Number"
+               Name="column1"
+               @ref="column1">
+    </IgbColumn>
+
+    <IgbColumn Field="Loai"
+               Header="Loai"
+               DataType="GridColumnDataType.String"
+               Name="column2"
+               @ref="column2">
+    </IgbColumn>
+
+    <IgbColumn Field="NgayCT"
+               Header="NgayCT"
+               DataType="GridColumnDataType.Date"
+               Name="column3"
+               @ref="column3">
+    </IgbColumn>
+
+    <IgbColumn Header="SoChungTu" Field="SoChungTu"
+               DataType="GridColumnDataType.String"
+               Name="column4"
+               @ref="column4">
+    </IgbColumn>
+    <IgbColumn Header="MaDonVi" Field="MaDonVi"
+               DataType="GridColumnDataType.String"
+               Name="column5"
+               @ref="column5">
+    </IgbColumn>
+    <IgbColumn Header="TenDonVi" Field="TenDonVi"
+               DataType="GridColumnDataType.String"
+               Name="column6"
+               @ref="column6">
+    </IgbColumn>
+    <IgbColumn Header="TongCong" Field="TongCong"
+               DataType="GridColumnDataType.String"
+               Name="column7"
+               @ref="column7">
+    </IgbColumn>
+
+    <IgbColumn Header="Action"
+               BodyTemplateScript="WebGridCellTemplate">
+    </IgbColumn>
+</IgbGrid>
+
+<IgbDataGrid Height="100%" Width="100%" @ref="grid"
+             DefaultColumnMinWidth="120"
+             AutoGenerateColumns="false"
+             DataSource="pagedData"
+             ActivationMode="@GridActivationMode.Cell"
+             SelectionMode="@DataGridSelectionMode.SingleRow"
+             SelectionBehavior="@GridSelectionBehavior.ModifierBased"
+             IsColumnOptionsEnabled="true">
+    <IgbTextColumn Field="Id" Width="@("*>150")" />
+    <IgbTextColumn Field="Loai" HeaderText="Loai" Width="@("*>160")" />
+    <IgbDateTimeColumn Field="NgayCT" HeaderText="NgayCT" Width="@("*>120")" />
+    <IgbTextColumn Field="SoCT" HeaderText="SoCT" Width="@("*>120")" />
+    <IgbTextColumn Field="MaDonVi" HeaderText="MaDonVi" Width="@("*>170")" />
+    <IgbTextColumn Field="TenDonVi" HeaderText="TenDonVi" Width="@("*>170")" />
+    <IgbNumericColumn Field="TongTienHang" HeaderText="TongTienHang" Width="@("*>170")" />
+    <IgbTextColumn Field="DienGiai" HeaderText="DienGiai" Width="@("*>170")" />
+    <IgbTemplateColumn Field="ButtonColumn" HeaderText="Action" CellUpdatingScript="onUpdatingTemplateColumnNhapXuat" />
+
+</IgbDataGrid>
+
+@code {
+
+    private List<NhapXuatModel> pagedDataGrid;
+    private ObservableCollection<NhapXuatModel> pagedData;
+    public NhapXuatModel nhapxuat { get; set; }
+
+    public GetAllResponsePaged<NhapXuatModel> lsResponses { get; set; }
+    public NhapXuatSearchRequest itemRequest { get; set; }
+
+    int currentPage = 0;
+    int pageSize = 2;
+    int totalCount = 0;
+    private Action BindElements { get; set; }
+
+
+
+    public static IgbDataGrid grid;
+    private IgbPaginator paginator;
+    private IgbPropertyEditorPropertyDescription sortingOptionsEditor;
+    private IgbPropertyEditorPanel propertyEditor;
+
+    private IJSObjectReference? module;
+
+    public async void OnDataPreLoad(IgbForOfStateEventArgs e)
+    {
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+
+
+            await LoadData();
+            StateHasChanged();
+
+        }
+         
+        await base.OnAfterRenderAsync(firstRender);
+    }
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        if (module is not null)
+        {
+            await module.DisposeAsync();
+        }
+    }
+    private IgbGrid grid1;
+    private IgbColumn column1;
+    private IgbColumn column2;
+    private IgbColumn column3;
+    private IgbColumn column4;
+    private IgbColumn column5;
+    private IgbColumn column6;
+    private IgbColumn column7;
+    private IgbColumn column8;
+    private IgbColumn column9;
+
+    private async Task InvokeJavaScriptFunction()
+    {
+        await JS.InvokeVoidAsync("DOMCleanup.myJavaScriptFunction2");
+    }
+
+     
+    protected override async Task OnInitializedAsync()
+    {
+
+        itemRequest = new NhapXuatSearchRequest()
+            {
+                DMDonViSuDungId = AppService.DMDonViSuDungId,
+                PageSize = 10,
+                Page = 0,
+                TotalPages = 0
+
+            };
+        pageSize = 10;
+        await base.OnInitializedAsync();
+    }
+
+    async Task HandleSortingDone(IgbSortingExpressionEventArgs eventArgs)
+    {
+        var evt = eventArgs;
+        if (evt.Detail.Count() == 0)
+        {
+            itemRequest.SortDirection = QLSX.Shared.Enums.SortDirection.None;
+        }
+        else
+        {
+            foreach (var item in evt.Detail)
+            {
+                itemRequest.SortLable = item.FieldName;
+                if (item.Dir == SortingDirection.Asc)
+                {
+                    itemRequest.SortDirection = QLSX.Shared.Enums.SortDirection.Ascending;
+
+                }
+                else
+                {
+                    itemRequest.SortDirection = QLSX.Shared.Enums.SortDirection.Descending;
+                }
+
+
+            }
+        }
+
+
+        await LoadData();
+    }
+    async Task HandlePageChanged(IgbNumberEventArgs eventArgs)
+    {
+        pageSize = (int)eventArgs.Detail;
+        await LoadData();
+    }
+    async Task HandlePagingDone(IgbPageEventArgs eventArgs)
+    {
+        var evt = eventArgs;
+        currentPage = (int)eventArgs.Detail.Current;
+        await LoadData();
+    }
+
+    async Task LoadData()
+    {
+        if (currentPage <= 0) itemRequest.Page = 0;
+        else itemRequest.Page = currentPage;
+        itemRequest.PageSize = pageSize;
+        lsResponses = new GetAllResponsePaged<NhapXuatModel>();
+        nhapxuat = new NhapXuatModel();
+
+        lsResponses = await nhapxuatService.GetAllPagedAsync(itemRequest);
+        pagedDataGrid = lsResponses.Items ?? new List<NhapXuatModel>();
+        pagedData = new ObservableCollection<NhapXuatModel>(lsResponses.Items) ?? new ObservableCollection<NhapXuatModel>();
+        totalCount = lsResponses.TotalRecords;
+
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public  static async Task ButtonClickActionAtBlazorLevel(object parameter)
+    {
+        string param = parameter.ToString();
+        //QLSX.Web.Pages.TesttPage.showmessage(param);
+        //toastService.ShowToast(ToastLevel.Warning, "Click button " + param, "Thông báo");
+        // int param = int.Parse(parameter.ToString());
+        // var rowItem = grid.ActualDataSource.GetItemAtIndex(param);
+        // grid.RemoveItem(rowItem);
+    }
+
+} *@

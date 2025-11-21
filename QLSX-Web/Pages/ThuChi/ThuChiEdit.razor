@@ -1,0 +1,192 @@
+﻿@using System.Text.Json
+@using Newtonsoft.Json
+@using Blazored.LocalStorage
+@using AutoMapper
+@using Dialogs
+@using QLSX.Shared.Models
+
+@inject NavigationManager navigationManager
+@inject ILogger<ThuChiEdit> Logger
+@inject IJSRuntime JSRuntime
+@inject IThuChiService<ThuChiModel> thuchitService
+@inject IEmloyeeService<UserModel> dmUserService
+@inject IDMKhoanThuService<DanhMucKhoanThuModel> DanhMucKhoanThuModelService
+@inject IDMKhoanChiService<DanhMucKhoanChiModel> dmKhoanChiService
+@inject IDMLoaiTienService<DanhMucLoaiTienModel> dmLoaiTienService
+@inject IDMKhachHangService<DanhMucKhachHangModel> dmkhachhangService
+@inject ILocalStorageService localStorageService
+@inject AppService AppService
+@inject IMapper mapper;
+@inject IPhanQuyenSuDungService< QLSX.Shared.Models.QuyenSuDungModel> permisstionService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+@inherits QLSX.Web.Helpers.BlazorComponent
+@namespace QLSX.Web.Pages.ThuChiPage
+
+
+<MudDialog DisableSidePadding="true">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Add" Class="mr-3 mb-n1" />
+            @Title
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <ThuChiForm thuchi="thuchi"
+                    lstUser="lstUser"
+                    lstKhoanThu="lstKhoanThu"
+                    lstKhoanChi="lstKhoanChi"
+                    lstLoaiTien="lstLoaiTien"
+                    quyenSuDung="quyenSuDung"
+                    OnValidSubmit="OnValidSubmit"
+                    SoDuCN="SoDuCN"
+                    IsCreateOrEdit="false"
+                    CancelClickCallBack="CancelClick"
+                    IsReadOnly="false" />
+    </DialogContent>
+    <DialogActions>
+    </DialogActions>
+</MudDialog>
+
+<LoadingProgress IsLoading="isLoading" />
+@code {
+    [CascadingParameter]    private Task<AuthenticationState> authenticationStateTask { get; set; }
+     [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public string Title { get; set; }
+    [Parameter] public int ThuChiId { get; set; }
+    [Parameter] public string loaiThuChi { get; set; }
+
+    private ThuChiModel thuchi = new ThuChiModel();
+    public bool isLoading = true;
+    public double SoDuCN = 0;
+    public QLSX.Shared.Models.QuyenSuDungModel quyenSuDung { get; set; } = new QLSX.Shared.Models.QuyenSuDungModel();
+
+    public List<int> lstIDs { get; set; }
+
+    //dialog
+    public bool visibleDialog { get; set; } = false;
+    public NhapXuatSearchRequest requestTimNhanh { get; set; }
+
+    private string glLoai { get; set; }
+    private DialogOptions dialogOptions = new() { FullWidth = true, CloseOnEscapeKey = true };
+
+    public List<UserModel> lstUser { get; set; }
+    public List<DanhMucLoaiTienModel> lstLoaiTien { get; set; }
+    public List<DanhMucKhoanThuModel> lstKhoanThu { get; set; }
+    public List<DanhMucKhoanChiModel> lstKhoanChi { get; set; }
+    public int TotalIndex { get; set; } = 0;
+    public int CurentIndex { get; set; } = 0;
+    public List<ThuChiModel> thuchiAll { get; set; }
+    public bool IsFirst { get; set; } = true;
+    public bool IsLast { get; set; } = true;
+
+
+    protected async override Task OnInitializedAsync()
+    {
+
+    }
+    private async Task CancelClick()
+    {
+        MudDialog.Cancel();
+    }
+    private async Task GetSoDuCongNo()
+    {
+        if (thuchi.Id > 0)
+        {
+            QLSX.Shared.Models.GetSoDuCongNoRequest request = new QLSX.Shared.Models.GetSoDuCongNoRequest();
+            request.DMDonViSuDungId = AppService.DMDonViSuDungId;
+            request.MaKhachHang = thuchi.MaDoiTuong;
+            request.Loai = thuchi.Loai;
+            request.Ngay = thuchi.NgayCT;
+            request.Id = thuchi.Id;
+            var user1 = (await authenticationStateTask).User;
+            var UserId = user1.FindFirst(c => c.Type == "UserId")?.Value ?? "0";
+            SoDuCN = await dmkhachhangService.GetSoDuCongNoById(request);
+
+        }
+
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isLoading = true;
+            ThuChiSearchRequest request = new ThuChiSearchRequest();
+            request.Index = CurentIndex;
+            request.DMDonViSuDungId = AppService.DMDonViSuDungId;
+            request.Loai = loaiThuChi;
+
+            request.Id = ThuChiId;
+            var thuchinew = await thuchitService.GetThuChiById(request);
+            thuchi = mapper.Map<ThuChiModel>(thuchinew);
+
+            lstLoaiTien = await dmLoaiTienService.GetAllAsync();
+            lstKhoanThu = await DanhMucKhoanThuModelService.GetAllAsync();
+            lstKhoanChi = await dmKhoanChiService.GetAllAsync();
+            await GetSoDuCongNo();
+
+            isLoading = false;
+            StateHasChanged();
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task OnValidSubmit(bool keepAdd)
+    {
+        isLoading = true;
+        bool isValid = true;
+        if (string.IsNullOrEmpty(thuchi.LoaiTien))
+        {
+            Snackbar.Add("Bạn phải chọn loại tiền", Severity.Error);
+            isValid = false;
+        }
+        if (string.IsNullOrEmpty(thuchi.DienGiai))
+        {
+            Snackbar.Add("Bạn phải nhập diễn giải", Severity.Error);
+            isValid = false;
+        }
+        if (string.IsNullOrEmpty(thuchi.MaDoiTuong))
+        {
+            Snackbar.Add("Bạn phải chọn đơn vị", Severity.Error);
+            isValid = false;
+        }
+        if (thuchi.SoTien == 0)
+        {
+            Snackbar.Add("Bạn phải nhập số tiền", Severity.Error);
+            isValid = false;
+        }
+        if (!isValid)
+        {
+            isLoading = false;
+            return;
+        }
+        await thuchitService.UpdateAsync(thuchi.Id, thuchi);
+        Snackbar.Add("Cập nhật thành công", Severity.Success);
+        isLoading = false;
+    }
+
+    private void OpenDialogTimNhanh()
+    {
+        var parameters = new DialogParameters { ["TimNhanhCalback"] = EventCallback.Factory.Create<int>(this, TimNhanhCalback), ["Loai"] = "thutm" };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<DialogTimKiemNhanhThuChi>("Tìm kiếm nhanh", parameters, options);
+    }
+
+    private async Task TimNhanhCalback(int id)
+    {
+        isLoading = true;
+        var thuchinew = await thuchitService.GetByIdAsync(id);
+        if (thuchinew.Total == 0)
+        {
+            isLoading = false;
+            //navigationManager.NavigateTo("thuchis/create/"+ loaiThuChi);
+            return;
+        }
+        thuchi = mapper.Map<ThuChiModel>(thuchinew);
+        await GetSoDuCongNo();
+        isLoading = false;
+    }
+   
+}

@@ -1,0 +1,297 @@
+﻿@page "/customerNew"
+@using CRMApp.Data
+@using CRMApp.Services
+@using CuriousDriveRazorLibrary
+@using Blazored.LocalStorage
+@using CRMApp.Shared
+@inject ICustomersService<Customer> customerService
+@inject IUserService userService
+@inject ILocalStorageService localStorageService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+@attribute [Authorize]
+@inherits CRMApp.Helpers.BlazorComponent
+
+@namespace CRMApp.Pages.CustomerPage.CustomerPageNew
+
+<div class="col-12">
+    <h3><b>Enter Author Information</b></h3>
+    <hr />
+
+    <ServerValidations IsVisible="IsVisible" Result="Result">
+        @RecordName
+    </ServerValidations>
+</div>
+<br />
+
+<div class="col-12">
+
+    <h3><b>Customers</b></h3>
+    <p class="esh-link-wrapper">
+        <button class="btn btn-primary">
+            Create New
+        </button>
+    </p>
+    <SpinLoader IsLoading="isLoading">
+        <LoadingTemplate>
+            <div class="col-12" style="background-color: lightgray; height:400px; vertical-align:middle">
+                <br /><br />
+                <Chase Center="true" Color="#c21f13" Size="70px"></Chase>
+            </div>
+        </LoadingTemplate>
+        <ContentTemplate>
+            @if (filteredCustomerList != null)
+            {
+<GridView Items="filteredCustomerList" ReloadList="IsGridViewFiltered">
+    <GridColumns>
+        <GridColumn ColumnTitle="Mã KH"
+                    OnSearchTextChanged="@(e => OnCustomerSearchTextChanged(e, "Customer_Id"))"></GridColumn>
+
+        <GridColumn ColumnTitle="Tên khách hàng"
+                    OnSearchTextChanged="@(e => OnCustomerSearchTextChanged(e, "CustomerName"))"></GridColumn>
+        <GridColumn ColumnTitle="Tuổi"
+                    OnSearchTextChanged="@(e => OnCustomerSearchTextChanged(e, "CustomerAge"))"></GridColumn>
+        <GridColumn ColumnTitle="Điệnt thoại"
+                    OnSearchTextChanged="@(e => OnCustomerSearchTextChanged(e, "Mobile1"))"></GridColumn>
+        <GridColumn ColumnTitle="Khu vực"
+                    OnSearchTextChanged="@(e => OnCustomerSearchTextChanged(e, "RegionName"))"></GridColumn>
+        <GridColumn ColumnTitle="Sản phẩm"
+                    OnSearchTextChanged="@(e => OnCustomerSearchTextChanged(e, "ProductName"))"></GridColumn>
+        <GridColumn ColumnTitle="Loại khách hàng"
+                    OnSearchTextChanged="@(e => OnCustomerSearchTextChanged(e, "CustomerTypeId"))"></GridColumn>
+        <GridColumn ColumnTitle="Trạng thái"
+                    OnSearchTextChanged="@(e => OnCustomerSearchTextChanged(e, "StatusName"))"></GridColumn>
+        <GridColumn ColumnTitle="Nhân viên"
+                    OnSearchTextChanged="@(e => OnCustomerSearchTextChanged(e, "EmployeeName"))"></GridColumn>
+        <GridColumn ColumnTitle="Ghi chú"
+                    OnSearchTextChanged="@(e => OnCustomerSearchTextChanged(e, "ReasonOfStop"))"></GridColumn>
+        <AuthorizeView>
+            <Authorized>
+                <GridColumn ColumnTitle="Actions"></GridColumn>
+            </Authorized>
+        </AuthorizeView>
+    </GridColumns>
+    <GridRow Context="customer">
+        <td>
+            <a @onclick="@(() => EditClick(customer.CustomerId))" @onclick:stopPropagation="true"> @customer.CustomerId</a>
+        </td>
+        <td>@customer.CustomerName  </td>
+        <td>@customer.CustomerAge  </td>
+        <td>@customer.Mobile1  </td>
+        <td>@customer.RegionName   </td>
+        <td>@customer.ProductName </td>
+        <td>@customer.CustomerTypeName  </td>
+        <td>@customer.StatusName   </td>
+        <td>@customer.EmployeeName  </td>
+        <td>@customer.ReasonOfStop  </td>
+        <AuthorizeView Roles="Publisher" Policy="SeniorEmployee">
+            <Authorized>
+                <th>
+                    <button @onclick="@(() => EditClick(customer.CustomerId))" @onclick:stopPropagation="true" class="btn btn-primary">
+                        Edit
+                    </button>
+                    <a href="/customercares/@customer.CustomerId" class="btn btn-primary">
+                        Chăm sóc
+                    </a>
+                </th>
+            </Authorized>
+        </AuthorizeView>
+    </GridRow>
+</GridView>}
+        </ContentTemplate>
+    </SpinLoader>
+
+    <Edit CusCares="@customercaresList" CusTypes="@customerTypeList" CusStatus="@customerStatusList" OnSaveClick="ReloadCatalogItems" @ref="EditComponent"></Edit>
+</div>
+
+@code { public List<CustomerCare> customercaresList { get; set; }
+    public List<CustomerType> customerTypeList { get; set; }
+    public List<CustomerStatus> customerStatusList { get; set; }
+
+
+
+    public Customer customer { get; set; }
+    public List<Customer> customerList { get; set; }
+    public List<Customer> filteredCustomerList { get; set; }
+    public string SelectedCity { get; set; }
+
+    public bool IsVisible { get; set; }
+    public bool Result { get; set; }
+    public string RecordName { get; set; }
+    public string[] Cities { get; set; }
+    public bool IsGridViewFiltered { get; set; }
+    bool isLoading = true;
+
+    ElementReference firstNameTextBox;
+
+    private Edit EditComponent { get; set; }
+
+
+    protected override void OnInitialized()
+    {
+        Console.WriteLine("Customer - OnInitialized");
+        base.OnInitialized();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine("Customer - OnInitializedAsync");
+
+        customer = new Customer();
+        customerList = new List<Customer>();
+        //customerList = await authorService.GetAuthors();
+
+        await base.OnInitializedAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        Console.WriteLine("Customers - OnParametersSet");
+        base.OnParametersSet();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Console.WriteLine("Customers - OnParametersSetAsync");
+        await base.OnParametersSetAsync();
+    }
+
+    protected override bool ShouldRender()
+    {
+        base.ShouldRender();
+        Console.WriteLine("Customers - ShouldRender");
+
+        return true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Console.WriteLine("Customers - OnAfterRender - firstRender = " + firstRender);
+        base.OnAfterRender(firstRender);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        Console.WriteLine("Customers - OnAfterRenderAsync - firstRender = " + firstRender);
+
+        if (firstRender)
+        {
+            await LoadCustomers();
+
+            isLoading = false;
+            StateHasChanged();
+
+            //CallRequestRefresh();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public void Dispose()
+    {
+        Console.WriteLine("Customers - Dispose");
+    }
+
+    private async Task LoadCustomers()
+    {
+        await Task.Delay(500);
+
+        customerList = filteredCustomerList = await customerService.GetAllAsync("customers");
+
+        if (customerList == null)
+        {
+            RefreshRequest refreshRequest = new RefreshRequest();
+            refreshRequest.AccessToken = await localStorageService.GetItemAsync<string>("accessToken");
+            refreshRequest.RefreshToken = await localStorageService.GetItemAsync<string>("refreshToken");
+
+            var user1 = await userService.RefreshTokenAsync(refreshRequest);
+            await localStorageService.SetItemAsync("accessToken", user1.AccessToken);
+
+            customerList = filteredCustomerList = await customerService.GetAllAsync("customers");
+        }
+        StateHasChanged();
+
+    }
+
+    private async Task SaveCustomer()
+    {
+        // customer.CustomerTypeId = SelectedCity;
+
+        if (customer.CustomerId == 0)
+            await customerService.SaveAsync("customers/Create", customer);
+        else
+            await customerService.UpdateAsync("customers/Update", customer.CustomerId, customer);
+
+        await LoadCustomers();
+
+        Result = true;
+        IsVisible = true;
+
+        //var firstName = customer.FirstName;
+        //var lastName = customer.LastName;
+
+        //RecordName = firstName + " " + lastName;
+
+        customer = new Customer();
+
+        //await JSRuntime.InvokeVoidAsync("saveMessage", firstName, lastName);
+        await JSRuntime.InvokeVoidAsync("setFocusOnElement", firstNameTextBox);
+    }
+
+    private async Task DeleteAuthor(int authorId)
+    {
+        await customerService.DeleteAsync("Customers/Delete/", authorId);
+        await LoadCustomers();
+
+        //throw new Exception("DeleteAuthor");
+    }
+
+    private async Task EditCustomer(Customer argcustomer)
+    {
+        customer = argcustomer;
+        await EditComponent.Open(customer.CustomerId);
+    }
+
+    private void OnSelectCityChange(ChangeEventArgs changeEventArgs)
+    {
+        SelectedCity = (string)changeEventArgs.Value;
+    }
+
+    private void OnCustomerSearchTextChanged(ChangeEventArgs changeEventArgs, string columnTitle)
+    {
+        string searchText = changeEventArgs.Value.ToString();
+        IsGridViewFiltered = true;
+
+        switch (columnTitle)
+        {
+            case "Id":
+                filteredCustomerList = customerList.Where(auth => auth.CustomerId.ToString().Contains(searchText)).ToList();
+                break;
+            case "CustomerName":
+                filteredCustomerList = customerList.Where(auth => auth.CustomerName.ToLower().Contains(searchText)).ToList();
+                break;
+            case "CustomerAge":
+                filteredCustomerList = customerList.Where(auth => auth.CustomerAge.ToLower().Contains(searchText)).ToList();
+                break;
+            case "CustomerType":
+                filteredCustomerList = customerList.Where(auth => auth.CustomerTypeId.ToString().ToLower().Contains(searchText)).ToList();
+                break;
+
+            default:
+                Console.WriteLine("Default case");
+                break;
+        }
+    }
+
+    
+     
+
+    private async Task EditClick(int id)
+    {
+        await EditComponent.Open(id);
+    }
+
+    private async Task ReloadCatalogItems()
+    {
+        await LoadCustomers();
+    } }

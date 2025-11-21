@@ -1,0 +1,409 @@
+﻿@using QLSX.Shared.Models
+@using QLSX.Web.Data
+@using Blazored.LocalStorage
+@using Microsoft.Extensions.Caching.Memory;
+@using Blazored.Toast.Configuration
+@using System.Security.Claims
+
+@inject NavigationManager navigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JSRuntime
+@inherits QLSX.Web.Helpers.BlazorLayoutComponent
+@inject INotificationService<Noti> notiService
+@inject ILocalStorageService localStorageService
+@inject IUserService userService
+@inject ISettingService<QLSX.Shared.Models.SettingModel> itemService
+@inject IDialogService DialogService
+@inject IToastService toastService
+
+@inject IMemoryCache memoryCache
+
+<MudThemeProvider Theme="_currentTheme" DefaultScrollbar="true" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<AuthorizeView>
+    <Authorized>
+        <MudLayout RightToLeft="@_rightToLeft">
+            <MudAppBar Elevation="25">
+                <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+                <MudHidden Breakpoint="Breakpoint.SmAndUp" Invert="true">
+                    <MudText Typo="Typo.subtitle1" Class="mudblazor-appbar-brand-text">Quản lý bán hàng</MudText>
+                    <MudMenu ActivationEvent="@MouseEvent.MouseOver" AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter" Class="ml-2">
+                        <ActivatorContent>
+                            <MudChip Icon="@Icons.Material.Filled.Add" Color="Color.Secondary">Tạo phiếu</MudChip>
+                        </ActivatorContent>
+                        <ChildContent>
+                            <MudNavGroup Icon="@Icons.Material.Filled.MonetizationOn" Title="Thu chi" @bind-Expanded=_isExpandedThuChi>
+                                <MudMenuItem OnClick="@( async () =>  await ClickNewThu())">Phiếu thu</MudMenuItem>
+                                <MudMenuItem OnClick="@(async () =>  await ClickNewChi())">Phiếu chi</MudMenuItem>
+                            </MudNavGroup>
+                            <MudNavGroup Icon="@Icons.Material.Filled.Warehouse" Title="Hàng hóa" @bind-Expanded=_isExpandedNX>
+                                <MudMenuItem OnClick="@(async ()=>  await ClickNewNhap())">Phiếu nhập</MudMenuItem>
+                                <MudMenuItem OnClick="@( async ()=> await  ClickNewXuat())">Phiếu xuất</MudMenuItem>
+                                <MudMenuItem OnClick="@(async ()=> await  ClickNewNhapTra())">Phiếu nhập trả</MudMenuItem>
+                                <MudMenuItem OnClick="@(async ()=> await  ClickNewXuatTra())">Phiếu xuất trả</MudMenuItem>
+                            </MudNavGroup>
+                            <MudNavGroup Icon="@Icons.Material.Filled.Brightness1" Title="Tôn cuộn" @bind-Expanded=_isExpandedTC>
+                                <MudMenuItem OnClick="@(async () => await  ClickNewNhapTon())">Phiếu nhập</MudMenuItem>
+                                <MudMenuItem OnClick="@(async () => await  ClickNewXuatTon())">Phiếu xuất</MudMenuItem>
+                                <MudMenuItem OnClick="@(async () => await  ClickNewNhapTraTon())">Phiếu nhập trả</MudMenuItem>
+                                <MudMenuItem OnClick="@(async () => await  ClickNewXuatTraTon())">Phiếu xuất trả</MudMenuItem>
+                            </MudNavGroup>
+                            <MudNavGroup Icon="@Icons.Material.Filled.SwapHoriz" Title="Điều chuyển" @bind-Expanded=_isExpandedDC>
+                                <MudMenuItem OnClick="@(async () => await ClickNewDieuChuyenHangHoa())">Hàng hóa</MudMenuItem>
+                                <MudMenuItem OnClick="@(async () => await  ClickNewDieuChuyenTonCuon())">Tôn cuộn</MudMenuItem>
+                            </MudNavGroup>
+                        </ChildContent>
+                    </MudMenu>
+                    <MudFab Color="Color.Tertiary" OnClick="@(async () => await clickBaoCao())" Size="Size.Small" Label="Báo cáo" StartIcon="@Icons.Material.Filled.CalendarMonth" DisableElevation="true" />
+                    <MudFab Color="Color.Tertiary" OnClick="@(async () => await clickTraCuu())" Size="Size.Small" Label="Tra cứu" StartIcon="@Icons.Material.Filled.SearchOff" DisableElevation="true" />
+                </MudHidden>
+                <MudSpacer />
+                <MudHidden Breakpoint="Breakpoint.MdAndUp" Invert="true">
+                    <MudMenu>
+                        <ActivatorContent>
+                            <MudAvatar Image="@url_img_pic" />
+                        </ActivatorContent>
+                        <ChildContent>
+                            <MudMenuItem OnClick="@((e) => ThongTinCaNhan())">Thông tin cá nhân</MudMenuItem>
+                            <MudMenuItem OnClick="@((e) => Logout())">Đăng xuất</MudMenuItem>
+                        </ChildContent>
+                    </MudMenu>
+                </MudHidden>
+                <MudHidden Breakpoint="Breakpoint.SmAndDown" Invert="true">
+                   @*  <MudMenu Icon="@Icons.Material.Filled.Settings" Color="Color.Inherit" Dense="true" Direction="Direction.Right" OffsetY="true">
+                        <div class="px-2">
+                            <MudIconButton Icon="@Icons.Material.Filled.Brightness4" Color="Color.Inherit" OnClick="@((e) => DarkMode())" />
+                            <MudIconButton Icon="@Icons.Material.Filled.FormatTextdirectionRToL" Color="Color.Inherit" OnClick="@((e) => RightToLeftToggle())" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" OnClick="@((e) => Logout())" />
+                        </div>
+                    </MudMenu> *@
+                </MudHidden>
+            </MudAppBar>
+            <MudDrawer @bind-Open=_drawerOpen Elevation="0" Variant="@DrawerVariant.Persistent">
+                <MudDrawerHeader Class="mudblazor-brand" LinkToIndex="true" Style="justify-content: center ;text-align:center; min-height:60px">
+                    @if (_drawerOpen)
+                    {
+                        <MudImage Src="@url_img_logo" Alt="logo" Elevation="25" Class="rounded-lg" Style="width: 200px !important; height:50px !important" />
+                    }
+                </MudDrawerHeader>
+                <NavMenu />
+
+            </MudDrawer>
+            <MudMainContent Class="mudblazor-main-content">
+                <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge">
+                    @Body
+                </MudContainer>
+
+                <MudScrollToTop TopOffset="400">
+                    <MudFab Icon="@Icons.Material.Filled.KeyboardArrowUp" Color="Color.Primary" />
+                </MudScrollToTop>
+            </MudMainContent>
+
+        </MudLayout>
+
+    </Authorized>
+    <NotAuthorized>
+        <RedirectToLogin></RedirectToLogin>
+    </NotAuthorized>
+</AuthorizeView>
+<BlazoredToasts Position="ToastPosition.BottomRight"
+                Timeout="10"
+                IconType="IconType.FontAwesome"
+                ShowProgressBar="true"
+                SuccessClass="success-toast-override"
+                ErrorIcon="fa fa-bug"
+                SuccessIcon="fa fa-thumbs-up" />
+
+
+
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    bool _isExpandedThuChi = true;
+    bool _isExpandedNX = true;
+    bool _isExpandedTC = false;
+    bool _isExpandedDC = false;
+    string url_img_pic { get; set; } = "img/noimage.png";
+    string url_img_logo { get; set; } = "";
+    private int lstCount = 0;
+    private UserModel userLogin = new UserModel()
+        {
+            Id = 0
+        };
+    ClaimsPrincipal claimsPrincipal;
+    public string token = "";
+    private string BoxCss = "none";
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var authen = await authenticationStateTask;
+            claimsPrincipal = authen.User;
+            if (claimsPrincipal.Identity.IsAuthenticated)
+            {
+                var UserId = claimsPrincipal.FindFirst(c => c.Type == "UserId")?.Value;
+                UserId = string.IsNullOrEmpty(UserId) ? "0" : UserId;
+                userLogin.EmailAddress = claimsPrincipal.Identity.Name;
+
+                var itemSetting = await itemService.GetByIdAsync(int.Parse(UserId));
+                url_img_pic = itemSetting?.PathImage ?? "img/noimage.png";
+                url_img_logo = itemSetting?.PathLogoImage ?? "Files/mathome.png";
+            }
+            StateHasChanged();
+
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+    private ThemeManagerTheme _themeManager = new ThemeManagerTheme();
+    public bool _themeManagerOpen = false;
+
+    void clicktoHome()
+    {
+        navigationManager.NavigateTo("/", true);
+    }
+    void OpenThemeManager(bool value)
+    {
+        _themeManagerOpen = value;
+    }
+
+    void UpdateTheme(ThemeManagerTheme value)
+    {
+        _themeManager = value;
+        StateHasChanged();
+    }
+
+
+    public async Task Logout()
+    {
+        await ((CustomAuthenticationStateProvider)AuthenticationStateProvider).MarkUserAsLoggedOut();
+        navigationManager.NavigateTo("/login");
+    }
+    public async Task ThongTinCaNhan()
+    {
+        navigationManager.NavigateTo("/Settings");
+    }
+    @*=====================*@
+
+    private bool _drawerOpen = true;
+    private bool _rightToLeft = false;
+    private string searchValue = string.Empty;
+
+    private void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    private void RightToLeftToggle()
+    {
+        _rightToLeft = !_rightToLeft;
+    }
+
+    protected override void OnInitialized()
+    {
+        _currentTheme = _defaultTheme;
+
+    }
+    private async Task clickBaoCao()
+    {
+        navigationManager.NavigateTo("baocao?rid=" + Guid.NewGuid());
+    }
+    private async Task clickTraCuu()
+    {
+        navigationManager.NavigateTo("tracuutoanbo?rid=" + Guid.NewGuid());
+    }
+    private async Task ClickNewNhap()
+    {
+        await CreateNhapXuat("nhap");
+    }
+    private async Task CreateNhapXuat(string loai)
+    {
+        string title = "Tạo";
+        if (loai == "nhap")
+        {
+            title = "Tạo Phiếu nhập";
+        }
+        else if (loai == "xuat")
+        {
+            title = "Tạo Phiếu xuất";
+
+        }
+        else if (loai == "nhaptra")
+        {
+            title = "Tạo Phiếu nhập trả";
+        }
+        else if (loai == "xuattra")
+        {
+            title = "Tạo Phiếu xuất trả";
+        }
+
+        var nhapxuat = new NhapXuatModel();
+        var parameters = new DialogParameters { ["nhapxuat"] = nhapxuat, ["loaiNX"] = loai, ["Title"] = title };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.ExtraExtraLarge, FullScreen = true, FullWidth = true };
+        var result = await DialogService.Show<QLSX.Web.Pages.NhapXuatPage.NhapXuatsCreate>("Thêm", parameters, options).Result;
+        if (!result.Canceled)
+        {
+            var itemSelected = (NhapXuatModel)(result.Data ?? null);
+            if (itemSelected != null)
+            {
+                toastService.ShowToast(ToastLevel.Success, "Tạo phiếu thành công", "Thông báo");
+            }
+            else { toastService.ShowToast(ToastLevel.Error, "Có lỗi xảy ra.", "Thông báo"); }
+        }
+    }
+    private async Task ClickNewXuat()
+    {
+        await CreateNhapXuat("xuat");
+    }
+    private async Task ClickNewNhapTra()
+    {
+        await CreateNhapXuat("nhaptra");
+    }
+    private async Task ClickNewXuatTra()
+    {
+        await CreateNhapXuat("xuattra");
+    }
+    private async Task ClickNewNhapTon()
+    {
+        navigationManager.NavigateTo("nhapxuattoncuons/create/nhapton?rid=" + Guid.NewGuid());
+    }
+    private async Task ClickNewXuatTon()
+    {
+        navigationManager.NavigateTo("nhapxuattoncuons/create/xuatton?rid=" + Guid.NewGuid());
+    }
+    private async Task ClickNewNhapTraTon()
+    {
+        navigationManager.NavigateTo("nhapxuattoncuons/create/nhaptontra?rid=" + Guid.NewGuid());
+    }
+    private async Task ClickNewXuatTraTon()
+    {
+        navigationManager.NavigateTo("nhapxuattoncuons/create/xuattontra?rid=" + Guid.NewGuid());
+    }
+    private void ClickNewDieuChuyen()
+    {
+        navigationManager.NavigateTo("dieuchuyens/create/dieuchuyen?rid=" + Guid.NewGuid());
+    }
+    private async Task ClickNewThu()
+    {
+        await CreateThuChi("thutm");
+    }
+    private async Task ClickNewChi()
+    {
+        await CreateThuChi("chitm");
+    }
+    private async Task ClickNewDieuChuyenHangHoa()
+    {
+        navigationManager.NavigateTo("dieuchuyens/create/dieuchuyen?rid=" + Guid.NewGuid());
+    }
+    private async Task ClickNewDieuChuyenTonCuon()
+    {
+        navigationManager.NavigateTo("dieuchuyens/create/dieuchuyen?rid=" + Guid.NewGuid());
+    }
+    private async Task CreateThuChi(string loai)
+    {
+        string title = "Thêm";
+        if (loai == "thutm")
+        {
+            title = "Thêm Phiếu thu";
+        }
+        else if (loai == "chitm")
+        {
+            title = "Thêm Phiếu chi";
+
+        }
+        var parameters = new DialogParameters { ["loaiThuChi"] = loai, ["Title"] = title };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.ExtraExtraLarge, FullScreen = true, FullWidth = true };
+        var result = await DialogService.Show<QLSX.Web.Pages.ThuChiPage.ThuChiCreate>("Sửa", parameters, options).Result;
+        if (!result.Canceled)
+        {
+            var itemSelected = (ThuChiModel)(result.Data ?? null);
+            if (itemSelected != null)
+            {
+                //await table.ReloadServerData();
+            }
+        }
+    }
+    private async Task SuaClickThuChi(string loai, int id)
+    {
+        string title = "Sửa";
+        if (loai == "thutm")
+        {
+            title = "Sửa Phiếu thu";
+        }
+        else if (loai == "chitm")
+        {
+            title = "Sửa Phiếu chi";
+        }
+        var parameters = new DialogParameters { ["ThuChiId"] = id, ["loaiThuChi"] = loai, ["Title"] = title };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.ExtraExtraLarge, FullScreen = true, FullWidth = true };
+        var result = await DialogService.Show<QLSX.Web.Pages.ThuChiPage.ThuChiEdit>("Sửa", parameters, options).Result;
+        if (!result.Canceled)
+        {
+            var itemSelected = (ThuChiModel)(result.Data ?? null);
+            if (itemSelected != null)
+            {
+                //await table.ReloadServerData();
+            }
+        }
+    }
+    #region Theme
+
+    private void DarkMode()
+    {
+        if (_currentTheme == _defaultTheme)
+        {
+            _currentTheme = _darkTheme;
+        }
+        else
+        {
+            _currentTheme = _defaultTheme;
+        }
+    }
+
+    private MudTheme _currentTheme = new MudTheme();
+    private readonly MudTheme _defaultTheme =
+        new MudTheme()
+            {
+                Palette = new Palette()
+                {
+                    Primary = Colors.Blue.Default,
+                    Secondary = Colors.Green.Accent4,
+                    AppbarBackground = Colors.Red.Default,
+                },
+                PaletteDark = new Palette()
+                {
+                    Primary = Colors.Blue.Lighten1
+                },
+
+                LayoutProperties = new LayoutProperties()
+                {
+                    DrawerWidthLeft = "260px",
+                    DrawerWidthRight = "300px"
+                }
+            };
+    private readonly MudTheme _darkTheme =
+        new MudTheme()
+            {
+                Palette = new Palette()
+                {
+                    Black = "#27272f",
+                    Background = "#32333d",
+                    BackgroundGrey = "#27272f",
+                    Surface = "#373740",
+                    DrawerBackground = "#27272f",
+                    DrawerText = "rgba(255,255,255, 0.50)",
+                    AppbarBackground = "#27272f",
+                    AppbarText = "rgba(255,255,255, 0.70)",
+                    TextPrimary = "rgba(255,255,255, 0.70)",
+                    TextSecondary = "rgba(255,255,255, 0.50)",
+                    ActionDefault = "#adadb1",
+                    ActionDisabled = "rgba(255,255,255, 0.26)",
+                    ActionDisabledBackground = "rgba(255,255,255, 0.12)",
+                    DrawerIcon = "rgba(255,255,255, 0.50)"
+                }
+            };
+
+    #endregion
+}

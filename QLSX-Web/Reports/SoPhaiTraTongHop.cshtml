@@ -1,0 +1,101 @@
+﻿@using QLSX.Shared.Data.Responses
+@using QLSX.Shared.Data.Responses.BaoCao
+
+@model ReportResponseBase<SoPhaiTraTongHopResponse>
+
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<link rel="stylesheet" href="@Model.Host/lib/bootstrap/dist/css/bootstrap.css" />
+	<link rel="stylesheet" href="@Model.Host/lib/bootstrap/dist/css/bootstrap-grid.css" />
+	<link rel="stylesheet" href="@Model.Host/lib/bootstrap/dist/css/bootstrap-reboot.css" />
+	<link rel="stylesheet" href="@Model.Host/lib/bootstrap/dist/css/bootstrap-theme.css" />
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="@Model.Host/css/report.css" />
+	<title>Sổ tổng hợp phải thu</title>
+</head>
+<body>
+@{
+		Html.RenderPartial("Header", @Model.ThongTin);
+}
+
+
+		@if (Model.ListData?.Count > 0)
+		{
+			
+			<div class="row" style="margin-top:10px !important">
+		   <div class="col-md-12" style="text-align:center"> SỔ TỔNG HỢP PHẢI TRẢ </div>
+		  </div>
+		  <div class="row" style="margin-top:5px !important">
+		   <div class="col-md-12" style="text-align:center"> <i> @Model.ListData?.First()?.ThoiGian </i></div>
+		  </div>
+		}else{
+			 
+			<div class="row" style="margin-top:10px !important">
+		   <div class="col-md-12" style="text-align:center"> <h1>SỔ TỔNG HỢP PHẢI TRẢ </h1> </div>
+		  </div>
+		  <div class="row" style="margin-top:5px !important">
+		   <div class="col-md-12" style="text-align:center"> <i> </i></div>
+		  </div>
+		}
+	  <table class="table table-bordered">
+	   <thead>
+		<tr>
+			 <th class="text-left w-100">Mã Đơn vị</th>
+			 <th class="text-left w35">Tên đơn vị</th>
+			 <th class="text-left w25">Địa chỉ</th>
+			 <th class="text-right w-100">Số dư đầu</th>
+			 <th class="text-right w-100">Số mua</th>
+			 <th class="text-right w-100">Số trả</th>
+			 <th class="text-right w-100">Số dư cuối</th>
+		</tr>
+	   </thead>
+	   <tbody>
+			 
+			@foreach(var group in Model.ListData.GroupBy(x=>x.TenNhom, (key, grp) => new { Name= key,List= grp }))
+			{
+				<tr style="background-color:GrayText;">
+						<th></th>
+						<th>@group.Name </th>
+						<th> </th>
+						<th>@group.List.Sum(x=>x.SoDuDau).ToString("###,###") </th>
+						<th >@group.List.Sum(x=>x.SoTienMua).ToString("###,###") </th>
+						<th>@group.List.Sum(x=>x.SoTienTra).ToString("###,###") </th>
+						<th>@group.List.Sum(x=>x.SoConLai).ToString("###,###") </th>
+				</tr>
+				foreach (var item in group.List.OrderBy(x=>x.TenDonVi))
+				{
+				<tr>
+						<th style="font-weight:normal; text-align: left; ">@item.MaDonVi </th>
+						<th class="w35" style="font-weight:normal; text-align: left;">@item.TenDonVi </th>
+						<th class="w25" style="font-weight:normal; text-align: left;">@item.DiaChi </th>
+						<th style="font-weight:normal; text-align: right;">@item.SoDuDau.ToString("###,###") </th>
+						<th style="font-weight:normal; text-align: right;">@item.SoTienMua.ToString("###,###") </th>
+						<th style="font-weight:normal; text-align: right;">@item.SoTienTra.ToString("###,###") </th>
+						<th style="font-weight:normal; text-align: right;">@item.SoConLai.ToString("###,###") </th>
+				</tr>
+				}
+			}
+			<tr style="background-color:GrayText;">
+					<th></th>
+					<th>TỔNG CỘNG </th>
+					<th></th>
+					<th>@Model.ListData.Sum(x=>x.SoDuDau).ToString("###,###") </th>
+					<th>@Model.ListData.Sum(x=>x.SoTienMua).ToString("###,###") </th>
+					<th>@Model.ListData.Sum(x=>x.SoTienTra).ToString("###,###") </th>
+					<th>@Model.ListData.Sum(x=>x.SoConLai).ToString("###,###") </th>
+			</tr>	
+				 
+					 
+	   </tbody>
+	  </table>
+	  @{
+		Html.RenderPartial("TitlePrint", @Model.ThongTin);
+	  }
+	   
+
+</body>
+</html>

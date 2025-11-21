@@ -1,0 +1,145 @@
+﻿@using System.Net
+@using System.Text
+@using QLSX.Web.Helpers
+@using QLSX.Shared.Models;
+@using System.Net.Http.Json
+@inject ILogger<DialogKhachHang> Logger
+@inject IJSRuntime jsRuntime
+@inject IDMKhachHangService<DanhMucKhachHangModel> khachhangServicece
+@inherits QLSX.Web.Helpers.BlazorComponent
+
+@namespace QLSX.Web.Pages.BaoCaoPage
+<MudDialog DisableSidePadding="true">
+    <DialogContent>
+        <MudContainer Style="overflow-y: scroll">
+            <MudTable ServerData="@(new Func<TableState, Task<TableData<DanhMucKhachHangModel>>>(ServerReload))" 
+                      FixedHeader="true" Height="350px"
+                      Dense="true" Hover="true" Bordered="true" 
+                      Striped="true" Loading="@Loading" 
+                      @ref="table"
+                      @bind-SelectedItems="selectedItems"
+                      MultiSelection="true"
+                      T="DanhMucKhachHangModel">
+                <ToolBarContent>
+                    
+                    <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Tìm kiếm" Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Mã khách hàng</MudTh>
+                    <MudTh>Tên khách hàng</MudTh>
+                    <MudTh>Địa chỉ</MudTh>
+                    <MudTh>Điện thoại</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="MaDonVi">
+                            @context.MaDonVi  
+                    </MudTd>
+                    <MudTd DataLabel="TenDonVi">
+                            @context.TenDonVi 
+                     </MudTd>
+                    <MudTd DataLabel="DiaChi">
+                             @context.DiaChi
+                    </MudTd>
+                    <MudTd DataLabel="DienThoai">
+                             @context.DienThoai  
+                    </MudTd>
+                    
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText>Không có bản ghi nào tìm thấy</MudText>
+                </NoRecordsContent>
+                <LoadingContent>
+                    <MudText>Đang tải dữ liệu...</MudText>
+                </LoadingContent>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="Ok">Chọn</MudButton>
+        <MudButton Color="Color.Secondary" OnClick="Cancel">Bỏ qua</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    public GetAllResponsePaged<DanhMucKhachHangModel> lsResponses { get; set; }
+
+    private string searchString1 = "";
+
+    public KhachHangSearchRequest itemRequest { get; set; } =
+      new KhachHangSearchRequest
+          {
+              MaDonVi   = "",
+              TenDonVi  = "",
+              DiaChi  = "",
+              DienThoai   = "",
+              DienThoai1  = "",
+              Page = 0,
+              PageSize = 10,
+              TotalPages = 0
+          };
+    private HashSet<DanhMucKhachHangModel> selectedItems = new HashSet<DanhMucKhachHangModel>();
+    private IEnumerable<DanhMucKhachHangModel> pagedData;
+    private MudTable<DanhMucKhachHangModel> table;
+    private int totalItems;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    private string searchString { get; set; } = "";
+    private bool Loading { get; set; } = false;
+    private List<string> clickedEvents = new();
+    void Cancel() => MudDialog.Cancel();
+
+    private async Task Ok()
+    {
+       
+        var result = await khachhangServicece.UpdateListPrintAsync(selectedItems.Select(x => x.Id).ToList());
+        MudDialog.Close(DialogResult.Ok<bool>(result));
+    }
+     
+    /// <summary>
+    /// Here we simulate getting the paged, filtered and ordered data from the server
+    /// </summary>
+    private async Task<TableData<DanhMucKhachHangModel>> ServerReload(TableState state)
+    {
+        Loading = true;
+        itemRequest.SortLable = state.SortLabel;
+        itemRequest.SortDirection = (QLSX.Shared.Enums.SortDirection)state.SortDirection;
+        itemRequest.Page = state.Page;
+        itemRequest.PageSize = state.PageSize;
+        if (!string.IsNullOrEmpty(searchString))
+        {
+            itemRequest.SearchText  = searchString;
+        }
+        else
+        {
+            itemRequest.SearchText = "";
+        }
+        lsResponses = new GetAllResponsePaged<DanhMucKhachHangModel>();
+        lsResponses = await khachhangServicece.GetAllPagedDialogAsync(itemRequest);
+        IEnumerable<DanhMucKhachHangModel> data = lsResponses.Items; ;
+        totalItems = lsResponses.TotalRecords;
+        if (data == null)
+        {
+            data = new List<DanhMucKhachHangModel>();
+        }
+        pagedData = data;
+        Loading = false;
+        return new TableData<DanhMucKhachHangModel>() { TotalItems = totalItems, Items = pagedData };
+    }
+
+   
+    private async Task OnSearch(string text)
+    {
+        searchString = text;
+        await table.ReloadServerData();
+    }
+     
+}

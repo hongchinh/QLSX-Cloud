@@ -1,0 +1,189 @@
+﻿@page "/ThongKeDoanhThuTheoNV"
+@using ChartJs.Blazor.LineChart
+@using QLSX.Web.Extensions
+@using ChartJs.Blazor
+@using ChartJs.Blazor.Common
+@using ChartJs.Blazor.Common.Axes
+@using ChartJs.Blazor.Common.Axes.Ticks
+@using ChartJs.Blazor.Common.Enums
+@using ChartJs.Blazor.Common.Handlers
+@using ChartJs.Blazor.Common.Time
+@using ChartJs.Blazor.Util
+@using ChartJs.Blazor.Interop
+@using ChartJs.Blazor.BarChart
+@using System.Drawing
+@using static QLSX.Shared.Ultils.ChartUtils
+@inject IThongKeService thongkeService
+
+<MudPaper Elevation="25" Class="py-8 px-8" Style="padding-top:2px !important">
+    <MudGrid>
+        <MudItem xs="12" sm="3">
+            <MudSelect T="int" Label="Năm" AnchorOrigin="Origin.BottomCenter" @bind-Value="CurrentYear" Variant="Variant.Outlined">
+                @for (int i = 0; i <= 5; i++)
+                {
+                    <MudSelectItem T="int" Value="@(Year- i)"></MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="3">
+            <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Secondary" Size="MudBlazor.Size.Large" OnClick="RebindingDate">Xem</MudButton>
+        </MudItem>
+        <MudItem xs="12" sm="6">
+        </MudItem>
+
+        <MudItem xs="12">
+            <Chart Config="_config" @ref="_chart"></Chart>
+        </MudItem>
+        @{
+            var groupUser = lstData
+            .OrderBy(x => x.Id)
+            .OrderBy(x => x.ColumnName)
+            .GroupBy(grp => grp.UserName, (key, group) => new { UserName = key, Items = group.ToList() }).ToList();
+
+        }
+        @foreach (var item in groupUser)
+        {
+            <MudItem xs="12" sm="6">
+                <MudTable Items="item.Items" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm">
+                    <ToolBarContent>
+                        <MudText Typo="Typo.h6">Nhân viên: @(item.UserName) </MudText>
+                        <MudSpacer />
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>Tháng</MudTh>
+                        <MudTh>Doanh thu</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Tháng">@context.ColumnName</MudTd>
+                        <MudTd DataLabel="Doanh thu" Style="text-align:right">@context.Value.ToString("###,###")</MudTd>
+                    </RowTemplate>
+                    <FooterContent>
+                        <MudTd Class="mud-table-cell-custom-group mud-table-cell-custom-group-footer">Tổng cộng</MudTd>
+                        <MudTd Class="mud-table-cell-custom-group mud-table-cell-custom-group-footer" Style="text-align:right">@item.Items.Sum(x=>x.Value).ToString("###,###")</MudTd>
+                    </FooterContent>
+                </MudTable>
+            </MudItem>
+
+        }
+
+    </MudGrid>
+</MudPaper>
+
+@code {
+    private int InitalCount = 10;
+    private LineConfig _config;
+    private Random _rng = new Random();
+    private Chart _chart;
+    private int CurrentYear { get; set; } = DateTime.Now.Year;
+    private int Year { get; set; } = DateTime.Now.Year;
+
+    public static List<ThongKeDoanhThuTheoNV> lstData { get; set; } = new List<ThongKeDoanhThuTheoNV>();
+
+    protected override async void OnInitialized()
+    {
+        _config = new LineConfig
+            {
+                Options = new LineOptions
+                {
+                    Responsive = true,
+                    Title = new OptionsTitle
+                    {
+                        Display = true,
+                        Text = "BIỂU ĐỒ DOANH THU THEO NHÂN VIÊN " + CurrentYear.ToString(),
+                    }
+                }
+            };
+        IDataset<double> dataset1 = new LineDataset<double>(RandomScalingFactor(5))
+            {
+                Label = $"Tổng thu tiền " + (DateTime.Now.Year - 1).ToString(),
+                SteppedLine = ChartJs.Blazor.Common.Enums.SteppedLine.False,
+                BorderColor = ColorUtil.FromDrawingColor(ChartColors.Red),
+                Fill = FillingMode.Disabled
+            };
+
+        IDataset<double> dataset2 = new LineDataset<double>(RandomScalingFactor(5))
+            {
+                Label = $"Tổng thu tiền " + (DateTime.Now.Year).ToString(),
+                SteppedLine = ChartJs.Blazor.Common.Enums.SteppedLine.False,
+                BorderColor = ColorUtil.FromDrawingColor(ChartColors.Blue),
+                Fill = FillingMode.Disabled
+            };
+
+        _config.Data.Labels.AddRange(Months.Take(5));
+        _config.Data.Datasets.Add(dataset1);
+        _config.Data.Datasets.Add(dataset2);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+        if (firstRender)
+        {
+            lstData = await thongkeService.ThongKeDoanhThuTheoNhanVienAsync(CurrentYear);
+            InitalCount = 12;
+            GetDataForChart();
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+
+    public IEnumerable<string> GetLabel(int count)
+    {
+        var lst = lstData.OrderBy(x => x.ColumnName).OrderBy(x => x.Id).Select(x => x.ColumnName).Take(count).ToList();
+        return lst;
+    }
+    private void GetDataForChart()
+    {
+        List<int> lst = new List<int>();
+
+        var groupUser = lstData
+        .OrderBy(x => x.Id)
+        .OrderBy(x => x.ColumnName)
+        .GroupBy(grp => grp.UserName, (key, group) => new { UserName = key, Items = group.ToList() }).ToList();
+
+        _config.Data.Datasets.Clear();
+        foreach (var group in groupUser)
+        {
+            var userName = group.UserName;
+            System.Drawing.Color color = ChartColors.All[_config.Data.Datasets.Count % ChartColors.All.Count];
+            IDataset<double> dataset = new LineDataset<double>(GetDataByUserId(userName))
+                {
+                    Label = $"Doanh thu: " + userName,
+                    SteppedLine = ChartJs.Blazor.Common.Enums.SteppedLine.False,
+                    BorderColor = ColorUtil.FromDrawingColor(color),
+                    Fill = FillingMode.Disabled
+                };
+
+            _config.Data.Datasets.Add(dataset);
+
+        }
+
+        _config.Data.Labels.Clear();
+        List<string> lst1 = GetLabel(12).ToList();
+        foreach (var item in lst1)
+        {
+            _config.Data.Labels.Add(item.ToString());
+        }
+
+        _chart.Update();
+    }
+
+    private async Task RebindingDate()
+    {
+        lstData = await thongkeService.ThongKeDoanhThuTheoNhanVienAsync(CurrentYear);
+        InitalCount = 12;
+        GetDataForChart();
+        StateHasChanged();
+    }
+    public IEnumerable<double> GetDataByUserId(string UserName)
+    {
+        var groupUser = lstData
+        .Where(x => x.UserName == UserName)
+       .OrderBy(x => x.ColumnName)
+       .Select(x => x.Value).ToList();
+
+        return groupUser;
+    }
+}

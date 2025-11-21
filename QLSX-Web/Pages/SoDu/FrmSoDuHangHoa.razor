@@ -1,0 +1,512 @@
+﻿@page "/SoDuHangHoa"
+@using System.Text.Json
+@using Newtonsoft.Json
+@using Dialogs
+@using QLSX.Shared.Models
+@using QLSX.Web.Services
+@using System.Globalization
+
+@inject NavigationManager navigationManager
+@inject ILogger<FrmSoDuHangHoa> Logger
+@inject IJSRuntime JSRuntime
+@inject ISoDuHangHoaService<QLSX.Shared.Models.SoDuHangHoa> soduService
+@inject IDMHangHoaService<DanhMucHangHoaModel> dmhanghoaService
+@inject IEmloyeeService<UserModel> dmUserService
+@inject IDMKhoHangService<DanhMucKhoHangModel> dmkhohangService
+@inject AppService AppService
+@inject IReportService reportService
+@inject IToastService toastService
+@inject IDialogService DialogService
+@inject IPhanQuyenSuDungService< QLSX.Shared.Models.QuyenSuDungModel> permisstionService
+
+@inherits QLSX.Web.Helpers.BlazorComponent
+@namespace QLSX.Web.Pages.SoDuPage
+<style>
+    .mud-input-control > .mud-input-control-input-container > div.mud-input.mud-input-text {
+        margin-top: 0px !important;
+    }
+</style>
+<MudBreadcrumbs Items="_items" Style="padding:0px !important" id="idTool"></MudBreadcrumbs>
+<div class="row">
+    <div class="col-12 pr-45">
+        <div class="area-search py-3 px-3">
+            <EditForm Model="@requestSearch" OnValidSubmit="@SearchClick" id="idSearch">
+                <MudPaper Elevation="25" Class="py-8 px-8" Style="padding-top:2px !important">
+                    <MudGrid Spacing="1">
+                        <MudItem xs="12" sm="3" lg="2">
+                            <MudTextField Margin="Margin.Dense" @bind-Value="requestSearch.MaHangHoa" Label="Mã hàng hóa" Variant="Variant.Outlined"></MudTextField>
+                        </MudItem>
+                        <MudItem xs="12" sm="3" lg="4">
+                            <MudTextField Margin="Margin.Dense" @bind-Value="requestSearch.TenHangHoa" Label="Tên hàng hóa" Variant="Variant.Outlined"></MudTextField>
+                        </MudItem>
+                        <MudItem xs="12" sm="3" lg="2">
+                            <MudTextField Margin="Margin.Dense" @bind-Value="requestSearch.DonViTinh" Label="Đơn vị tính" Variant="Variant.Outlined"></MudTextField>
+                        </MudItem>
+                        <MudItem xs="12" sm="3" lg="4">
+                            <MudSelect T="int" Margin="Margin.Dense" Label="Kho hàng" Dense="true" TextChanged="@((value)=> OnValueChanged(value) )" AnchorOrigin="Origin.BottomCenter" @bind-Value="@DMKhoHangId" Variant="Variant.Outlined">
+                                <MudSelectItem Value="0">Chọn kho hàng</MudSelectItem>
+                                @if (lstKhoHang != null)
+                                {
+                                    @foreach (var cnt in lstKhoHang)
+                                    {
+                                        <MudSelectItem Value="@cnt.Id">@cnt.TenKho</MudSelectItem>
+                                    }
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudButton Class="mt-3" ButtonType="ButtonType.Submit" Size="Size.Large" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Search" Color="Color.Primary">Tìm kiếm</MudButton>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+
+<MudTable Items="@sodu" Dense="false" Hover="true" ReadOnly="false"
+          @bind-SelectedItem="selectedItem1" SortLabel="Sắp xếp" CommitEditTooltip="Lưu chỉnh sửa" @ref="table"
+          RowEditPreview="BackupItem" CanCancelEdit="false"
+          RowEditCommit="ItemHasBeenCommitted" IsEditRowSwitchingBlocked="false" ApplyButtonPosition="TableApplyButtonPosition.StartAndEnd"
+          Loading="isLoading"
+          Height="@(HeightGrid ==0 ? "": HeightGrid.ToString () + "px" )"
+          FixedHeader="true" FixedFooter="true" HorizontalScrollbar="true"
+          OnPreviewEditClick="@OnPreviewEditClick"
+          OnRowClick="@RowClickEvent"
+          RowClassFunc="@SelectedRowClassFunc"
+          T="QLSX.Shared.Models.SoDuHangHoa">
+    <ToolBarContent>
+
+        <MudSpacer />
+        <MudButton ButtonType="ButtonType.Button" Size="Size.Large" OnClick="OnValidSubmit" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Save" Color="Color.Secondary">Lưu dữ liệu</MudButton>
+    </ToolBarContent>
+    <ColGroup>
+        <col/>
+        <col style="width: 150px !important; min-width: 150px !important" />
+        <col style="width: 250px !important; min-width: 250px !important" />
+        <col style="width: 100px !important; min-width: 100px !important" />
+        <col style="width: 150px !important; min-width: 150px !important" />
+        <col style="width: 150px !important; min-width: 150px !important" />
+        <col style="width: 150px !important; min-width: 150px !important" />
+        <col style="width: 150px !important; min-width: 150px !important" />
+        <col style="width: 150px !important; min-width: 150px !important" />
+        <col style="width: 150px !important; min-width: 150px !important" />
+        <col style="width: 150px !important; min-width: 150px !important" />
+        <col style="width: 150px !important; min-width: 150px !important" />
+
+    </ColGroup>
+    <HeaderContent>
+        <MudTh>	Mã hàng hóa	</MudTh>
+        <MudTh>	Tên hàng hóa</MudTh>
+        <MudTh>	DVT	  </MudTh>
+        <MudTh>	Số lượng	   </MudTh>
+        <MudTh>	Chiều dài(mm)	   </MudTh>
+        <MudTh>	Tổng dài(m)	   </MudTh>
+        <MudTh>	Khổ rộng(mm)	   </MudTh>
+        <MudTh>	Tổng rộng(m2)	   </MudTh>
+        <MudTh>	Đơn giá	   </MudTh>
+        <MudTh>	Thành tiền	   </MudTh>
+        <MudTh>Ghi chú</MudTh>
+    </HeaderContent>
+    <RowTemplate Context="ctx1">
+        <MudTd DataLabel="MaHangHoa" Class="cell-data">@ctx1.MaHangHoa</MudTd>
+        <MudTd DataLabel="TenHangHoa" Class="cell-data">@ctx1.TenHangHoa</MudTd>
+        <MudTd DataLabel="DonViTinh" Class="cell-data">@ctx1.DonViTinh</MudTd>
+        <MudTd DataLabel="SoLuong" Style="text-align:right" Class="cell-data">@ctx1.SoLuong.ToString("###,###")</MudTd>
+        <MudTd DataLabel="ChieuDai" Style="text-align:right" Class="cell-data">@ctx1.ChieuDai?.ToString("###,###")</MudTd>
+        <MudTd DataLabel="TongChieuDai" Style="text-align:right" Class="cell-data">@ctx1.TongChieuDai?.ToString("###,###")</MudTd>
+        <MudTd DataLabel="KhoRongTon" Style="text-align:right" Class="cell-data">@ctx1.KhoRongTon?.ToString("###,###")</MudTd>
+        <MudTd DataLabel="TongChieuDai" Style="text-align:right" Class="cell-data">@ctx1.TongDienTich?.ToString("###,###")</MudTd>
+        <MudTd DataLabel="DonGia" Style="text-align:right" Class="cell-data">@ctx1.DonGia.ToString("###,###")</MudTd>
+        <MudTd DataLabel="SoTien" Style="text-align:right" Class="cell-data">@ctx1.SoTien.ToString("###,###")</MudTd>
+        <MudTd DataLabel="GhiChu" Class="cell-data">@ctx1.GhiChu</MudTd>
+        <MudTd>
+            <MudIconButton Size="@Size.Small" Icon="@Icons.Outlined.Delete" OnClick="@(()=> XoaClick(ctx1.Id))" />
+        </MudTd>
+    </RowTemplate>
+    <RowEditingTemplate Context="ctx1">
+        <MudTd DataLabel="MaHangHoa">
+            <MudTextField Margin="Margin.Dense" @bind-Value="@ctx1.MaHangHoa" Immediate="true" TextChanged="@( async (s) => await MaHangHoaTextChanged(s) )"
+                          Adornment="Adornment.End"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          OnAdornmentClick="@(() => OpenDialogHangHoa())" />
+        </MudTd>
+        <MudTd DataLabel="TenHangHoa">
+            <MudTextField Margin="Margin.Dense" @bind-Value="@ctx1.TenHangHoa" Immediate="true" />
+        </MudTd>
+        <MudTd DataLabel="DonViTinh">
+            <MudTextField Margin="Margin.Dense" @bind-Value="@ctx1.DonViTinh" Immediate="true" />
+        </MudTd>
+        <MudTd DataLabel="SoLuong">
+            <MudNumericField Margin="Margin.Dense" @bind-Value="@ctx1.SoLuong" HideSpinButtons="true" TextChanged="@((value) => ChangeValueRow(value,"SoLuong"))" Immediate="true" Format="###,###.##" Culture="@_vi" T="double" />
+        </MudTd>
+        <MudTd DataLabel="ChieuDai">
+            <MudNumericField Margin="Margin.Dense" @bind-Value="@ctx1.ChieuDai" HideSpinButtons="true" TextChanged="@((value) => ChangeValueRow(value,"ChieuDai"))" Immediate="true" Format="###,###.##" Culture="@_vi" T="double?" />
+        </MudTd>
+        <MudTd DataLabel="TongChieuDai">
+            <MudNumericField Margin="Margin.Dense" @bind-Value="@ctx1.TongChieuDai" HideSpinButtons="true" Immediate="true" Format="###,###.##" Culture="@_vi" T="double?" />
+        </MudTd>
+        <MudTd DataLabel="KhoRongTon">
+            <MudNumericField Margin="Margin.Dense" @bind-Value="@ctx1.KhoRongTon" HideSpinButtons="true" TextChanged="@((value) => ChangeValueRow(value,"KhoRongTon"))" Immediate="true" Format="###,###.##" Culture="@_vi" T="double?" />
+        </MudTd>
+        <MudTd DataLabel="TongDienTich">
+            <MudNumericField Margin="Margin.Dense" @bind-Value="@ctx1.TongDienTich" HideSpinButtons="true" Immediate="true" Format="###,###.##" Culture="@_vi" T="double?" />
+        </MudTd>
+        <MudTd DataLabel="DonGia">
+            <MudNumericField Margin="Margin.Dense" @bind-Value="@ctx1.DonGia" HideSpinButtons="true" TextChanged="@((value) => ChangeValueRow(value,"DonGia"))" Immediate="true" Format="###,###" Culture="@_vi" T="double" />
+        </MudTd>
+        <MudTd DataLabel="SoTien">
+            <MudTextField Margin="Margin.Dense" @bind-Value="@ctx1.SoTien" HideSpinButtons="true" Immediate="true" Format="###,###" Culture="@_vi" T="double" />
+        </MudTd>
+        <MudTd DataLabel="GhiChu">
+            <MudTextField Margin="Margin.Dense" @bind-Value="@ctx1.GhiChu" Immediate="true" />
+        </MudTd>
+    </RowEditingTemplate>
+    <PagerContent>
+        <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100}" />
+    </PagerContent>
+    
+</MudTable>
+<MudPaper Square="true" Class="mud-table-pagination d-flex justify-space-around text-center">
+    <MudIconButton Disabled="@( DMKhoHangId >0 ? false: true)" Icon="@Icons.Material.Filled.AddCircle" @onclick="@(e => AddRow())" Color="Color.Inherit" Title="Thêm dòng" />
+    <MudDivider Vertical="true" FlexItem="true" />
+
+    <div>Tổng số lượng :<div style="font-weight:bold;color:black"> @sodu?.Sum(x=>x.SoLuong).ToString("##0,###")</div></div>
+
+    <MudDivider Vertical="true" FlexItem="true" />
+    <div>
+        Tổng chiều dài: <div style="font-weight:bold;color:black">@sodu?.Sum(x=>x.TongChieuDai)?.ToString("###,##0.##")</div>
+    </div>
+    <MudDivider Vertical="true" FlexItem="true" />
+    <div> Tổng diện tích :<div style="font-weight:bold;color:black"> @sodu?.Sum(x=>x.TongDienTich)?.ToString("###,##0.##")</div></div>
+
+    <MudDivider Vertical="true" FlexItem="true" />
+    <div>Tổng tiền : <div style="font-weight:bold;color:black">@sodu?.Sum(x=>x.SoTien).ToString("##0,###") </div></div>
+</MudPaper>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    private QLSX.Shared.Models.QuyenSuDungModel quyenSuDung { get; set; } =
+        new QLSX.Shared.Models.QuyenSuDungModel() { Sua = false, Them = false, Xoa = false, XemIn = false, Selectted = false };
+
+    public CultureInfo _vi = CultureInfo.GetCultureInfo("vi-VN");
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Home", href: "/"),
+        new BreadcrumbItem("Số dư hàng hóa",href: null, disabled: true)
+    };
+
+
+    private QLSX.Shared.Models.SoDuHangHoa selectedItem1 { get; set; }
+    private QLSX.Shared.Models.SoDuHangHoa elementBeforeEdit { get; set; }
+    private MudTable<QLSX.Shared.Models.SoDuHangHoa> table;
+    public int HeightGrid { get; set; } = 0;
+    private List<QLSX.Shared.Models.SoDuHangHoa> sodu = new List<QLSX.Shared.Models.SoDuHangHoa>();
+    public bool isLoading = true;
+    public List<UserModel> lstUser { get; set; }
+    public List<DanhMucKhoHangModel> lstKhoHang { get; set; }
+    public int index = -1;
+    public bool DisableAdd { get; set; } = true;
+    public DanhMucKhoHangModel khohang { get; set; } = new DanhMucKhoHangModel();
+    public QLSX.Shared.Models.HangHoaSearchRequest itemRequest { get; set; } =
+                    new QLSX.Shared.Models.HangHoaSearchRequest
+                        {
+                            MaHangHoa = "",
+                            TenHangHoa = "",
+                            DonViTinh = "",
+                            Page = 0,
+                            PageSize = 200,
+                            TotalPages = 0
+                        };
+    public QLSX.Shared.Models.SearchSoDuHangHoaRequest requestSearch
+    = new QLSX.Shared.Models.SearchSoDuHangHoaRequest();
+
+
+    public string UrlReport { get; set; }
+    private readonly Random _random = new Random();
+
+
+    private int DMKhoHangId { get; set; }
+
+    protected async override Task OnInitializedAsync()
+    {
+
+    }
+
+    private void OnPreviewEditClick(object item)
+    {
+        //var row = (QLSX.Shared.Models.SoDuHangHoa)item;
+        IsFirstEdit = 1;
+    }
+    public int IsFirstEdit = -1;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isLoading = true;
+            sodu = new List<QLSX.Shared.Models.SoDuHangHoa>();
+            lstUser = await dmUserService.GetAllAsync();
+            lstKhoHang = await dmkhohangService.GetAllAsync();
+            requestSearch.DMDonViSuDungId = AppService.DMDonViSuDungId;
+            var hgrid = await JSRuntime.InvokeAsync<WindowDimensions>("getGridSize", "idSearch", "idTool");
+            HeightGrid = hgrid.Height - 220;
+            isLoading = false;
+            StateHasChanged();
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+    private async Task OnValidSubmit()
+    {
+        await JSRuntime.InvokeAsync<WindowDimensions>("saveAutoClick");
+        await Task.Delay(500);
+        foreach (QLSX.Shared.Models.SoDuHangHoa item in sodu)
+        {
+            item.DMHangHoaId = khohang.Id;
+            item.DMDonViSuDungId = AppService.DMDonViSuDungId;
+        }
+
+        await soduService.UpdateBatchAsync(sodu);
+        toastService.ShowSuccess("Cập nhật dữ liệu thành công.");
+        //navigationManager.NavigateTo("nhapxuats");
+    }
+    private void RowClickEvent(TableRowClickEventArgs<QLSX.Shared.Models.SoDuHangHoa> tableRowClickEventArgs)
+    {
+        //toastService.ShowSuccess("Cập nhật dữ liệu thành công.");
+        //clickedEvents.Add("Row has been clicked");
+        //var tbl = table;
+        //var row = ((MudBlazor.TableContext<QLSX.Shared.Models.SoDuHangHoa>)table.TableContext).Table;
+        //var rw = ((MudBlazor.MudTable<QLSX.Shared.Models.SoDuHangHoa>)((MudBlazor.TableContext<QLSX.Shared.Models.SoDuHangHoa>)table.TableContext).Table).SelectedItem;
+
+    } 
+    public async Task MaHangHoaTextChanged(string mahh)
+    {
+        if (IsFirstEdit == 1) {
+            IsFirstEdit = -1;
+            return;
+        }
+        DanhMucHangHoaModel dmhanghoa = await dmhanghoaService.GetByCodeAsync(mahh);
+        if (dmhanghoa.Id > 0)
+        {
+            selectedItem1.TenHangHoa = dmhanghoa.TenHangHoa;
+            selectedItem1.DonViTinh = dmhanghoa.DonViTinh;
+            selectedItem1.DonGia = dmhanghoa.GiaXuat;
+            selectedItem1.KhoRongTon = dmhanghoa.KhoRongTon;
+            selectedItem1.ChieuDai = dmhanghoa.ChieuDai;
+            selectedItem1.DMHangHoaId = dmhanghoa.Id;
+            selectedItem1.DMDonViSuDungId = selectedItem1.DMDonViSuDungId;
+            selectedItem1.DMKhoHangId = requestSearch.DMKhoHangId;
+            if (dmhanghoa.MaNhomHang == "01")
+            {
+                selectedItem1.SoTien = dmhanghoa.ChieuDai * dmhanghoa.KhoRongTon * selectedItem1.SoLuong * selectedItem1.DonGia;
+            }
+            else if (dmhanghoa.MaNhomHang == "02")
+            {
+                selectedItem1.SoTien = dmhanghoa.ChieuDai * selectedItem1.SoLuong * selectedItem1.DonGia;
+            }
+            else
+            {
+                selectedItem1.SoTien = selectedItem1.SoLuong * selectedItem1.DonGia;
+            }
+        }
+    }
+
+    private void ChangeValueRow(string value, string key)
+    {
+
+        double valueItem = 0;
+        double.TryParse(value, out valueItem);
+
+        //await CaculateRow(selectedItem1, valueItem, selectedItem1.ChieuDai, selectedItem1.KhoRongTon, selectedItem1.DonGia);
+
+        ////await Task.Delay(100);
+        if (key == "SoLuong")
+        {
+            CaculateRow(selectedItem1, valueItem, selectedItem1.ChieuDai, selectedItem1.KhoRongTon, selectedItem1.DonGia);
+        }
+        if (key == "DonGia")
+        {
+            CaculateRow(selectedItem1, selectedItem1.SoLuong, selectedItem1.ChieuDai, selectedItem1.KhoRongTon, valueItem);
+        }
+        if (key == "ChieuDai")
+        {
+            CaculateRow(selectedItem1, selectedItem1.SoLuong, valueItem, selectedItem1.KhoRongTon, selectedItem1.DonGia);
+        }
+        if (key == "KhoRongTon")
+        {
+            CaculateRow(selectedItem1, selectedItem1.SoLuong, selectedItem1.ChieuDai, valueItem, selectedItem1.DonGia);
+        }
+    }
+    private void CaculateRow(QLSX.Shared.Models.SoDuHangHoa item, double soluong, double? chieudai, double? chieurong, double dongia)
+    {
+        int tyle = 1000;
+        selectedItem1.TongChieuDai = Math.Round(soluong * (chieudai ?? 0) / tyle, 2);
+        selectedItem1.TongDienTich = Math.Round(soluong * (chieurong ?? 0) / tyle * (chieudai ?? 0), 2);
+        //selectedItem1.SoTien = Math.Round((chieudai) * (chieurong) * soluong * dongia, 0);
+        // await Task.Delay(100);
+        //DMHangHoa dmhanghoa = await dmhanghoaService.GetByCodeAsync(selectedItem1.MaHangHoa);
+        if (selectedItem1.MaNhom == "01") // theo m2
+        {
+            selectedItem1.SoTien = Math.Round(((chieudai ?? 0) / tyle) * ((chieurong ?? 0) / tyle) * soluong * dongia, 0);
+        }
+        else if (selectedItem1.MaNhom == "02") // theo md
+        {
+            selectedItem1.SoTien = Math.Round((chieudai ?? 0) / tyle * soluong * dongia, 0);
+        }
+        else // theo sl
+        {
+            selectedItem1.SoTien = Math.Round(soluong * dongia, 0);
+        }
+    }
+    private void AddRow()
+    {
+        var item = new QLSX.Shared.Models.SoDuHangHoa();
+        sodu.Add(item);
+
+    }
+
+    private void BackupItem(object element)
+    {
+        elementBeforeEdit = new QLSX.Shared.Models.SoDuHangHoa()
+            {
+                MaHangHoa = ((QLSX.Shared.Models.SoDuHangHoa)element).MaHangHoa,
+                TenHangHoa = ((QLSX.Shared.Models.SoDuHangHoa)element).TenHangHoa,
+                DonViTinh = ((QLSX.Shared.Models.SoDuHangHoa)element).DonViTinh,
+                SoLuong = ((QLSX.Shared.Models.SoDuHangHoa)element).SoLuong,
+                ChieuDai = ((QLSX.Shared.Models.SoDuHangHoa)element).ChieuDai,
+                KhoRongTon = ((QLSX.Shared.Models.SoDuHangHoa)element).KhoRongTon,
+                TongChieuDai = ((QLSX.Shared.Models.SoDuHangHoa)element).TongChieuDai,
+                TongDienTich = ((QLSX.Shared.Models.SoDuHangHoa)element).TongDienTich,
+                DonGia = ((QLSX.Shared.Models.SoDuHangHoa)element).DonGia,
+                SoTien = ((QLSX.Shared.Models.SoDuHangHoa)element).SoTien,
+                GhiChu = ((QLSX.Shared.Models.SoDuHangHoa)element).GhiChu,
+
+            };
+        //AddEditionEvent($"RowEditPreview event: made a backup of Element {((NoiDungNhapXuat)element).TenHangHoa} ");
+    }
+
+    private void ItemHasBeenCommitted(object element)
+    {
+        StateHasChanged();
+        // AddEditionEvent($"RowEditCommit event: Changes to Element {((NoiDungNhapXuat)element).Name} committed");
+    }
+
+    private void ResetItemToOriginalValues(object element)
+    {
+        selectedItem1.MaHangHoa = elementBeforeEdit.MaHangHoa;
+        selectedItem1.TenHangHoa = elementBeforeEdit.TenHangHoa;
+        selectedItem1.DonViTinh = elementBeforeEdit.DonViTinh;
+        selectedItem1.SoLuong = elementBeforeEdit.SoLuong;
+        selectedItem1.ChieuDai = elementBeforeEdit.ChieuDai;
+        selectedItem1.KhoRongTon = elementBeforeEdit.KhoRongTon;
+        selectedItem1.TongChieuDai = elementBeforeEdit.TongChieuDai;
+        selectedItem1.TongDienTich = elementBeforeEdit.TongDienTich;
+        selectedItem1.DonGia = elementBeforeEdit.DonGia;
+        selectedItem1.SoTien = elementBeforeEdit.SoTien;
+        selectedItem1.GhiChu = elementBeforeEdit.GhiChu;
+        StateHasChanged();
+        // AddEditionEvent($"RowEditCancel event: Editing of Element {((NoiDungNhapXuat)element).TenHangHoa} cancelled");
+    }
+    private async Task savedata()
+    {
+        await JSRuntime.InvokeAsync<WindowDimensions>("saveAutoClick");
+        await Task.Delay(500);
+        if (table.SelectedItem.Id > 0)
+        {
+            await soduService.UpdateAsync(table.SelectedItem.Id, table.SelectedItem);
+        }
+        else
+        {
+            await soduService.CreateAsync(table.SelectedItem);
+        }
+        await TimKiem();
+        toastService.ShowSuccess("Cập nhật dữ liệu thành công.");
+    }
+    private async Task XoaClick(int id)
+    {
+        await soduService.DeleteAsync(id);
+        await TimKiem();
+        toastService.ShowSuccess("Cập nhật dữ liệu thành công.");
+    }
+    private int selectedRowNumber = -1;
+    private string SelectedRowClassFunc(QLSX.Shared.Models.SoDuHangHoa element, int rowNumber)
+    {
+         
+        //selectedRowNumber = rowNumber;
+        //return string.Empty;
+        if (selectedRowNumber == rowNumber)
+        {
+            selectedRowNumber = -1;
+            selectedItem1.GhiChu = "-1";
+            // clickedEvents.Add("Selected Row: None");
+            return string.Empty;
+        }
+        else if (table.SelectedItem != null && table.SelectedItem.Equals(element))
+        {
+            selectedRowNumber = rowNumber;
+            selectedItem1.GhiChu = rowNumber.ToString();
+            //clickedEvents.Add($"Selected Row: {rowNumber}");
+            return "selected";
+        }
+        else
+        {
+            return string.Empty;
+        }
+    }
+    private async Task InClickInPhieu()
+    {
+        UrlReport = await reportService.GetPathReportAsync("rptSoDuHangHoa", "pdf", "1");
+        UrlReport = UrlReport + "&makhoid=" + requestSearch.DMKhoHangId.ToString();
+        StateHasChanged();
+        await JSRuntime.InvokeVoidAsync("openfile", null);
+    }
+
+
+    private async Task TimKiem()
+    {
+        isLoading = true;
+        sodu = await soduService.GetAllByMaKhoAsync(requestSearch);
+        isLoading = false;
+    }
+
+    private async Task OnValueChanged(string value)
+    {
+        DMKhoHangId = int.Parse(value);
+        if (value != "0")
+        {
+            requestSearch.DMKhoHangId = int.Parse(value);
+            isLoading = true;
+            sodu = await soduService.GetAllByMaKhoAsync(requestSearch);
+            StateHasChanged();
+            isLoading = false;
+        }
+    }
+    async Task OpenDialogHangHoa()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var result = await DialogService.Show<DialogHangHoa>("Danh sách hàng hóa", options).Result;
+
+        if (!result.Canceled)
+        {
+            var itemSelected = (DanhMucHangHoaModel)(result.Data ?? null);
+            if (itemSelected != null)
+            {
+                selectedItem1.DMDonViSuDungId = selectedItem1.DMDonViSuDungId;
+                selectedItem1.DMKhoHangId = requestSearch.DMKhoHangId;
+                selectedItem1.DMHangHoaId = itemSelected.Id;
+                selectedItem1.MaHangHoa = itemSelected.MaHangHoa;
+                selectedItem1.TenHangHoa = itemSelected.TenHangHoa;
+                selectedItem1.DonViTinh = itemSelected.DonViTinh;
+
+            }
+
+        }
+    }
+    private async Task SearchClick()
+    {
+        isLoading = true;
+        await table.ReloadServerData();
+        isLoading = false;
+    }
+}

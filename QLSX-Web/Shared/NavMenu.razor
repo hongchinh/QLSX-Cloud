@@ -1,0 +1,105 @@
+﻿@inject IPhanQuyenSuDungService< QLSX.Shared.Models.QuyenSuDungModel> permisstionService
+@inject NavigationManager navigationManager
+@inject IThuChiService<ThuChiModel> thuchitService
+@inject INhapXuatsService<NhapXuatModel> nhapxuatService
+@inject IDieuChuyensService<QLSX.Shared.Models.DieuChuyen> dieuchuyenService
+@inject INhapXuatTonCuonsService<NhapXuatTonCuonModel> nhapxuattonService
+
+<MudNavMenu Class="mudblazor-navmenu" Dense="true" Color="Color.Info">
+    <div class="docs-nav-fader"></div>
+    <MudNavGroup Title="Thu chi" HideExpandIcon="true" @onclick="@(() => {navigationManager.NavigateTo("thuchis?rid=" + Guid.NewGuid(), isReLoad );} )"
+                 Icon="@Icons.Material.Filled.Money">
+    </MudNavGroup>
+    <MudNavGroup Title="Đơn đặt hàng" HideExpandIcon="true" @onclick="@(() => {navigationManager.NavigateTo("dondathangs?rid=" + Guid.NewGuid(), isReLoad );} )"
+                 Icon="@Icons.Material.Filled.AddHomeWork">
+    </MudNavGroup>
+    <MudNavGroup Title="Nhập xuất" HideExpandIcon="true" @onclick="@(() => {navigationManager.NavigateTo("nhapxuats?rid=" + Guid.NewGuid(), isReLoad );} )"
+                 Icon="@Icons.Material.Filled.Warehouse">
+    </MudNavGroup>
+    <MudNavGroup Title="Tôn cuộn"  HideExpandIcon = "true" @onclick="@(() => {navigationManager.NavigateTo("nhapxuattoncuons?rid=" + Guid.NewGuid(), isReLoad );} )"
+                 Icon="@Icons.Material.Filled.Adjust">
+    </MudNavGroup>
+    <MudNavGroup Title="Điều chuyển" HideExpandIcon="true" @onclick="@(() => {navigationManager.NavigateTo("dieuchuyens?rid=" + Guid.NewGuid(), isReLoad );} )"
+                 Icon="@Icons.Material.Filled.PublishedWithChanges">
+    </MudNavGroup>
+    <MudNavGroup Title="Quản trị"
+                 Icon="@Icons.Material.Filled.AdminPanelSettings">
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("tonghopdongtien?rid=" + Guid.NewGuid(), isReLoad );} )">Tổng hợp dòng tiền</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("ThongKeDoanhThuThang?rid=" + Guid.NewGuid(), isReLoad );} )">Biểu đồ doanh thu</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("ThongKeThuTien?rid=" + Guid.NewGuid(), isReLoad );} )">Biểu đồ thu tiền</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("ThongKeDoanhThuTheoNV?rid=" + Guid.NewGuid(), isReLoad );} )">Biểu đồ doanh thu theo NV</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("thongkeloaitien?rid=" + Guid.NewGuid(), isReLoad );} )">Biểu đồ theo loại tiền</MudNavLink>
+
+    </MudNavGroup>
+    <MudNavGroup Title="Tra cứu"
+                 Icon="@Icons.Material.Filled.Balance">
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("tracuutoanbo?rid=" + Guid.NewGuid(), isReLoad );} )">Tra cứu chứng từ</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("tracuutonkho?rid=" + Guid.NewGuid(), isReLoad );} )">Tra cứu tồn kho</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("tracuucongno?rid=" + Guid.NewGuid(), isReLoad );} )">Tra cứu công nợ</MudNavLink>
+
+    </MudNavGroup>
+    <MudNavGroup Title="Số dư"
+                 Icon="@Icons.Material.Filled.Balance">
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("soducongno?rid=" + Guid.NewGuid(), isReLoad );} )">Số dư công nợ</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("SoDuHangHoa?rid=" + Guid.NewGuid(), isReLoad );} )">Số dư hàng hóa</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("soduloaitien?rid=" + Guid.NewGuid(), isReLoad );} )">Số dư loại tiền</MudNavLink>
+
+    </MudNavGroup>
+    <MudNavGroup Title="Báo cáo" HideExpandIcon="true" @onclick="@(() => {navigationManager.NavigateTo("baocao?rid=" + Guid.NewGuid(), isReLoad );} )"
+                 Icon="@Icons.Material.Filled.Report">
+    </MudNavGroup>
+
+    <MudNavGroup Title="Danh mục"
+                 Icon="@Icons.Material.Filled.ViewList">
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("DMKhachHang?rid=" + Guid.NewGuid(), isReLoad );} )">Khách hàng</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("DMHangHoa?rid=" + Guid.NewGuid(), isReLoad );} )">Hàng hóa</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("DMHangHoaTonCuon?rid=" + Guid.NewGuid(), isReLoad );} )">Tôn cuộn</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("DMLoaiTien?rid=" + Guid.NewGuid(), isReLoad );} )">Loại tiền</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("DMKhoHang?rid=" + Guid.NewGuid(), isReLoad );} )">Kho hàng</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("DMNhomHang?rid=" + Guid.NewGuid(), isReLoad );} )">Nhóm hàng</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("DMNhomKhachHang?rid=" + Guid.NewGuid(), isReLoad );} )">Nhóm khách hàng</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("DMKhoanThu?rid=" + Guid.NewGuid(), isReLoad );} )">Khoản thu</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("DMKhoanChi?rid=" + Guid.NewGuid(), isReLoad );} )">Khoản chi</MudNavLink>
+
+    </MudNavGroup>
+
+    <MudNavGroup Title="Hệ thống"
+                 Icon="@Icons.Material.Filled.Settings">
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("Settings?rid=" + Guid.NewGuid(), isReLoad );} )">Thiết lập</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("ListUser?rid=" + Guid.NewGuid(), isReLoad );} )">Danh sách user</MudNavLink>
+        @* <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("DMPhongBan?rid=" + Guid.NewGuid(), isReLoad );} )">Phòng ban</MudNavLink> *@
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("DMSoCT?rid=" + Guid.NewGuid(), isReLoad );} )">Số chứng từ tự động</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("PhanQuyenSuDung?rid=" + Guid.NewGuid(), isReLoad );} )">Phân quyền chức năng</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("NhatKy?rid=" + Guid.NewGuid(), isReLoad );} )">Nhật ký</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("bots?rid=" + Guid.NewGuid(), isReLoad );} )">Trả lời tự động</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("chatroom?rid=" + Guid.NewGuid(), isReLoad );} )">Chat với đồng nghiệp</MudNavLink>
+        <MudNavLink OnClick="@(() => {navigationManager.NavigateTo("CapNhatTonKho?rid=" + Guid.NewGuid(), isReLoad );} )">Cập nhật hàng tồn kho</MudNavLink>
+
+    </MudNavGroup>
+
+</MudNavMenu>
+
+
+
+@code {
+    private bool collapseNavMenu = true;
+    private bool isReLoad = false;
+
+    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+  
+    private async Task ClickNewThu()
+    {
+        int id = await thuchitService.GetIdLastest("thutm");
+        navigationManager.NavigateTo($"thuchis/thu/edit/{id}?rid=" + Guid.NewGuid(), isReLoad);
+    }
+    private async Task ClickNewChi()
+    {
+        int id = await thuchitService.GetIdLastest("chitm");
+        navigationManager.NavigateTo($"thuchis/chi/edit/{id}?rid=" + Guid.NewGuid(), isReLoad);
+    }
+}

@@ -1,0 +1,274 @@
+﻿@page "/nhapxuattoncuons/{LoaiNhapXuat}/edit/{Id:int?}"
+@using System.Text.Json
+@using Newtonsoft.Json
+@using Blazored.LocalStorage
+@using QLSX.Shared.DTOs
+@using AutoMapper
+@using QLSX.Shared.Models
+@inject NavigationManager navigationManager
+@inject ILogger<NhapXuatEdit> Logger
+@inject IJSRuntime JSRuntime
+@inject INhapXuatTonCuonsService<NhapXuatTonCuonModel> nhapxuatService
+@inject IDMHangHoaTonCuonService<DanhMucHangHoaTonCuonModel> dmhanghoaService
+@inject IEmloyeeService<UserModel> dmUserService
+@inject IDMHinhThucTTService<DanhMucHinhThucTTModel> dmHinhThucTTService
+@inject IDMTinhTrangService<QLSX.Shared.Models.DMTinhTrangModel> dmTinhTrangService
+@inject IDMKhoHangService<DanhMucKhoHangModel> dmkhohangService
+@inject IDMLoaiTienService<DanhMucLoaiTienModel> dmLoaiTienService
+@inject ILocalStorageService localStorageService
+@inject AppService AppService
+@inject IMapper mapper;
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject IToastService toastService
+@inject IPhanQuyenSuDungService< QLSX.Shared.Models.QuyenSuDungModel> permisstionService
+@inject ISettingService<QLSX.Shared.Models.SettingModel> itemService
+@inject ISnackbar Snackbar
+
+@namespace QLSX.Web.Pages.NhapXuatTonCuonPage
+
+
+<div class="d-flex">
+    <MudBreadcrumbs Items="_items" Style="padding:0px !important"></MudBreadcrumbs>
+    <EditForm Model="nhapxuat">
+        <QLSX.Web.Pages.Commons.BindingNavigator TotalIndex="TotalIndex"
+                                                 CurrentIndex="CurentIndex"
+                                                 MoveIndex="MoveIndex"
+                                                 IsFirst="IsFirst"
+                                                 IsLast="IsLast">
+
+        </QLSX.Web.Pages.Commons.BindingNavigator>
+    </EditForm>
+    <MudSpacer />
+
+</div>
+
+<NhapXuatsForm nhapxuat="nhapxuat"
+               lstUser="lstUser"
+               lstHinhThucTT="lstHinhThucTT"
+               lstTinhTrang="lstTinhTrang"
+               lstKhoHang="lstKhoHang"
+               lstLoaiTien="lstLoaiTien"
+               isLoading="@isLoading"
+               quyenSuDung="quyenSuDung"
+               OnValidSubmit="OnValidSubmit"
+               IsCreateOrEdit="false" />
+
+<LoadingProgress IsLoading="isLoading" />
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    [Parameter]
+    public int? Id { get; set; }
+
+    [Parameter]
+    public string LoaiNhapXuat { get; set; }
+    public bool isNhapTheoM2 { get; set; }
+
+    public List<int> lstIDs { get; set; }
+
+    public int nhapxuatId { get; set; }
+
+    private NhapXuatTonCuonModel nhapxuat = new NhapXuatTonCuonModel();
+    public bool isLoading = true;
+    private string glLoai { get; set; }
+
+    public int CurentIndex { get; set; } = 0;
+    public int TotalIndex { get; set; } = 0;
+    public List<NhapXuatTonCuonModel> nhapxuatAll { get; set; }
+
+    public List<UserModel> lstUser { get; set; }
+    public List<DanhMucHinhThucTTModel> lstHinhThucTT { get; set; }
+    public List<QLSX.Shared.Models.DMTinhTrangModel> lstTinhTrang { get; set; }
+    public List<DanhMucKhoHangModel> lstKhoHang { get; set; }
+    public List<DanhMucLoaiTienModel> lstLoaiTien { get; set; }
+    public QLSX.Shared.Models.QuyenSuDungModel quyenSuDung { get; set; } = new QLSX.Shared.Models.QuyenSuDungModel();
+    public QLSX.Shared.Models.SettingModel itemSetting { get; set; } = new QLSX.Shared.Models.SettingModel { LoaiNhapXuat = 1 };
+
+    public bool IsFirst { get; set; } = true;
+    public bool IsLast { get; set; } = true;
+
+    protected async override Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Home", href: "/"),
+        new BreadcrumbItem("Tra cứu nhập xuất tôn cuộn", href: "/nhapxuattoncuons"),
+        new BreadcrumbItem("Phiếu xuất", href: null, disabled: true)
+    };
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender || glLoai != LoaiNhapXuat)
+        {
+            isLoading = true;
+            glLoai = LoaiNhapXuat;
+            var user = (await authenticationStateTask).User;
+            var UserId = user.FindFirst(c => c.Type == "UserId")?.Value;
+            UserId = string.IsNullOrEmpty(UserId) ? "0" : UserId;
+            itemSetting = await itemService.GetByIdAsync(int.Parse(UserId));
+            quyenSuDung = await permisstionService.GetQuyenByUserIdAsync(int.Parse(UserId), LoaiNhapXuat);
+            NhapXuatTonCuonSearchRequest request = new NhapXuatTonCuonSearchRequest();
+            request.Loai = LoaiNhapXuat;
+            request.DMDonViSuDungId = AppService.DMDonViSuDungId;
+            // get list IDs from nhap xuat
+            lstIDs = await nhapxuatService.GetAllNhapXuatIDs(request);
+            // get ID
+            TotalIndex = lstIDs.Count;
+            if (TotalIndex == 0)
+            {
+                CurentIndex = TotalIndex;
+                nhapxuat = new NhapXuatTonCuonModel();
+                nhapxuat.Loai = LoaiNhapXuat;
+                nhapxuat.MaDonVi = "";
+            }
+            else
+            {
+                if (Id == null)
+                {
+                    Id = lstIDs[TotalIndex - 1];
+                    CurentIndex = TotalIndex;
+                }
+                else
+                {
+                    CurentIndex = lstIDs.IndexOf(Id ?? lstIDs[TotalIndex - 1]) + 1;
+                }
+                request.Id = Id;
+                var nhapxuatnew = await nhapxuatService.GetNhapXuatByIDAsync(request);
+                nhapxuat = mapper.Map<NhapXuatTonCuonModel>(nhapxuatnew);
+            }
+            EnalbleNavigator();
+            lstUser = await dmUserService.GetAllAsync();
+            lstHinhThucTT = await dmHinhThucTTService.GetAllAsync();
+            lstTinhTrang = await dmTinhTrangService.GetAllAsync();
+            lstKhoHang = await dmkhohangService.GetAllAsync();
+            lstLoaiTien = await dmLoaiTienService.GetAllAsync();
+
+            var loaiNX = LoaiNhapXuat;
+            if (loaiNX == "nhapton")
+            {
+                _items = new List<BreadcrumbItem>
+                {
+                    new BreadcrumbItem("Home", href: "/"),
+                    new BreadcrumbItem("Tra cứu nhập xuất", href: "/nhapxuattoncuons"),
+                    new BreadcrumbItem("Phiếu nhập", href: null, disabled: true)
+                };
+                nhapxuat.DienGiai = "Nhập hàng hóa " + nhapxuat.SoChungTu;
+            }
+            else if (loaiNX == "xuat")
+            {
+                nhapxuat.DienGiai = "Xuất hàng hóa " + nhapxuat.SoChungTu;
+                _items = new List<BreadcrumbItem>
+                {
+                    new BreadcrumbItem("Home", href: "/"),
+                    new BreadcrumbItem("Tra cứu nhập xuất", href: "/nhapxuattoncuons"),
+                    new BreadcrumbItem("Phiếu xuất", href: null, disabled: true)
+                };
+            }
+            else if (loaiNX == "nhaptra")
+            {
+                nhapxuat.DienGiai = "Nhập trả hàng hóa " + nhapxuat.SoChungTu;
+                _items = new List<BreadcrumbItem>
+                {
+                    new BreadcrumbItem("Home", href: "/"),
+                    new BreadcrumbItem("Tra cứu nhập xuất", href: "/nhapxuats"),
+                    new BreadcrumbItem("Phiếu nhập trả", href: null, disabled: true)
+                };
+            }
+            else if (loaiNX == "xuattra")
+            {
+                nhapxuat.DienGiai = "Xuất trả hàng hóa " + nhapxuat.SoChungTu;
+                _items = new List<BreadcrumbItem>
+                {
+                    new BreadcrumbItem("Home", href: "/"),
+                    new BreadcrumbItem("Tra cứu nhập xuất", href: "/nhapxuats"),
+                    new BreadcrumbItem("Phiếu xuất trả", href: null, disabled: true)
+                };
+            }
+
+            isLoading = false;
+            StateHasChanged();
+
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task OnValidSubmit(bool keepAdd)
+    {
+        isLoading = true;
+        bool isValid = true;
+        if (nhapxuat.SoChungTu == "")
+        {
+            Snackbar.Add("Bạn phải nhập vào số chứng từ", Severity.Error);
+            isValid = false;
+        }
+        if (nhapxuat.NgayCT == null)
+        {
+            Snackbar.Add("Bạn phải nhập vào ngày chứng từ", Severity.Error);
+            isValid = false;
+        }
+        if (string.IsNullOrEmpty(nhapxuat.MaKho))
+        {
+            Snackbar.Add("Bạn phải nhập vào kho hàng", Severity.Error);
+            isValid = false;
+        }
+        if (!isValid)
+        {
+            isLoading = false;
+            return;
+        }
+        var nxnew = await nhapxuatService.UpdateAsync(nhapxuat.Id, nhapxuat);
+        if (nxnew.Id > 0)
+        {
+            Snackbar.Add("Cập nhật thành công", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("Lỗi trong quá trình cập nhật. Liên hệ với người quản trị chương trình.", Severity.Error);
+        }
+        isLoading = false;
+
+    }
+
+    private async Task MoveIndex(string index)
+    {
+        int indexint = 0;
+        int.TryParse(index, out indexint);
+        CurentIndex = indexint;
+        NhapXuatTonCuonSearchRequest request = new NhapXuatTonCuonSearchRequest();
+        request.Loai = LoaiNhapXuat;
+        request.Id = lstIDs[CurentIndex - 1];
+        request.DMDonViSuDungId = AppService.DMDonViSuDungId;
+        TotalIndex = lstIDs.Count;
+        EnalbleNavigator();
+        if (TotalIndex == 0) return;
+        var nhapxuatnew = await nhapxuatService.GetNhapXuatByIDAsync(request);
+        nhapxuat = mapper.Map<NhapXuatTonCuonModel>(nhapxuatnew);
+
+        StateHasChanged();
+    }
+
+    private void EnalbleNavigator()
+    {
+        if (TotalIndex == CurentIndex && CurentIndex > 1)
+        {
+            IsLast = true;
+            IsFirst = false;
+        }
+        else if (CurentIndex == 1)
+        {
+            IsLast = false;
+            IsFirst = true;
+        }
+        else if (TotalIndex == 1)
+        {
+            IsLast = true;
+            IsFirst = true;
+        }
+        else if (CurentIndex > 1 && CurentIndex < TotalIndex)
+        {
+            IsLast = false;
+            IsFirst = false;
+        }
+    }
+}

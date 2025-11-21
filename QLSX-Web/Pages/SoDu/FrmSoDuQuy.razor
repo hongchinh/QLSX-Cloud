@@ -1,0 +1,241 @@
+﻿@page "/soduloaitien"
+@using System.Text.Json
+@using Newtonsoft.Json
+@using Dialogs
+@using QLSX.Web.Services
+@inject NavigationManager navigationManager
+@inject ILogger<FrmSoDuQuy> Logger
+@inject IJSRuntime JSRuntime
+@inject ISoDuLoaiTienService<QLSX.Shared.Models.SoDuLoaiTien> soduService
+@inject IDMLoaiTienService<DanhMucLoaiTienModel> dmloaitienService
+@inject AppService AppService
+@inject IReportService reportService
+@inject IToastService toastService
+@inject IPhanQuyenSuDungService< QLSX.Shared.Models.QuyenSuDungModel> permisstionService
+
+@inherits QLSX.Web.Helpers.BlazorComponent
+@namespace QLSX.Web.Pages.SoDuPage
+<style>
+    .mud-input-control > .mud-input-control-input-container > div.mud-input.mud-input-text {
+        margin-top: 0px !important;
+    }
+</style>
+<MudBreadcrumbs Items="_items" Style="padding:0px !important" id="idItem"></MudBreadcrumbs>
+<MudToolBar id="idTool">
+    <MudButton Variant="Variant.Filled" OnClick="OnValidSubmit" StartIcon="@Icons.Material.Filled.Save" Size="Size.Small" Color="Color.Info">Lưu dữ liệu</MudButton>
+</MudToolBar>
+
+<MudTable Items="@sodu" Dense="true" Hover="true" ReadOnly="false"
+          @bind-SelectedItem="selectedItem1" SortLabel="Sort By" CommitEditTooltip="Commit Edit" @ref="table"
+          OnCommitEditClick="@(() => savedata())" RowEditPreview="BackupItem" 
+          RowEditCommit="ItemHasBeenCommitted" IsEditRowSwitchingBlocked="false" ApplyButtonPosition="TableApplyButtonPosition.StartAndEnd"
+          FixedHeader="true" FixedFooter="true"
+          Height="@(HeightGrid ==0 ? "": HeightGrid.ToString () + "px" )"
+          Loading="@isLoading"
+          OnPreviewEditClick="@OnPreviewEditClick"
+          RowClassFunc="@SelectedRowClassFunc">
+    <HeaderContent>
+        <MudTh>Ký hiệu</MudTh>
+        <MudTh>Loại tiền</MudTh>
+        <MudTh>Số tiền</MudTh>
+    </HeaderContent>
+    <RowTemplate Context="ctx">
+        <MudTd DataLabel="KyHieu">@ctx.KyHieu</MudTd>
+        <MudTd DataLabel="TenLoaiTien">@ctx.TenLoaiTien</MudTd>
+        <MudTd DataLabel="SoTien" Style="text-align:right">@ctx.SoTien.ToString("###,###")</MudTd>
+        <MudTd>
+            <MudIconButton Size="@Size.Small" Icon="@Icons.Outlined.Delete" OnClick="@(()=> XoaClick(ctx.Id))" />
+        </MudTd>
+    </RowTemplate>
+    <RowEditingTemplate Context="ctx">
+        <MudTd DataLabel="KyHieu">
+            <MudTextField Margin="Margin.Dense" @bind-Value="@ctx.KyHieu" Immediate="true" TextChanged="MaHangHoaTextChanged" />
+        </MudTd>
+        <MudTd DataLabel="TenLoaiTien">
+            <MudTextField Margin="Margin.Dense" @bind-Value="@ctx.TenLoaiTien" Immediate="true" />
+        </MudTd>
+        <MudTd DataLabel="SoTien">
+            <MudTextField Margin="Margin.Dense" @bind-Value="@ctx.SoTien" HideSpinButtons="true" Immediate="true" />
+        </MudTd>
+    </RowEditingTemplate>
+</MudTable>
+<MudPaper Square="true" Class="mud-table-pagination d-flex justify-space-around text-center" Style="align-items:center" id="idTong">
+    <MudIconButton Icon="@Icons.Material.Filled.AddCircle" @onclick="@(e => AddRow())" Color="Color.Inherit" Title="Thêm dòng" />
+    <MudDivider Vertical="true" FlexItem="true" />
+    <div style="font-weight:bold;color:black"> Tổng cộng  : @sodu?.Sum(x=>x.SoTien).ToString("##0,###")</div>
+</MudPaper>
+
+
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    private QLSX.Shared.Models.QuyenSuDungModel quyenSuDung { get; set; } =
+        new QLSX.Shared.Models.QuyenSuDungModel() { Sua = false, Them = false, Xoa = false, XemIn = false, Selectted = false };
+
+    private List<QLSX.Shared.Models.SoDuLoaiTien> sodu = new List<QLSX.Shared.Models.SoDuLoaiTien>();
+    public bool isLoading = true;
+    public int index = -1;
+    public QLSX.Shared.Models.SearchSoDuLoaiTienRequest requestSearch = new QLSX.Shared.Models.SearchSoDuLoaiTienRequest();
+    public string UrlReport { get; set; }
+    private readonly Random _random = new Random();
+
+    private QLSX.Shared.Models.SoDuLoaiTien selectedItem1 { get; set; }
+    private QLSX.Shared.Models.SoDuLoaiTien elementBeforeEdit { get; set; }
+    private MudTable<QLSX.Shared.Models.SoDuLoaiTien> table;
+    public int HeightGrid { get; set; } = 0;
+    protected async override Task OnInitializedAsync()
+    {
+       ;
+        sodu = new List<QLSX.Shared.Models.SoDuLoaiTien>();
+        requestSearch.DMDonViSuDungId = AppService.DMDonViSuDungId;
+        requestSearch.KyHieu = "";
+        requestSearch.TenLoaiTien = "";
+    }
+
+
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Home", href: "/"),
+        new BreadcrumbItem("Số dư tiền",href: null, disabled: true)
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isLoading = true;
+            sodu = await soduService.GetAllAsync(requestSearch);
+            var hgrid = await JSRuntime.InvokeAsync<WindowDimensions>("getGridSize", "idItem", "idTool", "idTong");
+            HeightGrid = hgrid.Height -100;
+            isLoading = false;
+            StateHasChanged();
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task OnValidSubmit()
+    {
+        isLoading = true;
+        await JSRuntime.InvokeAsync<WindowDimensions>("saveAutoClick");
+        await Task.Delay(500);
+        foreach (QLSX.Shared.Models.SoDuLoaiTien item in sodu)
+        {
+            item.DMDonViSuDungId = AppService.DMDonViSuDungId;
+        }
+        await soduService.UpdateBatchAsync(sodu);
+        toastService.ShowSuccess("Cập nhật dữ liệu thành công.");
+        isLoading = false;
+    }
+    public int IsFirstEdit = -1;
+    private void OnPreviewEditClick(object item)
+    {
+        //var row = (QLSX.Shared.Models.SoDuHangHoa)item;
+        IsFirstEdit = 1;
+    }
+    public async Task MaHangHoaTextChanged(string mahh)
+    {
+        if (IsFirstEdit == 1)
+        {
+            IsFirstEdit = -1;
+            return;
+        }
+        DanhMucLoaiTienModel loaitien = await dmloaitienService.GetByCodeAsync(mahh);
+        if (loaitien != null)
+        {
+            selectedItem1.TenLoaiTien = loaitien.LoaiTien;
+            selectedItem1.DMLoaiTienId = loaitien.Id;
+        }
+    }
+    private async Task AddRow()
+    {
+        var item = new QLSX.Shared.Models.SoDuLoaiTien();
+        item.DMDonViSuDungId = AppService.DMDonViSuDungId;
+        sodu.Add(item);
+        //StateHasChanged();
+    }
+
+
+    private async Task TimKiem()
+    {
+        isLoading = true;
+        sodu = await soduService.GetAllAsync(requestSearch);
+        isLoading = false;
+    }
+
+    private void BackupItem(object element)
+    {
+        elementBeforeEdit = new QLSX.Shared.Models.SoDuLoaiTien()
+            {
+                KyHieu = ((QLSX.Shared.Models.SoDuLoaiTien)element).KyHieu,
+                TenLoaiTien = ((QLSX.Shared.Models.SoDuLoaiTien)element).TenLoaiTien,
+                DMLoaiTienId = ((QLSX.Shared.Models.SoDuLoaiTien)element).DMLoaiTienId,
+                SoTien = ((QLSX.Shared.Models.SoDuLoaiTien)element).SoTien,
+            };
+        //AddEditionEvent($"RowEditPreview event: made a backup of Element {((NoiDungNhapXuat)element).TenHangHoa} ");
+    }
+
+    private void ItemHasBeenCommitted(object element)
+    {
+        // AddEditionEvent($"RowEditCommit event: Changes to Element {((NoiDungNhapXuat)element).Name} committed");
+    }
+
+    private void ResetItemToOriginalValues(object element)
+    {
+        selectedItem1.KyHieu = elementBeforeEdit.KyHieu;
+        selectedItem1.TenLoaiTien = elementBeforeEdit.TenLoaiTien;
+        selectedItem1.DMLoaiTienId = elementBeforeEdit.DMLoaiTienId;
+        selectedItem1.SoTien = elementBeforeEdit.SoTien;
+        StateHasChanged();
+        // AddEditionEvent($"RowEditCancel event: Editing of Element {((NoiDungNhapXuat)element).TenHangHoa} cancelled");
+    }
+    private async Task savedata()
+    {
+        await JSRuntime.InvokeAsync<WindowDimensions>("saveAutoClick");
+        await Task.Delay(500);
+        isLoading = true;
+        if (table.SelectedItem.Id > 0)
+        {
+            await soduService.UpdateAsync(table.SelectedItem.Id, table.SelectedItem);
+        }
+        else
+        {
+            await soduService.CreateAsync(table.SelectedItem);
+        }
+        await TimKiem();
+        toastService.ShowSuccess("Cập nhật dữ liệu thành công.");
+        isLoading = false;
+    }
+    private async Task XoaClick(int id)
+    {
+        isLoading = true;
+        await soduService.DeleteAsync(id);
+        await TimKiem();
+        toastService.ShowSuccess("Cập nhật dữ liệu thành công.");
+        isLoading = false;
+    }
+    private int selectedRowNumber = -1;
+    private string SelectedRowClassFunc(QLSX.Shared.Models.SoDuLoaiTien element, int rowNumber)
+    {
+        //selectedRowNumber = rowNumber;
+        //return string.Empty;
+        if (selectedRowNumber == rowNumber)
+        {
+            selectedRowNumber = -1;
+            // clickedEvents.Add("Selected Row: None");
+            return string.Empty;
+        }
+        else if (table.SelectedItem != null && table.SelectedItem.Equals(element))
+        {
+            selectedRowNumber = rowNumber;
+            //clickedEvents.Add($"Selected Row: {rowNumber}");
+            return "selected";
+        }
+        else
+        {
+            return string.Empty;
+        }
+    }
+
+
+}

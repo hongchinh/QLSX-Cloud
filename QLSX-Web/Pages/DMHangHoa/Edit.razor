@@ -1,0 +1,248 @@
+﻿@inject ILogger<Edit> Logger
+@inject IJSRuntime JSRuntime
+@inject IDMHangHoaService<DanhMucHangHoaModel> hanghoaService
+@inherits QLSX.Web.Helpers.BlazorComponent
+@namespace QLSX.Web.Pages.DMHangHoaPage
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <div class="d-inline-flex">
+                @if (IsSuaOrXoa)
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Edit" Class="mr-3 mb-n1" />
+                    <div>Cập nhật : @server.MaHangHoa</div>
+                }
+                else
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Class="mr-3 mb-n1" />
+                    <div>Xóa : @server.MaHangHoa</div>
+                }
+            </div>
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <EditForm Model="server">
+            <DataAnnotationsValidator />
+            <MudForm @ref="formData" @bind-IsValid="@success" @bind-Errors="@errors">
+                <MudPaper Elevation="25" Class="py-8 px-8" Style="padding-top:2px !important">
+                    <ValidationSummary></ValidationSummary>
+                    <MudGrid Spacing="0">
+
+                        <MudItem xs="12" sm="2" Style="margin-top:20px; padding-left:25px;">
+                            Mã hàng hóa
+                        </MudItem>
+                        <MudItem xs="12" sm="4" Style="margin-top:10px;">
+                            <MudTextField @bind-Value="@server.MaHangHoa" Margin="Margin.Dense" Variant="Variant.Outlined" Required="true" RequiredError="Trường bắt buộc nhập!" />
+                            <ValidationMessage For="(() => server.MaHangHoa)" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                        </MudItem>
+                        <MudItem xs="12" sm="2" Style="margin-top:20px">
+                            Tên hàng hóa
+                        </MudItem>
+                        <MudItem xs="12" sm="10" Style="margin-top:20px;">
+                            <MudTextField @bind-Value="@server.TenHangHoa" Margin="Margin.Dense" Variant="Variant.Outlined" Required="true" RequiredError="Trường bắt buộc nhập!" />
+                        </MudItem>
+                        <MudItem xs="12" sm="2" Style="margin-top:20px; padding-left:25px;">
+                            Đơn vị tính
+                        </MudItem>
+                        <MudItem xs="12" sm="4" Style="margin-top:10px;">
+                            <MudTextField @bind-Value="@server.DonViTinh" Margin="Margin.Dense" Variant="Variant.Outlined" Required="true" RequiredError="Trường bắt buộc nhập!" />
+                        </MudItem>
+                        <MudItem xs="12" sm="2" Style="margin-top:20px; padding-left:25px;">
+                            Nhóm hàng
+                        </MudItem>
+                        <MudItem xs="12" sm="4" Style="margin-top:10px;">
+                            <MudSelect T="string" Margin="Margin.Dense" Label=" Nhóm hàng" AnchorOrigin="Origin.BottomCenter" @bind-Value="@server.MaNhomHang" Variant="Variant.Outlined">
+                                <MudSelectItem Value="@("")"> Nhóm hàng</MudSelectItem>
+                                @if (lstNhomHang != null)
+                                {
+                                    @foreach (var cnt in lstNhomHang)
+                                    {
+                                        <MudSelectItem Value="@cnt.MaNhom">@cnt.TenNhom </MudSelectItem>
+                                    }
+                                }
+                            </MudSelect>
+                        </MudItem>
+
+                        <MudItem xs="12" sm="2" Style="margin-top:20px; padding-left:25px;">
+                            Giá nhập
+                        </MudItem>
+                        <MudItem xs="12" sm="4" Style="margin-top:10px;">
+                            <MudNumericField @bind-Value="@server.GiaNhap" Margin="Margin.Dense" Format="###,##0" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12" sm="2" Style="margin-top:20px; padding-left:25px;">
+                            Giá xuất
+                        </MudItem>
+                        <MudItem xs="12" sm="4" Style="margin-top:10px;">
+                            <MudNumericField @bind-Value="@server.GiaXuat" Margin="Margin.Dense" Format="###,##0" Variant="Variant.Outlined" />
+                        </MudItem>
+
+                        <MudItem xs="12" sm="2" Style="margin-top:20px; padding-left:25px;">
+                            Loại tôn
+                        </MudItem>
+
+                        <MudItem xs="12" sm="4" Style="margin-top:10px;">
+                            <MudSelect T="string" Margin="Margin.Dense" Label="Loại tôn" AnchorOrigin="Origin.BottomCenter" @bind-Value="@server.MaLoaiTon" Variant="Variant.Outlined">
+                                <MudSelectItem Value="@("")"> Loại tôn</MudSelectItem>
+                                @if (lstLoaiTon != null)
+                                {
+                                    @foreach (var cnt in lstLoaiTon)
+                                    {
+                                        <MudSelectItem Value="@cnt.MaSo">@cnt.ChiTieu </MudSelectItem>
+                                    }
+                                }
+                            </MudSelect>
+
+                        </MudItem>
+                        <MudItem xs="12" sm="2" Style="margin-top:20px; padding-left:25px;">
+                            Chủng loại
+                        </MudItem>
+                        <MudItem xs="12" sm="4" Style="margin-top:10px;">
+                            <MudSelect T="string" Margin="Margin.Dense" Label="Chủng loại" AnchorOrigin="Origin.BottomCenter" @bind-Value="@server.MaChungLoai" Variant="Variant.Outlined">
+                                <MudSelectItem Value="@("")"> Chủng loại</MudSelectItem>
+                                @if (lstChungLoai != null)
+                                {
+                                    @foreach (var cnt in lstChungLoai)
+                                    {
+                                        <MudSelectItem Value="@cnt.MaSo">@cnt.ChiTieu </MudSelectItem>
+                                    }
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" sm="2" Style="margin-top:20px; padding-left:25px;">
+                            Khổ rộng
+                        </MudItem>
+                        <MudItem xs="12" sm="4" Style="margin-top:10px;">
+                            <MudNumericField @bind-Value="@server.KhoRongTon" Format="###,###0.##" Margin="Margin.Dense" Adornment="@Adornment.End" AdornmentText="mm" Variant="Variant.Outlined" />
+                        </MudItem>
+                        @*<MudItem xs="12" sm="2" Style="margin-top:20px; padding-left:25px;">
+                        Chiều dài
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                        <MudTextField @bind-Value="@server.ChieuDai" Format="###,###0.##" Margin="Margin.Dense" Adornment="@Adornment.End" AdornmentText="mm" Variant="Variant.Outlined" />
+                        </MudItem> *@
+
+                        <MudItem xs="12" sm="2" Style="margin-top:20px; padding-left:25px;">
+                            Màu sắc
+                        </MudItem>
+                        <MudItem xs="12" sm="4" Style="margin-top:10px;">
+                            <MudSelect T="string" Label="Màu sắc" Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter" @bind-Value="@server.MaMauSac" Variant="Variant.Outlined">
+                                <MudSelectItem Value="@("")">Màu sắc</MudSelectItem>
+                                @if (lstMauSac != null)
+                                {
+                                    @foreach (var cnt in lstMauSac)
+                                    {
+                                        <MudSelectItem Value="@cnt.MaSo">@cnt.ChiTieu </MudSelectItem>
+                                    }
+                                }
+                            </MudSelect>
+
+                        </MudItem>
+                        <MudItem xs="12" sm="2" Style="margin-top:20px; padding-left:25px;">
+                            Độ dày
+                        </MudItem>
+                        <MudItem xs="12" sm="4" Style="margin-top:10px;">
+                            <MudSelect T="string" Label="Độ dày" Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter" @bind-Value="@server.MaDoDay" Variant="Variant.Outlined">
+                                <MudSelectItem Value="@("")">Độ dày</MudSelectItem>
+                                @if (lstDoDay != null)
+                                {
+                                    @foreach (var cnt in lstDoDay)
+                                    {
+                                        <MudSelectItem Value="@cnt.MaSo">@cnt.ChiTieu </MudSelectItem>
+                                    }
+                                }
+                            </MudSelect>
+
+                        </MudItem>
+                        <MudItem xs="12" sm="2" Style="margin-top:20px; padding-left:25px;">
+                            Kiểu sóng
+                        </MudItem>
+                        <MudItem xs="12" sm="4" Style="margin-top:10px;">
+                            <MudSelect T="string" Label="Kiểu sóng" Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter" @bind-Value="@server.MaKieuSong" Variant="Variant.Outlined">
+                                <MudSelectItem Value="@("")">Kiểu sóng</MudSelectItem>
+                                @if (lstKieuSong != null)
+                                {
+                                    @foreach (var cnt in lstKieuSong)
+                                    {
+                                        <MudSelectItem Value="@cnt.MaSo">@cnt.ChiTieu </MudSelectItem>
+                                    }
+                                }
+                            </MudSelect>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+            </MudForm>
+        </EditForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel" Variant="Variant.Filled" Color="Color.Error">Đóng</MudButton>
+        <MudButton Class="me-3" StartIcon="@Icons.Material.Filled.Save" Color="Color.Primary" Variant="Variant.Filled" OnClick="@(() => SaveClick())">@(IsSuaOrXoa ? "Cất" : "Xóa")</MudButton>
+    </DialogActions>
+</MudDialog>
+<LoadingProgress IsLoading="isLoading" />
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public DanhMucHangHoaModel server { get; set; } = new DanhMucHangHoaModel();
+
+
+    [Parameter]
+    public IEnumerable<DanhMucNhomHangModel> lstNhomHang { get; set; } = new List<DanhMucNhomHangModel>();
+    [Parameter]
+    public IEnumerable<DanhMucLoaiTonModel> lstLoaiTon { get; set; } = new List<DanhMucLoaiTonModel>();
+    [Parameter]
+    public IEnumerable<QLSX.Shared.Models.DanhMucDoDayModel> lstDoDay { get; set; } = new List<QLSX.Shared.Models.DanhMucDoDayModel>();
+    [Parameter]
+    public IEnumerable<QLSX.Shared.Models.DanhMucMauSacModel> lstMauSac { get; set; } = new List<QLSX.Shared.Models.DanhMucMauSacModel>();
+    [Parameter]
+    public IEnumerable<DanhMucChungLoaiModel> lstChungLoai { get; set; } = new List<DanhMucChungLoaiModel>();
+    [Parameter]
+    public IEnumerable<DanhMucKieuSongModel> lstKieuSong { get; set; } = new List<DanhMucKieuSongModel>();
+
+    [Parameter] public bool IsSuaOrXoa { get; set; }
+
+    MudForm formData;
+    bool success;
+    string[] errors = { };
+    public bool isLoading { get; set; } = false;
+
+
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private async Task SaveClick()
+    {
+        await formData.Validate();
+        if (errors.Count() == 0 && IsSuaOrXoa)
+        {
+            isLoading = true;
+            var hangHoa = await hanghoaService.GetByCodeAsync(server.MaHangHoa);
+            if (hangHoa.Id != 0 && hangHoa.Id != server.Id)
+            {
+                Snackbar.Add("Mã hàng hóa đã tồn tại, chọn mã khác.", MudBlazor.Severity.Error);
+            }
+            else
+            {
+                var itemEdit = await hanghoaService.UpdateAsync(server.Id, server);
+                MudDialog.Close(DialogResult.Ok(itemEdit.Id > 0));
+            }
+            isLoading = false;
+        }
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+}

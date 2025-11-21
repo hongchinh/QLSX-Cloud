@@ -1,0 +1,14 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/QLSX.Shared/obj/
+/.vs/*
+/.vs/ProjectEvaluation/*
+/.vs/QLSX.API/DesignTimeBuild/*
+/.vs/*/*
+/.vs/*/*/*
+
+/.vs/QLSX.API/v17/*
+/QLSX.Shared/bin
+.vs

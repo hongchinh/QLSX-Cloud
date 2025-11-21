@@ -1,0 +1,268 @@
+﻿@using Dialogs
+@using Newtonsoft.Json
+@using Microsoft.AspNetCore.Mvc;
+@using QLSX.Shared.Models
+@using AutoMapper
+@using Microsoft.Extensions.Configuration;
+@using System.Globalization
+@using Blazored.LocalStorage
+
+@inject IDMHangHoaService<DanhMucHangHoaModel> dmhanghoaService
+@inject IDMKhachHangService<DanhMucKhachHangModel> dmkhachhangService
+@inject INhapXuatsService<NhapXuatModel> nhapxuatService
+@inject AppService AppService
+@inject IReportService reportService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager navigationManager
+@inject IToastService toastService
+@inject IDialogService DialogService
+@inject IMapper mapper;
+@inject IConfiguration configuration
+@inject ILocalStorageService localStorageService
+@inject ISnackbar Snackbar
+
+
+@namespace QLSX.Web.Pages.NhapXuatPage
+
+<MudPaper Elevation="25" id="idToolbarNX">
+    <MudToolBar Style="background-color:darkslategrey">
+
+        @if (IsCreateOrEdit)
+        {
+            <MudTooltip Text="Quay lại" Color="Color.Tertiary" Placement="Placement.Top" Arrow="true">
+                @* <MudIconButton @onclick="@( () => HuyClick())" Icon="@Icons.Material.Outlined.Close" Color="Color.Error" /> *@
+                <MudButton Variant="Variant.Filled" OnClick="@( () => HuyClick())" StartIcon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" Color="Color.Warning">Quay lại</MudButton>
+            </MudTooltip>
+
+            <MudTooltip Text="Lưu dữ liệu" Color="Color.Tertiary" Placement="Placement.Top" Arrow="true">
+                @* <MudIconButton @onclick="@( async () => await SaveDataToDB())" Icon="@Icons.Material.Outlined.Save" Color="Color.Secondary" /> *@
+                <MudButton Variant="Variant.Filled" OnClick="@( () => SaveDataToDB())" StartIcon="@Icons.Material.Filled.Save" Size="Size.Small" Color="Color.Warning">Lưu</MudButton>
+            </MudTooltip>
+        }
+        else
+        {
+
+            @if (!IsReadOnly)
+            {
+                <MudTooltip Text="Hủy sửa" Color="Color.Tertiary" Placement="Placement.Top" Arrow="true">
+                    @* <MudIconButton @onclick="@( () => SuaClick())" Icon="@Icons.Material.Outlined.Close" Color="Color.Error"></MudIconButton> *@
+                    <MudButton Variant="Variant.Filled" OnClick="@( () => SuaClick())" StartIcon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Warning">Hủy bỏ</MudButton>
+                </MudTooltip>
+
+                <MudTooltip Text="Lưu dữ liệu" Color="Color.Tertiary" Placement="Placement.Top" Arrow="true">
+                   @*  <MudIconButton @onclick="@( async () => await SaveDataToDB())" Icon="@Icons.Material.Outlined.Save" Color="Color.Secondary" /> *@
+                    <MudButton Variant="Variant.Filled" OnClick="@( () => SaveDataToDB())" StartIcon="@Icons.Material.Filled.Save" Size="Size.Small" Color="Color.Warning">Lưu</MudButton>
+                </MudTooltip>
+
+            }
+            else
+            {
+                <MudTooltip Text="Quay trở lại" Color="Color.Tertiary" Placement="Placement.Top" Arrow="true">
+                    @* <MudIconButton @onclick="@( () => HuyClick())" Icon="@Icons.Material.Outlined.Close" Color="Color.Error" Class="mr-3" /> *@
+                    <MudButton Variant="Variant.Filled" OnClick="@( () => HuyClick())" StartIcon="@Icons.Material.Filled.Save" Size="Size.Small" Color="Color.Warning">Quay lại</MudButton>
+                </MudTooltip>
+                <MudTooltip Text="Sửa phiếu" Color="Color.Tertiary" Placement="Placement.Top" Arrow="true">
+                    @* <MudIconButton Disabled="IsEnableSua" @onclick="@( () => SuaClick())" Icon="@Icons.Material.Filled.Edit" Color="Color.Inherit" /> *@
+                    <MudButton Variant="Variant.Filled" Disabled="IsEnableSua" OnClick="@( () => SuaClick())" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Warning">Sửa</MudButton>
+                </MudTooltip>
+            }
+            @if (IsReadOnly)
+            {
+                <MudTooltip Text="Xóa phiếu" Color="Color.Tertiary" Placement="Placement.Top" Arrow="true">
+                    @* <MudIconButton Disabled="@(IsEnableXoa || IsEnableSua)" @onclick="@(async() => await DeleteClick())" Icon="@Icons.Material.Outlined.Delete" Color="Color.Error" /> *@
+                    <MudButton Variant="Variant.Filled" Disabled="@(IsEnableXoa || IsEnableSua)" OnClick="@(async() => await DeleteClick())" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Warning">Xóa</MudButton>
+
+                </MudTooltip>
+                <MudTooltip Text="Tìm kiếm nhanh" Color="Color.Tertiary" Placement="Placement.Top" Arrow="true">
+                    @* <MudIconButton @onclick="@(() => OpenDialogTimNhanh())" Icon="@Icons.Material.Outlined.Search" Color="Color.Inherit" /> *@
+                    <MudButton Variant="Variant.Filled" OnClick="@(() => OpenDialogTimNhanh())" StartIcon="@Icons.Material.Filled.Search" Size="Size.Small" Color="Color.Warning">Tìm kiếm nhanh</MudButton>
+
+                </MudTooltip>
+
+                @if (nhapxuat.Loai == "nhap")
+                {
+                    <MudTooltip Text="In phiếu nhập" Color="Color.Tertiary" Placement="Placement.Top" Arrow="true">
+                        <MudMenu Disabled="IsEnableXemIn" StartIcon="@Icons.Material.Outlined.Print" EndIcon="@Icons.Material.Outlined.KeyboardArrowDown" Color="Color.Inherit">
+                            <MudMenuItem OnClick="@( async () => await PrintPhieuNhapThuong(nhapxuat.Id))">In nhập thường</MudMenuItem>
+                            <MudMenuItem OnClick="@( async () => await PrintPhieuNhapTon(nhapxuat.Id))">In nhập tôn</MudMenuItem>
+                        </MudMenu>
+                    </MudTooltip>
+                }
+                else if (nhapxuat.Loai == "xuat")
+                {
+                    <MudTooltip Text="In phiếu xuất" Color="Color.Tertiary" Placement="Placement.Top" Arrow="true">
+                        <MudMenu Disabled="IsEnableXemIn" StartIcon="@Icons.Material.Outlined.Print" EndIcon="@Icons.Material.Outlined.KeyboardArrowDown" Color="Color.Inherit">
+                            <MudMenuItem OnClick="@( async () => await PrintPhieuXuatThuong(nhapxuat.Id))">In xuất thường</MudMenuItem>
+                            <MudMenuItem OnClick="@( async () => await PrintPhieuXuatTon(nhapxuat.Id))">In xuất tôn</MudMenuItem>
+                            <MudMenuItem OnClick="@( async () => await PrintLenhSanXuat(nhapxuat.Id))">In lệnh sản xuất</MudMenuItem>
+                        </MudMenu>
+                    </MudTooltip>
+                }
+                else if (nhapxuat.Loai == "nhaptra")
+                {
+                    <MudTooltip Text="In phiếu nhập trả" Color="Color.Tertiary" Placement="Placement.Top" Arrow="true">
+                        <MudIconButton Disabled="IsEnableXemIn" OnClick="async () => await PrintClick(nhapxuat)" Icon="@Icons.Material.Outlined.Print" />
+                    </MudTooltip>
+
+                }
+                else if (nhapxuat.Loai == "xuattra")
+                {
+                    <MudTooltip Text="In phiếu xuất trả" Color="Color.Tertiary" Placement="Placement.Top" Arrow="true">
+                        <MudIconButton Disabled="IsEnableXemIn" OnClick="async () => await PrintClick(nhapxuat)" Icon="@Icons.Material.Outlined.Print" />
+                    </MudTooltip>
+                }
+            }
+        }
+        <MudSpacer />
+    </MudToolBar>
+</MudPaper>
+@code {
+    [CascadingParameter] private Task<AuthenticationState> authenticationStateTask { get; set; }
+    [Parameter] public NhapXuatModel nhapxuat { get; set; } = new NhapXuatModel();
+    [Parameter] public QuyenSuDungModel quyenSuDung { get; set; }
+    [Parameter] public bool IsCreateOrEdit { get; set; }
+    [Parameter] public bool saveAndCreate { get; set; }
+    [Parameter] public EventCallback SaveData { get; set; }
+    [Parameter] public EventCallback CancelClick { get; set; }
+    [Parameter] public EventCallback<bool> SuaClickCallBack { get; set; }
+
+    public string hostReport { get; set; }
+    public string mdvsd { get; set; }
+
+    public bool IsEnableThem { get; set; }
+    public bool IsEnableSua { get; set; }
+    public bool IsEnableHuy { get; set; }
+    public bool IsEnableXoa { get; set; }
+    public bool IsEnableXemIn { get; set; }
+    public bool IsReadOnly { get; set; } = true;
+
+    private void EnableButton(bool enable)
+    {
+        IsEnableThem = enable;
+        IsEnableHuy = !enable;
+        IsEnableSua = enable;
+        IsEnableXoa = enable;
+        IsEnableXemIn = enable;
+
+        //if (!quyenSuDung.Them) IsEnableThem = false;
+        //if (!quyenSuDung.Sua) IsEnableSua = false;
+        //if (!quyenSuDung.Xoa) IsEnableXoa = false;
+        //if (!quyenSuDung.XemIn) IsEnableXemIn = false;
+
+        StateHasChanged();
+    }
+    private async Task SuaClick()
+    {
+        IsReadOnly = !IsReadOnly;
+        await SuaClickCallBack.InvokeAsync(IsReadOnly);
+    }
+    private async Task HuyClick()
+    {
+        await CancelClick.InvokeAsync();
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            hostReport = configuration.GetValue<string>("AppSettings:ReportUrl");
+            var user = (await authenticationStateTask).User;
+            mdvsd = user.FindFirst(c => c.Type == "TenantId")?.Value ?? "0";
+            EnableButton(false);
+            StateHasChanged();
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task SaveDataToDB()
+    {
+        await SaveData.InvokeAsync();
+        EnableButton(false);
+    }
+
+    private async Task PrintPhieuXuatThuong(int id)
+    {
+        string strURL = hostReport + "/Reports/Viewer?ReportFileName=rptPhieuXuat&id=" + id + "&mdvsd=" + mdvsd;
+        await JSRuntime.InvokeVoidAsync("open", strURL, "_blank");
+    }
+    private async Task PrintPhieuXuatTon(int id)
+    {
+        string strURL = hostReport + "/Reports/Viewer?ReportFileName=rptPhieuXuatFull&id=" + id + "&mdvsd=" + mdvsd;
+        await JSRuntime.InvokeVoidAsync("open", strURL, "_blank");
+    }
+    private async Task PrintPhieuNhapThuong(int id)
+    {
+        string strURL = hostReport + "/Reports/Viewer?ReportFileName=rptPhieuNhap&id=" + id + "&mdvsd=" + mdvsd;
+        await JSRuntime.InvokeVoidAsync("open", strURL, "_blank");
+    }
+    private async Task PrintPhieuNhapTon(int id)
+    {
+        string strURL = hostReport + "/Reports/Viewer?ReportFileName=rptPhieuNhapFull&id=" + id + "&mdvsd=" + mdvsd;
+        await JSRuntime.InvokeVoidAsync("open", strURL, "_blank");
+    }
+    private async Task PrintLenhSanXuat(int id)
+    {
+        string strURL = hostReport + "/Reports/Viewer?ReportFileName=rptPhieuXuatSL&id=" + id + "&mdvsd=" + mdvsd;
+        await JSRuntime.InvokeVoidAsync("open", strURL, "_blank");
+    }
+
+    private void OpenDialogTimNhanh()
+    {
+        var parameters = new DialogParameters { ["TimNhanhCalback"] = EventCallback.Factory.Create<int>(this, TimNhanhCalback), ["Loai"] = nhapxuat.Loai };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<DialogTimKiemNhanhNhapXuat>("Tìm kiếm nhanh", parameters, options);
+    }
+
+    private async Task TimNhanhCalback(int id)
+    {
+        var item = await nhapxuatService.GetByIdAsync(id);
+        if (item.Id == 0)
+        {
+            return;
+        }
+        nhapxuat = mapper.Map<NhapXuatModel>(item);
+        StateHasChanged();
+    }
+
+
+    [JSInvokable]
+    private async Task PrintClick(NhapXuatModel item)
+    {
+        string urlPrint = @"{0}/Reports/Viewer?ReportFileName={1}&id={2}&mdvsd={3}";
+        if (item.Loai == "nhaptra")
+        {
+            urlPrint = string.Format(urlPrint, hostReport, "rptPhieuNhapTra", item.Id, item.DMDonViSuDungId);
+
+        }
+        else if (item.Loai == "xuattra")
+        {
+            urlPrint = string.Format(urlPrint, hostReport, "rptPhieuXuatTra", item.Id, item.DMDonViSuDungId);
+        }
+        await JSRuntime.InvokeAsync<WindowDimensions>("printReport", urlPrint);
+    }
+
+
+    private async Task SaveStatus()
+    {
+        await localStorageService.SetItemAsync($"{nhapxuat.Loai}-SaveStatus", saveAndCreate);
+    }
+
+    private async Task DeleteClick()
+    {
+        var parameters = new DialogParameters { ["server"] = nhapxuat };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<Delete>("Xóa", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            int.TryParse(result.Data.ToString(), out int deletedServer);
+            await nhapxuatService.DeleteAsync(nhapxuat.Id);
+
+            Snackbar.Add("Bạn xóa dữ liệu thành công", Severity.Info);
+
+            navigationManager.NavigateTo("nhapxuats?rid=" + Guid.NewGuid(), true);
+        }
+    }
+
+}
+

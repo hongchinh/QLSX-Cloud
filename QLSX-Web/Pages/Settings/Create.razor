@@ -1,0 +1,86 @@
+﻿@using QLSX.Web.Helpers
+@inject ILogger<Create> Logger
+@inject IJSRuntime jsRuntime
+@inject ISettingService<QLSX.Shared.Models.SettingModel> itemService
+@inherits QLSX.Web.Helpers.BlazorComponent
+
+@namespace QLSX.Web.Pages.SettingsPage
+
+<div class="modal @_modalClass" tabindex="-1" role="dialog" style="display:@_modalDisplay; overflow-y:auto" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+	<div class="modal-dialog" role="document" style="width:800px; max-width:800px !important">
+		<div class="modal-content">
+			<EditForm Model="_item" OnValidSubmit="@CreateClick">
+				<DataAnnotationsValidator />
+				<div class="modal-header">
+					<h5 class="modal-title" id="exampleModalLabel">Tạo mới</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<ValidationSummary></ValidationSummary>
+					@if (_item == null)
+					{
+		 <SpinnerData></SpinnerData>
+					}
+					else
+					{
+						<FormInput itemForm="_item"> </FormInput>
+					}
+	</div>
+	<div class="modal-footer">
+	 <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="Close">Bỏ qua</button>
+	 <button type="submit" class="btn btn-primary">
+	  Lưu
+	 </button>
+	</div>
+   </EditForm>
+  </div>
+ </div>
+</div>
+
+
+
+@if (_showCreateModal)
+{
+	<div class="modal-backdrop fade show"></div>
+}
+
+@code {
+	[Parameter]
+	public EventCallback<string> OnSaveClick { get; set; }
+
+	private QLSX.Shared.Models.SettingModel _item = new QLSX.Shared.Models.SettingModel();
+	private string _modalDisplay = "none;";
+	private string _modalClass = "";
+	private bool _showCreateModal = false;
+
+	private async Task CreateClick()
+	{
+		var cus = await itemService.CreateAsync(_item);
+		await OnSaveClick.InvokeAsync(null);
+		await Close();
+	}
+
+	public async Task Open(int UserLoginId)
+	{
+		Logger.LogInformation("Create Setting");
+		await new Css(jsRuntime).HideBodyOverflow();
+		_item = new QLSX.Shared.Models.SettingModel
+		{
+			CreatedDate = DateTime.Now
+		};
+		_modalDisplay = "block;";
+		_modalClass = "Show";
+		_showCreateModal = true;
+		StateHasChanged();
+	}
+
+	private async Task Close()
+	{
+		await new Css(jsRuntime).ShowBodyOverflow();
+		_modalDisplay = "none";
+		_modalClass = "";
+		_showCreateModal = false;
+	}
+}

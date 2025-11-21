@@ -1,0 +1,235 @@
+﻿@using QLSX.Web.Helpers
+@using System.Globalization
+
+@inject ILogger<Create> Logger
+@inject IJSRuntime jsRuntime
+@inject IDMKhachHangService<DanhMucKhachHangModel> khachhangService
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject AppService AppService
+@inject IDMSoCTService<DanhMucSoChungTuModel> dmSoCTService
+@inject ISettingService<QLSX.Shared.Models.SettingModel> itemSettingService
+@inject ISnackbar Snackbar
+
+@namespace QLSX.Web.Pages.DMKhachHangPage
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Edit" Class="mr-3 mb-n1" />
+            Tạo mới
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="formData" @bind-IsValid="@success" @bind-Errors="@errors">
+            <EditForm Model="server">
+                <DataAnnotationsValidator />
+                <MudPaper Elevation="25" Class="py-8 px-8" Style="padding-top:2px !important">
+                    <ValidationSummary></ValidationSummary>
+                    <MudGrid Spacing="0">
+                        <MudItem xs="12" sm="2" Style="margin-top:20px">
+                            Mã đơn vị
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudTextField @bind-Value="@server.MaDonVi" Margin="Margin.Dense" Variant="Variant.Outlined" Required="true" RequiredError="Trường này bắt buộc nhập!" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+
+                        </MudItem>
+                        <MudItem xs="12" sm="2" Style="margin-top:20px">
+                            Tên đơn vị
+                        </MudItem>
+                        <MudItem xs="12" sm="10">
+                            <MudTextField @bind-Value="@server.TenDonVi" Margin="Margin.Dense" Variant="Variant.Outlined" Required="true" RequiredError="Trường này bắt buộc nhập!" />
+                        </MudItem>
+                        <MudItem xs="12" sm="2" Style="margin-top:20px">
+                            Địa chỉ
+                        </MudItem>
+                        <MudItem xs="12" sm="10">
+                            <MudTextField @bind-Value="@server.DiaChi" Margin="Margin.Dense" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12" sm="2" Style="margin-top:20px">
+                            Nhóm khách hàng
+                        </MudItem>
+                        <MudItem xs="12" sm="10">
+                            <MudSelect T="string" Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter" @bind-Value="@server.MaNhom" Variant="Variant.Outlined">
+                                <MudSelectItem Value="@("")">Chọn nhóm khách hàng</MudSelectItem>
+                                @if (lstNhomKhachHang != null)
+                                {
+                                    @foreach (var cnt in lstNhomKhachHang)
+                                    {
+                                        <MudSelectItem Value="@cnt.MaNhom">@cnt.TenNhom</MudSelectItem>
+                                    }
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" sm="2" Style="margin-top:20px">
+                            Tỉnh thành
+                        </MudItem>
+                        <MudItem xs="12" sm="10">
+                            <MudSelect T="string" Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter" @bind-Value="@server.MaTinh" Variant="Variant.Outlined">
+                                <MudSelectItem Value="@("")">Chọn tỉnh thành</MudSelectItem>
+                                @if (lstTinhThanh != null)
+                                {
+                                    @foreach (var cnt in lstTinhThanh)
+                                    {
+                                        <MudSelectItem Value="@cnt.MaTinh">@cnt.TenTinh</MudSelectItem>
+                                    }
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" sm="2" Style="margin-top:20px">
+                            Điện thoại
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudTextField @bind-Value="@server.DienThoai" Margin="Margin.Dense" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12" sm="2" Style="text-align:center;margin-top:20px">
+                            Mã số thuế
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudTextField @bind-Value="@server.MaSoThue" Margin="Margin.Dense" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12" sm="2" Style="margin-top:20px">
+                            Hạn mức dư nợ
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudNumericField Format="###,###" Culture="@_vi" Margin="Margin.Dense" @bind-Value="@server.HanMucDuNo" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+
+                        </MudItem>
+                        <MudItem xs="12" sm="2" Style="margin-top:20px">
+                            Số tài khoản
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudTextField @bind-Value="@server.SoTaiKhoan" Margin="Margin.Dense" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12" sm="2" Style="text-align:center;margin-top:20px">
+                            Tên ngân hàng
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudTextField @bind-Value="@server.TenNganHang" Margin="Margin.Dense" Variant="Variant.Outlined" />
+                        </MudItem>
+                        @* <MudItem xs="12" sm="2" Style="margin-top:20px">
+                        Nhân viên kinh doanh
+                        </MudItem>
+                        <MudItem xs="12" sm="8">
+                        <MudSelect T="int" AnchorOrigin="Origin.BottomCenter" Margin="Margin.Dense" @bind-Value="@MaNhanVienId" Variant="Variant.Outlined">
+                        <MudSelectItem Value="@(0)">Chọn nhân viên</MudSelectItem>
+                        @if (lstUser != null)
+                        {
+                        @foreach (var cnt in lstUser)
+                        {
+                        <MudSelectItem Value="@cnt.Id">@cnt.FirstName</MudSelectItem>
+                        }
+                        }
+                        </MudSelect>
+                        </MudItem> *@
+                        <MudItem xs="12" sm="2" Style="margin-top:20px">
+
+                        </MudItem>
+                        @* <MudItem xs="12" sm="8">
+                        <MudCheckBox @bind-Checked="@server.KhongTheoDoi" Label="Không theo dõi công nợ" />
+                        </MudItem> *@
+                    </MudGrid>
+
+                </MudPaper>
+            </EditForm>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel" Variant="Variant.Filled" Color="Color.Error">Bỏ qua</MudButton>
+        <MudButton Class="me-3" StartIcon="@Icons.Material.Filled.Save" Color="Color.Primary" Variant="Variant.Filled" OnClick="@(() => SaveClick())">Lưu</MudButton>
+    </DialogActions>
+</MudDialog>
+<LoadingProgress IsLoading="isLoading" />
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public DanhMucKhachHangModel server { get; set; } = new DanhMucKhachHangModel();
+    [Parameter]
+    public IEnumerable<QLSX.Shared.Models.DanhMucTinhThanhModel> lstTinhThanh { get; set; } = new List<QLSX.Shared.Models.DanhMucTinhThanhModel>();
+    [Parameter]
+    public IEnumerable<DanhMucNhomKhachHangModel> lstNhomKhachHang { get; set; } = new List<DanhMucNhomKhachHangModel>();
+
+    [Parameter]
+    public IEnumerable<QLSX.Shared.Models.UserModel> lstUser { get; set; } = new List<QLSX.Shared.Models.UserModel>();
+    [CascadingParameter] private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    public CultureInfo _vi = CultureInfo.GetCultureInfo("vi-VN");
+    public bool isLoading { get; set; } = false;
+    public int DMTinhThanhId { get; set; }
+
+    public SettingModel itemSetting { get; set; } = new QLSX.Shared.Models.SettingModel { LoaiNhapXuat = 1 };
+
+    MudForm formData;
+    bool success;
+    string[] errors = { };
+
+    private int _maNhanVienId;
+    public int MaNhanVienId
+    {
+        get
+        {
+            return _maNhanVienId;
+        }
+        set
+        {
+            this._maNhanVienId = value;
+            server.UserId = value;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isLoading = true;
+            MaNhanVienId = server.UserId ?? 0;
+            GetSoChungTuRequest dmsoct = new GetSoChungTuRequest();
+            var userLogin = (await authenticationStateTask).User;
+            var DMDonViId = userLogin.FindFirst(c => c.Type == "TenantId")?.Value;
+            DMDonViId = string.IsNullOrEmpty(DMDonViId) ? "0" : DMDonViId;
+            var UserId = userLogin.FindFirst(c => c.Type == "UserId")?.Value;
+            UserId = string.IsNullOrEmpty(UserId) ? "0" : UserId;
+            dmsoct.Loai = "dmkhachhang";
+            dmsoct.DMDonViSuDungId = int.Parse(DMDonViId);
+            itemSetting = await itemSettingService.GetByIdAsync(int.Parse(UserId));
+            if (itemSetting.TuDongMaHangHoa)
+            {
+                server.MaDonVi = await dmSoCTService.GetSoChungTuAsync(dmsoct);
+            }
+
+            isLoading = false;
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private async Task SaveClick()
+    {
+        await formData.Validate();
+        if (errors.Count() == 0)
+        {
+            var khachHang = await khachhangService.GetByCodeAsync(server.MaDonVi);
+            if (khachHang.Id > 0)
+            {
+                Snackbar.Add("Mã đơn vị đã tồn tại, chọn mã khác.", Severity.Error);
+            }
+            else
+            {
+                isLoading = true;
+                var itemCreate = await khachhangService.CreateAsync(server);
+                isLoading = false;
+                MudDialog.Close(DialogResult.Ok(itemCreate));
+            }
+        }
+    }
+}

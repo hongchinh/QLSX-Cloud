@@ -1,0 +1,1128 @@
+﻿@page "/dondathangs"
+@using Microsoft.AspNetCore.SignalR.Client
+@using Newtonsoft.Json.Linq
+@using QLSX.Shared.Constants
+@using QLSX.Shared.Models
+@using QLSX.Shared.Models.Request
+@using QLSX.Web.Data
+@using QLSX.Web.Pages.DonDatHang
+@using QLSX.Web.Services
+@using Blazored.LocalStorage
+@using OfficeOpenXml
+@using OfficeOpenXml.Style
+@using Microsoft.Extensions.Configuration;
+@using AutoMapper
+@using System.Text.Json
+
+@inject IDonDatHangsService<PhieuNhapXuatAllModel> donDatHangService
+@inject IUserService userService
+@inject IDMTinhTrangService<QLSX.Shared.Models.DMTinhTrangModel> dmTinhTrangService
+@inject IDMKhoHangService<DanhMucKhoHangModel> dmkhohangService
+@inject IDMLoaiTienService<DanhMucLoaiTienModel> dmLoaiTienService
+@inject IMapper mapper;
+
+@inject NavigationManager navigationManager
+@inject ILocalStorageService localStorageService
+@inject AppService AppService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+@attribute [Authorize]
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject IDialogService DialogService
+@inject IToastService toastService
+@inject IPhanQuyenSuDungService< QLSX.Shared.Models.QuyenSuDungModel> permisstionService
+@inject ISnackbar Snackbar
+@inject IConfiguration configuration
+@inject ISettingService<QLSX.Shared.Models.SettingModel> itemService
+@inject Blazored.LocalStorage.ILocalStorageService localStorageService
+
+
+@namespace QLSX.Web.Pages.DonDatHangPage
+<style>
+    .mud-main-content {
+        padding-top: 45px;
+    }
+
+    .mud-breadcrumbs {
+        padding: 0;
+    }
+
+    .mud-grid-spacing-xs-1 > .mud-grid-item {
+        padding: 3px;
+    }
+
+    .mud-input-label-outlined {
+        padding: 0 !important;
+    }
+
+    .mud-input > input.mud-input-root-outlined.mud-input-root-margin-dense, div.mud-input-slot.mud-input-root-outlined.mud-input-root-margin-dense {
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
+
+    .mud-input-control > .mud-input-control-input-container > .mud-input-label-outlined.mud-input-label-inputcontrol {
+        line-height: 10px;
+    }
+
+    .mud-table-root {
+        width: max-content;
+    }
+
+    .mud-table-cell {
+        padding: 3px;
+    }
+
+    .mud-table-sticky-header * .mud-table-root .mud-table-head * .mud-table-cell {
+        top: -1px;
+    }
+
+    .mud-table-foot {
+        position: sticky;
+        bottom: -3px;
+        background: #f2f2f2;
+        color: blue;
+        z-index: 1;
+    }
+
+    .footerContent {
+        text-align: center;
+        padding: 0;
+        background: black;
+        color: white;
+        font-weight: bold;
+    }
+
+        .footerContent > label {
+            margin: 0;
+        }
+
+    .pb-1 {
+        padding-bottom: 5px !important;
+    }
+
+    .form-check {
+        border: 1px solid #BDBDBD;
+        border-radius: 5px;
+    }
+
+    .mud-input > input.mud-input-root-outlined, div.mud-input-slot.mud-input-root-outlined {
+        padding: 0px 2px;
+    }
+
+    .mud-input.mud-input-outlined .mud-input-outlined-border {
+        border-radius: 0px;
+    }
+
+    .mud-input > input.mud-input-root-outlined.mud-input-root-adorned-end, div.mud-input-slot.mud-input-root-outlined.mud-input-root-adorned-end {
+        padding-inline-start: 2px;
+    }
+
+    .mud-input-adornment-end {
+        margin-inline-start: -15px;
+    }
+
+    .mud-icon-button-edge-end {
+        margin-inline-end: -25px;
+    }
+
+    .mud-grid-spacing-xs-2 {
+        width: calc(100% + 0px);
+        margin: 0px;
+    }
+
+        .mud-grid-spacing-xs-2 > .mud-grid-item {
+            padding: 0px;
+        }
+
+    .mud-input-label-inputcontrol {
+        top: 0;
+        left: -10px;
+    }
+
+    .mud-table-dense * .mud-table-row .mud-table-cell {
+        padding: 0px;
+        padding-inline-start: 2px;
+        padding-inline-end: 2px;
+    }
+
+    .mud-input.mud-input-outlined.mud-input-adorned-end {
+        padding-inline-end: 6px;
+    }
+
+    .mud-icon-button {
+        padding: 0;
+    }
+
+    .mud-list-item {
+        padding-bottom: 0;
+        padding-top: 0;
+    }
+
+    .mud-table-cell .mud-checkbox {
+        margin: 0px;
+    }
+
+    #idToolbar {
+        padding-left: 0;
+    }
+
+    .mud-button {
+        padding: 2px;
+    }
+
+    .mud-table-dense * .mud-table-row .mud-table-cell:last-child {
+        padding-inline-end: 3px;
+    }
+</style>
+
+<div class="form-group">
+    <MudBreadcrumbs Items="_items"></MudBreadcrumbs>
+
+    <MudToolBar id="idToolbar">
+        <MudButton Disabled="@(!quyenSuDungXuat.Them)" Size="Size.Small" Variant="Variant.Outlined" Class="ml-1" @onclick="@(async() => await CreateDonHangClick())" StartIcon="@Icons.Material.Filled.AddShoppingCart" Color="Color.Secondary">Tạo đơn hàng</MudButton>
+        <MudButton Disabled="@(!quyenSuDungXuat.Them)" Size="Size.Small" Variant="Variant.Outlined" Class="ml-1" StartIcon="@Icons.Material.Filled.LocalPrintshop" Color="Color.Primary" @onclick="OpenDialogAsync">In LSX</MudButton>
+        <MudButton Disabled="printPXKDisableStatus" Size="Size.Small" Variant="Variant.Outlined" Class="ml-1" @onclick="@(() => OpenPrintPXKForm())" StartIcon="@Icons.Material.Filled.LocalPrintshop" Color="Color.Primary">In phiếu XK</MudButton>
+        <MudButton Disabled="@(!quyenSuDungXuat.Them)" Size="Size.Small" Variant="Variant.Outlined" Class="ml-1" StartIcon="@Icons.Material.Outlined.RunCircle" Color="Color.Primary">Nhận PXK liên 2</MudButton>
+        <MudButton Disabled="@(!quyenSuDungXuat.Them)" Size="Size.Small" Variant="Variant.Outlined" Class="ml-1" StartIcon="@Icons.Material.Outlined.CancelPresentation" Color="Color.Error" OnClick="CancelClick">Hủy đơn</MudButton>
+        <MudButton Disabled="@(!quyenSuDungXuat.Them)" Size="Size.Small" Variant="Variant.Outlined" Class="ml-2" @onclick="@(() => OpenDonHangTraNoForm())" StartIcon="@Icons.Material.Outlined.FireTruck" Color="Color.Primary">Tạo đơn trả nợ</MudButton>
+        <MudButton Disabled="@(!quyenSuDungXuat.Them)" Size="Size.Small" Variant="Variant.Outlined" Class="ml-2" StartIcon="@Icons.Material.Filled.Checklist" Color="Color.Primary">Tổng hợp số lượng panel</MudButton>
+        <MudButton Disabled="@(!quyenSuDungXuat.Them)" Size="Size.Small" Variant="Variant.Outlined" Class="ml-1" StartIcon="@Icons.Material.Filled.FormatListBulleted" Color="Color.Primary">Danh sách phụ kiện</MudButton>
+    </MudToolBar>
+
+    <EditForm Model="@itemRequest">
+        <MudGrid Spacing="1">
+            <MudItem xs="12">
+                <MudInputLabel Class="mb-0">Trạng thái đơn hàng: </MudInputLabel>
+                <div class="form-check form-check-inline p-1 mb-2">
+                    <InputRadioGroup Name="TrangThaiDonHang" @bind-Value="SelectedTrangThaiDonHang">
+                        <div class="pt-1 pb-1 pl-1" style="background-color: #ffffff"><InputRadio id="trangThaiDonHang0" Name="TrangThaiDonHang" Value="@(0)" /></div><div style="background-color: #ffffff; color: #000000"><MudInputLabel ForId="trangThaiDonHang0" class="pt-1 px-1">Tất cả</MudInputLabel></div>
+                        <div class="pt-1 pb-1 pl-1" style="background-color: #90EE90"><InputRadio id="trangThaiDonHang1" Name="TrangThaiDonHang" Value="@(1)" /></div><div style="background-color: #90EE90; color: #000000"><MudInputLabel ForId="trangThaiDonHang1" class="pt-1 px-1">Đã tạo đơn</MudInputLabel></div>
+                        <div class="pt-1 pb-1 pl-1" style="background-color: #FFA500"><InputRadio id="trangThaiDonHang2" Name="TrangThaiDonHang" Value="@(2)" /></div><div style="background-color: #FFA500; color: #000000"><MudInputLabel ForId="trangThaiDonHang2" class="pt-1 px-1">Đã in LSX</MudInputLabel></div>
+                        <div class="pt-1 pb-1 pl-1" style="background-color: #008000"><InputRadio id="trangThaiDonHang3" Name="TrangThaiDonHang" Value="@(3)" /></div><div style="background-color: #008000; color: #000000"><MudInputLabel ForId="trangThaiDonHang3" class="pt-1 px-1">Đã in phiếu XK</MudInputLabel></div>
+                        <div class="pt-1 pb-1 pl-1" style="background-color: #800080"><InputRadio id="trangThaiDonHang4" Name="TrangThaiDonHang" Value="@(4)" /></div><div style="background-color: #800080; color: #ffffff"><MudInputLabel ForId="trangThaiDonHang4" class="pt-1 px-1">Đã nhận phiếu XK</MudInputLabel></div>
+                        <div class="pt-1 pb-1 pl-1" style="background-color: #FF0000"><InputRadio id="trangThaiDonHang5" Name="TrangThaiDonHang" Value="@(5)" /></div><div style="background-color: #FF0000; color: #000000"><MudInputLabel ForId="trangThaiDonHang5" class="pt-1 px-1">Đã hủy</MudInputLabel></div>
+                    </InputRadioGroup>
+                </div>
+            </MudItem>
+        </MudGrid>
+    </EditForm>
+
+    <div class="form-group">
+        <MudDataGrid T="PhieuNhapXuatAllModel"
+                     Items="@dataList"
+                     SortMode="SortMode.Multiple"
+                     Filterable="true"
+                     Virtualize="true"
+                     FixedHeader="true"
+                     DragDropColumnReordering="true"
+                     ApplyDropClassesOnDragStarted="true"
+                     DragIndicatorIcon="@Icons.Material.Filled.DragIndicator"
+                     Dense
+                     MultiSelection="true"
+                     Hover="true"
+                     Height="@(HeightGrid == 0 ? "": HeightGrid.ToString () + "px" )"
+                     @bind-SelectedItems="selectedItems"
+                     SelectedItemChanged="SetEnableButton">
+
+            <Columns>
+                <SelectColumn T="PhieuNhapXuatAllModel" ShowInFooter="false" />
+                <PropertyColumn Property="x => x.Stt" DragAndDropEnabled="false" Groupable="false" Sortable="false" Filterable="false" Title="STT" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.NgayCTDisplay" Title="Ngày CT" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.SoChungTu" Title="Số ĐH" CellStyleFunc="@_cellStyleFunc">
+                    <CellTemplate>
+                        <MudButton Disabled="@(!quyenSuDungNhap.Sua)" Color="Color.Primary" Size="Size.Small" OnClick="@(async ()=> await SuaClick(context.Item .Loai, context.Item .Id))">@context.Item.SoChungTu</MudButton>
+                    </CellTemplate>
+                </PropertyColumn>
+                <PropertyColumn Property="x => x.TrangThaiChiTietDisplay" Title="Trạng thái chi tiết" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.TenDoiTuong" Title="Tên đơn vị" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.DiaDiem" Title="Địa điểm giao hàng" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.DienGiai" Title="Diễn giải" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.LoaiTon" Title="Loại hàng" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.TenHangHoa" Title="Tên hàng hóa" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.KhoRongTon" Title="Khổ rộng tôn" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.ChieuDai" Title="Chiều dài" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.SoLuong" Title="Số lượng" CellStyleFunc="@_cellStyleFunc" AggregateDefinition="_soLuongAggregation" />
+                <PropertyColumn Property="x => x.TongChieuDai" Title="Tổng md" CellStyleFunc="@_cellStyleFunc" AggregateDefinition="_tongChieuDaiAggregation" />
+                <PropertyColumn Property="x => x.TongDienTich" Title="Tổng m2" CellStyleFunc="@_cellStyleFunc" AggregateDefinition="_tongDienTichAggregation" />
+                <PropertyColumn Property="x => x.DonGia" Title="Đơn giá" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.SoTien" Title="Số tiền" CellStyleFunc="@_cellStyleFunc" AggregateDefinition="_tongSoTienAggregation">
+                    <CellTemplate>
+                        <MudText>@context.Item.SoTien?.ToString("###,###")</MudText>
+                    </CellTemplate>
+                </PropertyColumn>
+                <PropertyColumn Property="x => x.GhiChu" Title="Ghi chú" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.TenQuanLy" Title="Nhân viên" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.TenTinh" Title="Khu vực" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.ChungLoai" Title="Chủng loại" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.KieuSong" Title="Bề mặt" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.MauSac" Title="Màu sắc" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.DoDay" Title="Độ dày" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.SoPhieuLSX" Title="Số phiếu LSX" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.NgayPhieuLSXDisplay" Title="Ngày LSX" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.NgayXuatKhoDisplay" Title="Ngày XK" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.SoPhieuXuat" Title="Số PXK" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.NgayXacNhan" Title="Ngày XN" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.NgayHuy" Title="Ngày hủy" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.TrangThaiDonHangDisplay" Title="Trạng thái đơn hàng" CellStyleFunc="@_cellStyleFunc" />
+                <PropertyColumn Property="x => x.CreatedDate" Title="Thời gian tạo" CellStyleFunc="@_cellStyleFunc" />
+
+                <TemplateColumn StickyRight="true" Filterable="false" Sortable="false" DragAndDropEnabled="false">
+                    <CellTemplate>
+                        <MudMenu Icon="@Icons.Material.Filled.MoreHoriz">
+                            <MudMenuItem Disabled>Chuyển status về trước</MudMenuItem>
+                            <MudMenuItem>Sửa lại thông tin PXK</MudMenuItem>
+                            <MudMenuItem Disabled>In lại phiếu xuất kho</MudMenuItem>
+                            <MudMenuItem Disabled>In lại lệnh SX</MudMenuItem>
+                            <MudMenuItem>In phiếu xuất kho Excel</MudMenuItem>
+                            <MudMenuItem>In lại tem xuất xưởng</MudMenuItem>
+                            <MudMenuItem>Ghép đơn hàng vào PXK</MudMenuItem>
+                        </MudMenu>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+        </MudDataGrid>
+    </div>
+
+    <EditForm id="idForm" Model="@itemRequest">
+        <MudPaper Elevation="25">
+            <MudGrid Spacing="2">
+                <MudItem Class="styleFilter ml-1" Style="width: 60px">
+                    <MudTextField @bind-Value="itemRequest.SoCT" Label="Số CT" Margin="Margin.Dense" Variant="Variant.Outlined" OnBlur="@SearchAction" OnKeyUp="@KeyUpAction"></MudTextField>
+                </MudItem>
+                <MudItem Class="styleFilter" Style="width: 70px">
+                    <MudTextField @bind-Value="itemRequest.NgayCT" Label="Ngày CT" Margin="Margin.Dense" Variant="Variant.Outlined" OnBlur="@SearchAction" OnKeyUp="@KeyUpAction"></MudTextField>
+                </MudItem>
+                <MudItem Class="styleFilter" Style="width: 120px">
+                    <MudTextField @bind-Value="itemRequest.DienGiai" Label="Diễn giải" Margin="Margin.Dense" Variant="Variant.Outlined" OnBlur="@SearchAction" OnKeyUp="@KeyUpAction"></MudTextField>
+                </MudItem>
+                <MudItem Class="styleFilter" Style="width: 70px">
+                    <MudTextField @bind-Value="itemRequest.MaDonVi" Label="Mã đơn vị" Margin="Margin.Dense" Variant="Variant.Outlined" OnBlur="@SearchAction" OnKeyUp="@KeyUpAction"></MudTextField>
+                </MudItem>
+                <MudItem Class="styleFilter" Style="width: 80px">
+                    <MudTextField @bind-Value="itemRequest.TenDonVi" Label="Tên đơn vị" Margin="Margin.Dense" Variant="Variant.Outlined" OnBlur="@SearchAction" OnKeyUp="@KeyUpAction"></MudTextField>
+                </MudItem>
+                <MudItem Class="styleFilter" Style="width: 80px">
+                    <MudTextField @bind-Value="itemRequest.DiaChi" Label="Địa chỉ" Margin="Margin.Dense" Variant="Variant.Outlined" OnBlur="@SearchAction" OnKeyUp="@KeyUpAction"></MudTextField>
+                </MudItem>
+                <MudItem Class="styleFilter" Style="width: 80px">
+                    <MudTextField @bind-Value="itemRequest.NguoiQL" Label="Người QL" Margin="Margin.Dense" Variant="Variant.Outlined" OnBlur="@SearchAction" OnKeyUp="@KeyUpAction"></MudTextField>
+                </MudItem>
+                <MudItem Class="styleFilter" Style="width: 25px">
+                    <MudTextField @bind-Value="itemRequest.NguoiQL" Label="" Margin="Margin.Dense" Variant="Variant.Outlined" OnBlur="@SearchAction" OnKeyUp="@KeyUpAction"></MudTextField>
+                </MudItem>
+                <MudItem Class="styleFilter" Style="width: 140px">
+                    <MudDatePicker Margin="Margin.Dense" Label="Thời gian giao hàng" @bind-Date="@itemRequest.ThoiGianGiaoHang" Variant="Variant.Outlined" Editable="false" DateFormat="dd/MM/yyyy" PickerClosed="@SearchAction"></MudDatePicker>
+                </MudItem>
+                <MudItem Class="styleFilter" Style="width: 90px">
+                    <MudTextField @bind-Value="itemRequest.DiaDiem" Label="Địa điểm" Margin="Margin.Dense" Variant="Variant.Outlined" OnBlur="@SearchAction" OnKeyUp="@KeyUpAction"></MudTextField>
+                </MudItem>
+            </MudGrid>
+
+            <MudGrid Spacing="2" Class="mt-2">
+                <MudItem Class="styleFilter ml-1" Style="width: 85px">
+                    <MudTextField @bind-Value="itemRequest.MaHangHoa" Label="Mã hàng hóa" Margin="Margin.Dense" Variant="Variant.Outlined" OnBlur="@SearchAction" OnKeyUp="@KeyUpAction"></MudTextField>
+                </MudItem>
+                <MudItem Class="styleFilter" Style="width: 95px">
+                    <MudTextField @bind-Value="itemRequest.TenHangHoa" Label="Tên hàng hóa" Margin="Margin.Dense" Variant="Variant.Outlined" OnBlur="@SearchAction" OnKeyUp="@KeyUpAction"></MudTextField>
+                </MudItem>
+                <MudItem Class="styleFilter ml-1" Style="width: 85px">
+                    <MudDatePicker Margin="Margin.Dense" Label="Từ ngày" @bind-Date="@itemRequest.NgayCTFrom" Variant="Variant.Outlined" Editable="false" DateFormat="dd/MM/yyyy" PickerClosed="@SearchAction"></MudDatePicker>
+                </MudItem>
+                <MudItem Class="styleFilter" Style="width: 85px">
+                    <MudDatePicker Margin="Margin.Dense" Label="Đến ngày" @bind-Date="@itemRequest.NgayCTTo" Variant="Variant.Outlined" Editable="false" DateFormat="dd/MM/yyyy" PickerClosed="@SearchAction"></MudDatePicker>
+                </MudItem>
+                <MudItem Class="styleFilter " Style="width: 75px">
+                    <MudTextField @bind-Value="itemRequest.NgayLSX" Label="Ngày LSX" Margin="Margin.Dense" Variant="Variant.Outlined" OnBlur="@SearchAction" OnKeyUp="@KeyUpAction"></MudTextField>
+                </MudItem>
+                <MudItem Class="styleFilter" Style="width: 75px">
+                    <MudTextField @bind-Value="itemRequest.SoPhieuLSX" Label="Số phiếu" Margin="Margin.Dense" Variant="Variant.Outlined" OnBlur="@SearchAction" OnKeyUp="@KeyUpAction"></MudTextField>
+                </MudItem>
+
+                <MudItem Class="styleFilter ml-1" Style="width: 75px">
+                    <MudTextField @bind-Value="itemRequest.NgayXK" Label="Ngày XK" Margin="Margin.Dense" Variant="Variant.Outlined" OnBlur="@SearchAction" OnKeyUp="@KeyUpAction"></MudTextField>
+                </MudItem>
+                <MudItem Class="styleFilter" Style="width: 80px">
+                    <MudTextField @bind-Value="itemRequest.SoPhieuXK" Label="Số phiếu XK" Margin="Margin.Dense" Variant="Variant.Outlined" OnBlur="@SearchAction" OnKeyUp="@KeyUpAction"></MudTextField>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </EditForm>
+
+    <div class="footerContent">
+        <label>@_footerContent</label>
+    </div>
+
+</div>
+
+<LoadingProgress IsLoading="isLoading"></LoadingProgress>
+
+@code {
+
+    private async Task OpenDialogAsync()
+    {
+        List<int> ListIdId = selectedItems.Select(item => item.IdId).ToList();
+        if (ListIdId.Any())
+        {
+            var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true };
+            var parameters = new DialogParameters();
+            parameters.Add("ListIdId", ListIdId);
+            var result = DialogService.Show<PrintLsx>("In LSX", parameters, options);
+            await result.Result;
+        }
+        else
+        {
+            Snackbar.Clear();
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            string msg = $"Bạn chưa chọn dữ liệu";
+            Snackbar.Add(msg, Severity.Warning);
+        }
+
+
+    }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    private QLSX.Shared.Models.QuyenSuDungModel quyenSuDung { get; set; } =
+        new QLSX.Shared.Models.QuyenSuDungModel() { Sua = false, Them = false, Xoa = false, XemIn = false, Selectted = false };
+
+    private QLSX.Shared.Models.QuyenSuDungModel quyenSuDungNhap { get; set; } =
+        new QLSX.Shared.Models.QuyenSuDungModel() { Sua = false, Them = false, Xoa = false, XemIn = false, Selectted = false };
+
+    private QLSX.Shared.Models.QuyenSuDungModel quyenSuDungXuat { get; set; } =
+        new QLSX.Shared.Models.QuyenSuDungModel() { Sua = false, Them = false, Xoa = false, XemIn = false, Selectted = false };
+
+
+    public DonDatHangModel nhapxuat { get; set; }
+    public GetDonHangResponse<PhieuNhapXuatAllModel> lsResponses { get; set; }
+    public DonHangRequest itemRequest { get; set; }
+    public bool IsVisible { get; set; }
+    public bool IsGridViewFiltered { get; set; }
+    bool isLoading = true;
+    public UserModel UserLogin;
+    public List<DanhMucKhoHangModel> lstKhoHang { get; set; }
+    public List<DanhMucLoaiTienModel> lstLoaiTien { get; set; }
+    private HashSet<PhieuNhapXuatAllModel> selectedItems = new();
+    private IEnumerable<PhieuNhapXuatAllModel> dataList = new List<PhieuNhapXuatAllModel>();
+    private string _footerContent;
+    private HubConnection _hubConnection;
+    private bool printPXKDisableStatus = true;
+    private string idid = string.Empty;
+
+    public int selecttedKhohang { get; set; }
+    public int selecttedLoaiTien { get; set; }
+    public string selecttedLoai { get; set; }
+
+    private MudDataGrid<PhieuNhapXuatAllModel> table;
+
+    public string hostReport { get; set; }
+    public int HeightGrid { get; set; } = 277;
+
+    public QLSX.Shared.Models.SettingModel itemSetting { get; set; } = new QLSX.Shared.Models.SettingModel { LoaiNhapXuat = 1 };
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Home", href: "/"),
+        new BreadcrumbItem("Tra cứu đơn hàng",href: null, disabled: true)
+    };
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    private void SetEnableButton()
+    {
+        var maDonVi = selectedItems.Select(item => item.MaDoiTuong).Distinct().ToList();
+        var trangThaiDetail = selectedItems.Select(item => item.TrangThaiDetail).Distinct().ToList();
+        printPXKDisableStatus = !(maDonVi.Count == 1 && trangThaiDetail.Count == 1 && trangThaiDetail.First() == 2);
+    }
+
+    private async Task OpenPrintPXKForm()
+    {
+        SetEnableButton();
+        if (printPXKDisableStatus)
+        {
+            return;
+        }
+        var maDonVi = selectedItems.Select(item => item.MaDoiTuong).First();
+        var tenDonVi = selectedItems.Select(item => item.TenDoiTuong).First();
+        var idIdList = selectedItems.Select(item => item.IdId).Distinct().ToList();
+
+        double soTienHang = selectedItems.Sum(item => item.SoTien) ?? 0;
+        var getSoChungTuDonHangResult = await donDatHangService.GetSoChungTuDonHangAsync(new GetSoChungTuDonHangRequest()
+            {
+                IdIdList = idIdList,
+                HoTen = await localStorageService.GetItemAsync<string>("hoTen"),
+                SoTien = soTienHang,
+                NgayCT = DateTime.Now
+            });
+        JObject jObject = JObject.Parse(getSoChungTuDonHangResult);
+        string soCt = jObject["SOCT"].ToString();
+        string idid = jObject["IDID"].ToString();
+        var parameters = new DialogParameters();
+        PrintPXKModel printPXKModel = new PrintPXKModel
+            {
+                MaDonVi = maDonVi,
+                TenDonVi = tenDonVi,
+                SoPhieuXuat = soCt,
+                Ngay = DateTime.Now,
+                SoTienHang = soTienHang,
+                GhiChu = string.Empty,
+                IdIdList = idIdList
+            };
+        CalculateTime(printPXKModel);
+        parameters.Add("PrintPXKModel", printPXKModel);
+
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small };
+        var dialog = DialogService.Show<PrintPXKDialog>("Thông tin phiếu xuất kho", parameters, options);
+        var result = await dialog.Result;
+
+        if (result.Cancelled)
+        {
+            // Logic when cancel donHang
+            await donDatHangService.CancelPXKAsync(new CancelPXKRequest()
+                {
+                    SoCt = soCt
+                });
+            return;
+        }
+        selectedItems.Clear();
+    }
+
+    private void CalculateTime(PrintPXKModel printPXKModel)
+    {
+        if (printPXKModel.Ngay?.Date == DateTime.Today)
+        {
+            printPXKModel.ThoiGian = DateTime.Now.TimeOfDay;
+        }
+        else if (printPXKModel.Ngay?.Date > DateTime.Today)
+        {
+            var numberOfOrders = GetNumberOfOrdersOnDate(printPXKModel.Ngay);
+            printPXKModel.ThoiGian = new TimeSpan(1, numberOfOrders, 0);
+        }
+    }
+
+    private void OpenDonHangTraNoForm()
+    {
+        Snackbar.Clear();
+        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+        string msg = $"Mã hàng hóa chưa có số phiếu hoặc ngày xuất kho, hãy kiểm tra lại.";
+        Snackbar.Add(msg, Severity.Warning);
+    }
+
+    private int GetNumberOfOrdersOnDate(DateTime? date)
+    {
+        return 0;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+
+        itemRequest = new DonHangRequest()
+            {
+                NgayCTFrom = DateTime.Today,
+                NgayCTTo = DateTime.Today,
+            };
+
+        lsResponses = new GetDonHangResponse<PhieuNhapXuatAllModel>();
+
+        var user = (await authenticationStateTask).User;
+        var UserId = user.FindFirst(c => c.Type == "UserId")?.Value;
+        UserId = string.IsNullOrEmpty(UserId) ? "0" : UserId;
+        quyenSuDung = await permisstionService.GetQuyenByUserIdAsync(int.Parse(UserId), "tracuudonhang");
+        quyenSuDungNhap = await permisstionService.GetQuyenByUserIdAsync(int.Parse(UserId), "donnhap");
+        quyenSuDungXuat = await permisstionService.GetQuyenByUserIdAsync(int.Parse(UserId), "donxuat");
+
+        if (quyenSuDung.Selectted)
+        {
+            lsResponses = await donDatHangService.GetAllPagedAsync(itemRequest);
+        }
+
+        dataList = lsResponses.Items;
+        GetFooterContent(lsResponses);
+
+        // register socket client
+        await RegisterSocketClient();
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task RegisterSocketClient()
+    {
+        string baseUrl = donDatHangService.GetBaseUrl().Replace("/api/", "");
+
+        string hubUrl = baseUrl + "/" + SignalRKey.HubUrl;
+
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(hubUrl)
+            .Build();
+
+        // Socket when create donHang
+        _hubConnection.On<string>(SignalRKey.CreateDonHangSocketKey, (message) =>
+        {
+            // Fetch the new records and update dataList
+            var newRecords = JsonSerializer.Deserialize<List<PhieuNhapXuatAllModel>>(message);
+            var responseData = FilterSocketData(SignalRKey.CreateDonHangSocketKey, ref newRecords);
+            if (newRecords.Any())
+            {
+                lsResponses = responseData;
+                GetFooterContent(lsResponses);
+
+                // Notify Blazor to re-render the component
+                StateHasChanged();
+            }
+        });
+
+        // Socket when update donHang
+        _hubConnection.On<string>(SignalRKey.UpdateDonHangSocketKey, (message) =>
+        {
+            // Fetch the new records and update dataList
+            var newRecords = JsonSerializer.Deserialize<List<PhieuNhapXuatAllModel>>(message);
+            var responseData = FilterSocketData(SignalRKey.UpdateDonHangSocketKey, ref newRecords);
+            if (newRecords.Any())
+            {
+                lsResponses = responseData;
+                GetFooterContent(lsResponses);
+
+                // Notify Blazor to re-render the component
+                StateHasChanged();
+            }
+        });
+
+        // Socket when delete donHang
+        _hubConnection.On<string>(SignalRKey.DeleteDonHangSocketKey, (message) =>
+        {
+            // Fetch the new records and update dataList
+            var newRecords = JsonSerializer.Deserialize<List<PhieuNhapXuatAllModel>>(message);
+            var responseData = FilterSocketData(SignalRKey.DeleteDonHangSocketKey, ref newRecords);
+            if (newRecords.Any())
+            {
+                lsResponses = responseData;
+                GetFooterContent(lsResponses);
+
+                // Notify Blazor to re-render the component
+                StateHasChanged();
+            }
+        });
+
+        // Socket when cancel donHang
+        _hubConnection.On<string>(SignalRKey.HuyDonHangSocketKey, (message) =>
+        {
+            // Fetch the new records and update dataList
+            var newRecords = JsonSerializer.Deserialize<List<PhieuNhapXuatAllModel>>(message);
+            var responseData = FilterSocketData(SignalRKey.HuyDonHangSocketKey, ref newRecords);
+            if (newRecords.Any())
+            {
+                lsResponses = responseData;
+                GetFooterContent(lsResponses);
+
+                // Notify Blazor to re-render the component
+                StateHasChanged();
+            }
+        });
+
+        try
+        {
+            await _hubConnection.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    private GetDonHangResponse<PhieuNhapXuatAllModel> FilterSocketData(string signalRKey, ref List<PhieuNhapXuatAllModel> donHangSocketList)
+    {
+        GetDonHangResponse<PhieuNhapXuatAllModel> responseData = lsResponses;
+        var query = donHangSocketList.Where(item => item.NgayCT >= itemRequest.NgayCTFrom
+                                                    && item.NgayCT <= itemRequest.NgayCTTo);
+
+        if (itemRequest.TrangThaiDonHang >= 1 && itemRequest.TrangThaiDonHang <= 5)
+        {
+            query = query.Where(item => item.TrangThaiDetail == itemRequest.TrangThaiDonHang);
+        }
+        if (!string.IsNullOrEmpty(itemRequest.SoCT))
+        {
+            query = query.Where(item => item.SoChungTu.Contains(itemRequest.SoCT));
+        }
+        if (!string.IsNullOrEmpty(itemRequest.DienGiai))
+        {
+            query = query.Where(item => item.DienGiai.Contains(itemRequest.DienGiai));
+        }
+        if (!string.IsNullOrEmpty(itemRequest.MaDonVi))
+        {
+            query = query.Where(item => item.MaDoiTuong.Contains(itemRequest.MaDonVi));
+        }
+        if (!string.IsNullOrEmpty(itemRequest.TenDonVi))
+        {
+            query = query.Where(item => item.TenDoiTuong.Contains(itemRequest.TenDonVi));
+        }
+        if (!string.IsNullOrEmpty(itemRequest.DiaChi))
+        {
+            query = query.Where(item => item.DiaChiDoiTuong.Contains(itemRequest.DiaChi));
+        }
+        if (!string.IsNullOrEmpty(itemRequest.NguoiQL))
+        {
+            query = query.Where(item => item.TenQuanLy.Contains(itemRequest.NguoiQL));
+        }
+        if (itemRequest.ThoiGianGiaoHang != null)
+        {
+            string thoiGianGiaoHangString = (itemRequest.ThoiGianGiaoHang ?? DateTime.Now).ToString("dd/MM/yyyy");
+            query = query.Where(item => item.ThoiGianGiao.Contains(thoiGianGiaoHangString));
+        }
+        if (!string.IsNullOrEmpty(itemRequest.DiaDiem))
+        {
+            query = query.Where(item => item.DiaDiem.Contains(itemRequest.DiaDiem));
+        }
+        if (!string.IsNullOrEmpty(itemRequest.MaHangHoa))
+        {
+            query = query.Where(item => item.MaHangHoa.Contains(itemRequest.MaHangHoa));
+        }
+        if (!string.IsNullOrEmpty(itemRequest.TenHangHoa))
+        {
+            query = query.Where(item => item.TenHangHoa.Contains(itemRequest.TenHangHoa));
+        }
+        if (!string.IsNullOrEmpty(itemRequest.SoPhieuLSX))
+        {
+            query = query.Where(item => item.SoPhieuLSX.Contains(itemRequest.SoPhieuLSX));
+        }
+        if (!string.IsNullOrEmpty(itemRequest.SoPhieuXK))
+        {
+            query = query.Where(item => item.SoPhieuXuat.Contains(itemRequest.SoPhieuXK));
+        }
+        if (!string.IsNullOrEmpty(itemRequest.NgayCT))
+        {
+            query = query.Where(item => item.NgayCTDisplay.StartsWith(itemRequest.NgayCT));
+        }
+        if (!string.IsNullOrEmpty(itemRequest.NgayLSX))
+        {
+            query = query.Where(item => item.NgayPhieuLSXDisplay.StartsWith(itemRequest.NgayLSX));
+        }
+        if (!string.IsNullOrEmpty(itemRequest.NgayXK))
+        {
+            query = query.Where(item => item.NgayXuatKhoDisplay.StartsWith(itemRequest.NgayXK));
+        }
+
+        donHangSocketList = query.ToList();
+        if (donHangSocketList.Any())
+        {
+            string soChungTuSocket = donHangSocketList.First().SoChungTu;
+            int maxStt = 0;
+            if (lsResponses.Items.Any())
+            {
+                int.TryParse(lsResponses.Items.Max(item => item.Stt), out maxStt);
+            }
+            switch (signalRKey)
+            {
+                case SignalRKey.CreateDonHangSocketKey:
+                    foreach (var item in donHangSocketList)
+                    {
+                        item.Stt = (maxStt + 1).ToString();
+                        maxStt++;
+                    }
+                    responseData.Items.AddRange(donHangSocketList);
+                    break;
+                case SignalRKey.UpdateDonHangSocketKey:
+                    List<int> donHangIdIdSocketUsedList = new();
+                    foreach (var donHangSocket in donHangSocketList)
+                    {
+                        // If exist donHangSocket in data list, update item except Stt
+                        // If not exist donHangSocket in data list, add donHangSocket to data list with new Stt
+                        var donHangUpdate = responseData.Items.FirstOrDefault(item => item.SoChungTu == soChungTuSocket && item.IdId == donHangSocket.IdId);
+                        if (donHangUpdate != null)
+                        {
+                            donHangSocket.Stt = donHangUpdate.Stt;
+                            donHangUpdate.UpdateLastVersion(donHangSocket);
+                        }
+                        else
+                        {
+                            donHangSocket.Stt = (maxStt + 1).ToString();
+                            maxStt++;
+                            responseData.Items.Add(donHangSocket);
+                        }
+                        donHangIdIdSocketUsedList.Add(donHangSocket.IdId);
+                    }
+                    // If item in dataList has soChungTu equal soChungTuSocket and does not exist in donHangSocketList, remove this item
+                    var donHangDeleteList = responseData.Items.Where(item => item.SoChungTu == soChungTuSocket && !donHangIdIdSocketUsedList.Contains(item.IdId)).Distinct().ToList();
+                    foreach (var removeItem in donHangDeleteList)
+                    {
+                        responseData.Items.Remove(removeItem);
+                    }
+                    break;
+                case SignalRKey.DeleteDonHangSocketKey:
+                    var donHangIdIdSocketDeletedList = donHangSocketList.Select(item => item.IdId).Distinct().ToList();
+                    donHangDeleteList = responseData.Items.Where(item => item.SoChungTu == soChungTuSocket && donHangIdIdSocketDeletedList.Contains(item.IdId)).Distinct().ToList();
+                    foreach (var removeItem in donHangDeleteList)
+                    {
+                        responseData.Items.Remove(removeItem);
+                    }
+                    break;
+                case SignalRKey.HuyDonHangSocketKey:
+                    foreach (var donHangSocket in donHangSocketList)
+                    {
+                        // If exist donHangSocket in data list, update item except Stt
+                        var donHangUpdate = responseData.Items.FirstOrDefault(item => item.IdId == donHangSocket.IdId);
+                        if (donHangUpdate != null)
+                        {
+                            donHangSocket.Stt = donHangUpdate.Stt;
+                            donHangUpdate.UpdateLastVersion(donHangSocket);
+                        }
+                    }
+                    break;
+                default:
+                    return responseData;
+            }
+
+            responseData.TotalRows = responseData.Items.Count;
+            responseData.TotalM2 = responseData.Items.Sum(item => item.TongDienTich) ?? 0;
+            responseData.TotalSoTien = responseData.Items.Sum(item => item.SoTien) ?? 0;
+            responseData.TotalMd = responseData.Items.Sum(item => item.TongChieuDai) ?? 0;
+        }
+        return responseData;
+    }
+
+    private void GetFooterContent(GetDonHangResponse<PhieuNhapXuatAllModel> lsResponses)
+    {
+        _footerContent = $"Có {lsResponses.TotalRows} dòng. Tổng cd: {lsResponses.TotalMd.ToString("###,##")}. Tổng m2: {lsResponses.TotalM2.ToString("###,##")}. Số tiền: {lsResponses.TotalSoTien.ToString("###,##")}";
+    }
+
+    AggregateDefinition<PhieuNhapXuatAllModel> _soLuongAggregation = new AggregateDefinition<PhieuNhapXuatAllModel>
+        {
+            Type = AggregateType.Custom,
+            CustomAggregate = x =>
+           {
+               var value = x.Sum(z => z.SoLuong);
+               return $"{value?.ToString("###,##")}";
+           }
+        };
+
+    AggregateDefinition<PhieuNhapXuatAllModel> _tongSoTienAggregation = new AggregateDefinition<PhieuNhapXuatAllModel>
+        {
+            Type = AggregateType.Custom,
+            CustomAggregate = x =>
+           {
+               var value = x.Sum(z => z.SoTien);
+               return $"{value?.ToString("###,##")}";
+           }
+        };
+
+    AggregateDefinition<PhieuNhapXuatAllModel> _tongDienTichAggregation = new AggregateDefinition<PhieuNhapXuatAllModel>
+        {
+            Type = AggregateType.Custom,
+            CustomAggregate = x =>
+           {
+               var value = x.Sum(z => z.TongDienTich);
+               return $"{value?.ToString("###,##")}";
+           }
+        };
+
+    AggregateDefinition<PhieuNhapXuatAllModel> _tongChieuDaiAggregation = new AggregateDefinition<PhieuNhapXuatAllModel>
+        {
+            Type = AggregateType.Custom,
+            CustomAggregate = x =>
+           {
+               var value = x.Sum(z => z.TongChieuDai);
+               return $"{value?.ToString("###,##")}";
+           }
+        };
+
+    private Func<PhieuNhapXuatAllModel, string> _cellStyleFunc => x =>
+    {
+        string style = string.Empty;
+        if (x.TrangThaiDetail != null)
+        {
+            switch (x.TrangThaiDetail)
+            {
+                case 1:
+                    style += "background-color: #90EE90; color: #000000";
+                    break;
+                case 2:
+                    style += "background-color: #FFA500; color: #000000";
+                    break;
+                case 3:
+                    style += "background-color: #008000; color: #000000";
+                    break;
+                case 4:
+                    style += "background-color: #800080; color: #ffffff;";
+                    break;
+                case 5:
+                    style += "background-color: #FF0000; color: #000000";
+                    break;
+            }
+        }
+        return style;
+    };
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isLoading = true;
+            lstKhoHang = await dmkhohangService.GetAllAsync();
+            lstLoaiTien = await dmLoaiTienService.GetAllAsync();
+            hostReport = configuration.GetValue<string>("AppSettings:ReportUrl");
+            var user = (await authenticationStateTask).User;
+            var UserId = user.FindFirst(c => c.Type == "UserId")?.Value;
+            UserId = string.IsNullOrEmpty(UserId) ? "0" : UserId;
+            itemSetting = await itemService.GetByIdAsync(int.Parse(UserId));
+            var dimension = await JSRuntime.InvokeAsync<WindowDimensions>("getWindowSize");
+            HeightGrid = dimension.Height - dimension.FormHeight - dimension.ToolbarHeight - 150;
+
+            isLoading = false;
+            StateHasChanged();
+        }
+        //await JSRuntime.InvokeAsync<object>("TestDataTablesAdd", "#GridTable");
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task CancelClick()
+    {
+        var parameters = new DialogParameters { ["ConfirmContent"] = "Bạn có chắc chắn muốn hủy những đơn hàng đã chọn không?" };
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var dialog = DialogService.Show<ConfirmDeleteDialog>("Xác nhận hủy đơn", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Cancelled)
+        {
+            await CancelAction();
+        }
+    }
+
+    private async Task CancelAction()
+    {
+        var ididList = selectedItems.Select(item => item.IdId).ToList();
+        if (!ididList.Any())
+        {
+            return;
+        }
+        int trangThai = 5; // trangthai = 5 when cancel donHang
+        DateTime ngay = DateTime.Now;
+        string spx = string.Empty;
+        await UpdateTrangThai(trangThai, ididList, ngay, spx);
+        selectedItems.Clear();
+        StateHasChanged();
+    }
+
+    private async Task UpdateTrangThai(int trangThai, List<int> selectedIds, DateTime ngay, string spx)
+    {
+        var request = new UpdateTrangThaiRequest
+            {
+                TrangThai = trangThai,
+                IdIdList = selectedIds,
+                Ngay = ngay,
+                Spx = spx
+            };
+
+        var success = await donDatHangService.UpdateTrangThaiDonHangAsync(request);
+    }
+
+    public void Dispose()
+    {
+    }
+
+    private async Task CreateDonHangClick()
+    {
+        if (nhapxuat == null)
+        {
+            nhapxuat = new DonDatHangModel();
+        }
+        var parameters = new DialogParameters { ["nhapxuat"] = nhapxuat, ["loaiNX"] = "donhang", ["Title"] = "Tạo Phiếu xuất" };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.ExtraExtraLarge, FullWidth = true };
+        var result = await DialogService.Show<QLSX.Web.Pages.NhapXuatPage.NhapXuatsCreate>("Tạo mới đơn đặt hàng", parameters, options).Result;
+        if (!result.Canceled)
+        {
+            var itemSelected = (PhieuNhapXuatAllModel)(result.Data ?? null);
+            if (itemSelected != null)
+            {
+                await table.ReloadServerData();
+            }
+        }
+    }
+
+    private int selectedValue;
+    public int SelectedTrangThaiDonHang
+    {
+        get { return selectedValue; }
+        set
+        {
+            selectedValue = value;
+            itemRequest.TrangThaiDonHang = selectedValue;
+            SearchAction();
+        }
+    }
+
+    private async Task KeyUpAction(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchAction();
+        }
+    }
+
+    private DonHangRequest previousItemRequest;
+    private async Task SearchAction()
+    {
+        if (itemRequest.Equals(previousItemRequest))
+        {
+            return;
+        }
+        isLoading = true;
+        if (quyenSuDung.Selectted)
+        {
+            lsResponses = await donDatHangService.GetAllPagedAsync(itemRequest);
+        }
+        dataList = lsResponses.Items;
+        isLoading = false;
+        GetFooterContent(lsResponses);
+        previousItemRequest = itemRequest.Clone();
+        StateHasChanged();
+    }
+
+    private async Task SuaClick(string loai, int id)
+    {
+        string title = "Sửa đơn hàng";
+
+        var parameters = new DialogParameters { ["NhapXuatId"] = id, ["loaiNX"] = loai, ["Title"] = title };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.ExtraExtraLarge, FullScreen = true, FullWidth = true };
+        var result = await DialogService.Show<QLSX.Web.Pages.NhapXuatPage.NhapXuatEdit>("Sửa", parameters, options).Result;
+        if (!result.Canceled)
+        {
+            var itemSelected = (PhieuNhapXuatAllModel)(result.Data ?? null);
+            if (itemSelected != null)
+            {
+                await table.ReloadServerData();
+            }
+        }
+    }
+
+    private async Task ExportExcel()
+    {
+        byte[] fileContents;
+        MemoryStream stream = new();
+        var listData = await donDatHangService.ExportToExcelAsync(itemRequest);
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        if (listData != null)
+        {
+            using (var package = new ExcelPackage())
+            {
+                var workSheet = package.Workbook.Worksheets.Add("DonDatHang_Sheet_1");
+
+                // Set default width cho tất cả column
+                workSheet.DefaultColWidth = 20;
+                // Tự động xuống hàng khi text quá dài
+                workSheet.Cells.Style.WrapText = true;
+
+                #region Header excel
+                workSheet.Cells[1, 1].Value = "Loại";
+                workSheet.Cells[1, 1].Style.Font.Size = 12;
+                workSheet.Cells[1, 1].Style.Font.Bold = true;
+                workSheet.Cells[1, 1].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 2].Value = "Ngày lập";
+                workSheet.Cells[1, 2].Style.Font.Size = 12;
+                workSheet.Cells[1, 2].Style.Font.Bold = true;
+                workSheet.Cells[1, 2].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 3].Value = "Số phiếu";
+                workSheet.Cells[1, 3].Style.Font.Size = 12;
+                workSheet.Cells[1, 3].Style.Font.Bold = true;
+                workSheet.Cells[1, 3].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 4].Value = "Mã đơn vị";
+                workSheet.Cells[1, 4].Style.Font.Size = 12;
+                workSheet.Cells[1, 4].Style.Font.Bold = true;
+                workSheet.Cells[1, 4].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 5].Value = "Tên đơn vị";
+                workSheet.Cells[1, 5].Style.Font.Size = 12;
+                workSheet.Cells[1, 5].Style.Font.Bold = true;
+                workSheet.Cells[1, 5].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 6].Value = "Địa chỉ";
+                workSheet.Cells[1, 6].Style.Font.Size = 12;
+                workSheet.Cells[1, 6].Style.Font.Bold = true;
+                workSheet.Cells[1, 6].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 7].Value = "Tổng tiền hàng";
+                workSheet.Cells[1, 7].Style.Font.Size = 12;
+                workSheet.Cells[1, 7].Style.Font.Bold = true;
+                workSheet.Cells[1, 7].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 8].Value = "Loại tiền";
+                workSheet.Cells[1, 8].Style.Font.Size = 12;
+                workSheet.Cells[1, 8].Style.Font.Bold = true;
+                workSheet.Cells[1, 8].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 9].Value = "Số tiền TT";
+                workSheet.Cells[1, 9].Style.Font.Size = 12;
+                workSheet.Cells[1, 9].Style.Font.Bold = true;
+                workSheet.Cells[1, 9].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 10].Value = "Kho hàng";
+                workSheet.Cells[1, 10].Style.Font.Size = 12;
+                workSheet.Cells[1, 10].Style.Font.Bold = true;
+                workSheet.Cells[1, 10].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+                #endregion
+
+                #region Body excel
+                int rowIndex = 2;
+                foreach (var item in listData.Items)
+                {
+                    workSheet.Cells[rowIndex, 1].Value = item.Loai;
+                    workSheet.Cells[rowIndex, 1].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 1].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 1].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 2].Value = item.NgayCT;
+                    workSheet.Cells[rowIndex, 2].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 2].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 2].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 3].Value = item.SoChungTu;
+                    workSheet.Cells[rowIndex, 3].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 3].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 3].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 4].Value = item.MaDonVi;
+                    workSheet.Cells[rowIndex, 4].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 4].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 4].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 5].Value = item.TenDonVi;
+                    workSheet.Cells[rowIndex, 5].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 5].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 5].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 6].Value = item.DiaChiDoiTuong;
+                    workSheet.Cells[rowIndex, 6].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 6].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 6].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+
+                    rowIndex++;
+                }
+                #endregion
+
+                fileContents = await package.GetAsByteArrayAsync();
+            };
+
+            await JSRuntime.InvokeAsync<QLSX.Shared.Models.DMPhongBan>(
+                "saveAsFile",
+                $"DonDatHang_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.xlsx",
+                Convert.ToBase64String(fileContents)
+            );
+        }
+
+
+    }
+    // style the cells according to the element's physical classification and the molar mass.
+    private Func<PhieuNhapXuatAllModel, string> _cellNumberStyleFunc => x =>
+    {
+        string style = "";
+        style = "text-align: end";
+        return style;
+    };
+
+}

@@ -1,0 +1,59 @@
+﻿@inject ILogger<Delete> Logger
+@inject IJSRuntime JSRuntime
+@inject IDMKhoanThuService<DanhMucKhoanThuModel> itemService
+@inherits QLSX.Web.Helpers.BlazorComponent
+
+@namespace QLSX.Web.Pages.DanhMucKhoanThuModelPage
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.DeleteForever" Class="mr-3 mb-n1" />
+            Xóa
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudGrid Spacing="0">
+            <MudItem xs="4" sm="2">
+                <MudText> Mã khoản thu </MudText>
+            </MudItem>
+            <MudItem xs="4" sm="6">
+                <MudTextField Margin="Margin.Dense" @bind-Value="@server.MaKhoanThu" Label="Mã khoản thu" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="4" sm="4">
+            </MudItem>
+            <MudItem xs="6" sm="2">
+                <MudText> Tên khoản thu </MudText>
+            </MudItem>
+
+            <MudItem xs="6" sm="10">
+                <MudTextField Margin="Margin.Dense" @bind-Value="@server.TenKhoanThu" Label="Tên khoản thu" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="6" sm="2">
+                <MudText> Ghi chú </MudText>
+            </MudItem>
+            <MudItem xs="6" sm="10">
+                <MudTextField Margin="Margin.Dense" @bind-Value="@server.GhiChu" Label="Ghi chú" Variant="Variant.Outlined" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel" Variant="Variant.Filled" Color="Color.Error" >Bỏ qua</MudButton>
+        <MudButton StartIcon="@Icons.Material.Filled.Delete" Color="Color.Primary" Variant="Variant.Filled" OnClick="@(() => DeleteClick(server.Id))" Class="me-3">Xóa</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public DanhMucKhoanThuModel server { get; set; } = new DanhMucKhoanThuModel();
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    private async Task DeleteClick(int id)
+    {
+        var isdelete = await itemService.DeleteAsync(id);
+        MudDialog.Close(DialogResult.Ok(isdelete));
+    }
+ }

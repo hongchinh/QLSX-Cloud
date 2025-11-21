@@ -1,0 +1,81 @@
+﻿@using QLSX.Shared.Data.Responses
+@using QLSX.Shared.Data.Responses.ThuChi
+
+@model ReportResponseBase<InPhieuThuChiResponse>
+
+<!DOCTYPE html>
+<html>
+<head>
+	<link rel="stylesheet" href="@(Model.Host)/lib/bootstrap/dist/css/bootstrap.css" />
+	<link rel="stylesheet" href="@(Model.Host)/lib/bootstrap/dist/css/bootstrap-grid.css" />
+	<link rel="stylesheet" href="@(Model.Host)/lib/bootstrap/dist/css/bootstrap-reboot.css" />
+	<link rel="stylesheet" href="@(Model.Host)/lib/bootstrap/dist/css/bootstrap-theme.css" />
+
+	<link rel="stylesheet" href="@(Model.Host)/css/report.css" />
+
+	<title>Phiếu Chi - @Model.ListData?.First()?.SoPhieu</title>
+</head>
+<body>
+	<div class="row" style="margin-top:10px !important">
+		<div class="col-md-12" style="text-align:center"> <h1>Phiếu Thu </h1> </div>
+	</div>
+	<div class="row" style="margin-top:5px !important">
+		<div class="col-md-12" style="text-align:center"> Ngày: @Model.ListData?.First().NgayCT.ToString("dd/MM/yyyy") </div>
+	</div>
+	@if (Model.ListData != null)
+	{
+		<div class="row mt-5">
+			<div>Họ tên người nộp tiền: <b> @Model.ListData?.First()?.TenDoiTuong </b> </div> 
+		</div>
+		 <div class="row mt-5">
+			<div>Địa chỉ: <b> @Model.ListData?.First()?.DiaChi </b> </div> 
+		</div>
+		<div class="row mt-5">
+			<div>Lý do thu: <b> @Model.ListData?.First()?.TenKhoanThu </b> </div> 
+		</div>
+		<div class="row mt-5">
+			<div>Loại tiền: <b> @Model.ListData?.First()?.LoaiTien </b> </div> 
+		</div>
+		<div class="row mt-5">
+			<div>Số tiền (*):  <b> @Model.ListData?.First()?.SoTien  đồng</b> </div> 
+		</div>
+		<div class="row mt-5">
+			<div>Viết bằng chữ :  <b> @Model.ListData?.First()?.BangChu</b> </div> 
+		</div>
+		<div class="row mt-5">
+			<div>Kèm theo:       Chứng từ gốc</div> 
+		</div>
+
+	}
+		<div class="row mt-5">
+			<div class="col-4 font-weight-bold">@Model.ThongTin.ChucDanhThuTruong </div>
+			<div class="col-4 font-weight-bold">@Model.ThongTin.ChucDanhKeToan </div>
+			<div class="col-4 font-weight-bold">@Model.ThongTin.ChucDanhLapBieu </div>
+		</div>
+		<div style="height:120px" >
+		 
+		 
+		 
+		</div>
+		<div class="row mt-5">
+			<div class="col-4 font-weight-bold">@Model.ThongTin.HoTenThuTruong </div>
+			<div class="col-4 font-weight-bold">@Model.ThongTin.HoTenKeToan </div>
+			<div class="col-4 font-weight-bold">@Model.ThongTin.HoTenNguoiLapBieu </div>
+		</div>
+	<table width="100%">
+		<tr>
+			<td style="width:20%"></td> 
+			<td style="width:20%"></td> 
+			<td style="width:15%"></td> 
+			<td style="text-align: center; width:25%"><h4><i>@Model.ThongTin.NgayThangLB  </i></h4></td> 
+		</tr>
+		<tr>
+			<td style="text-align: center"> <h4><b>Thủ quỹ</b></h4> </td> 
+			<td></td> 
+			<td></td> 
+			<td style="text-align: center"><h4><b>Người nhận tiền</b></h4></td> 
+		</tr>
+	</table>	
+
+</body>
+</html>

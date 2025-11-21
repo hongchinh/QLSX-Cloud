@@ -1,0 +1,85 @@
+﻿@page "/tonghopdongtien"
+@using ChartJs.Blazor.LineChart
+@using QLSX.Web.Extensions
+@using ChartJs.Blazor
+@using ChartJs.Blazor.Common
+@using ChartJs.Blazor.Common.Axes
+@using ChartJs.Blazor.Common.Axes.Ticks
+@using ChartJs.Blazor.Common.Enums
+@using ChartJs.Blazor.Common.Handlers
+@using ChartJs.Blazor.Common.Time
+@using ChartJs.Blazor.Util
+@using ChartJs.Blazor.Interop
+@using ChartJs.Blazor.BarChart
+@using System.Drawing
+@using static QLSX.Shared.Ultils.ChartUtils
+@inject IThongKeService thongkeService
+
+<MudPaper Elevation="25" Class="py-8 px-8" Style="padding-top:2px !important">
+    <MudGrid>
+        <MudItem xs="12" sm="3">
+            <MudDatePicker Label="Từ ngày" Editable="true" @bind-Date="fromDate" Placeholder="Chọn ngày" />
+            <MudDatePicker Label="Đến ngày" Editable="true" @bind-Date="toDate" Placeholder="Chọn ngày" />
+        </MudItem>
+        <MudItem xs="12" sm="3">
+            <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Secondary" Size="MudBlazor.Size.Large" OnClick="RebindingDate">Xem</MudButton>
+        </MudItem>
+        <MudItem xs="12" sm="6">
+        </MudItem>
+        <MudItem xs="12">
+            <MudTable Items="@lstData" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">Tổng hợp dòng tiền</MudText>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Chỉ tiêu</MudTh>
+                    <MudTh>Số dư đầu</MudTh>
+                    <MudTh>Số tăng</MudTh>
+                    <MudTh>Số giảm</MudTh>
+                    <MudTh>Số còn lại</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Chỉ tiêu">@context.TenLoaiTien</MudTd>
+                    <MudTd DataLabel="Số đầu kỳ" Style="text-align:right">@context.SoDuDau.ToString("###,###")</MudTd>
+                    <MudTd DataLabel="Số tăng" Style="text-align:right">@context.SoTienThu.ToString("###,###")</MudTd>
+                    <MudTd DataLabel="Số giảm" Style="text-align:right">@context.SoTienChi.ToString("###,###")</MudTd>
+                    <MudTd DataLabel="Số còn lại" Style="text-align:right">@context.SoDuCuoiKy.ToString("###,###")</MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText>Không có bản ghi nào tìm thấy</MudText>
+                </NoRecordsContent>
+                <LoadingContent>
+                    <MudText>Đang tải dữ liệu...</MudText>
+                </LoadingContent>
+            </MudTable>
+        </MudItem>
+
+    </MudGrid>
+</MudPaper>
+
+@code {
+
+    private DateTime? fromDate { get; set; } = DateTime.Now;
+    private DateTime? toDate { get; set; } = DateTime.Now;
+    public static List<TongHopDongTienModel> lstData { get; set; } = new List<TongHopDongTienModel>();
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var lst = await thongkeService.TongHopDongTienAsync(fromDate ?? DateTime.Now, toDate ?? DateTime.Now);
+            if (lst != null)
+            {
+                lstData = lst;
+            }
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task RebindingDate()
+    {
+        lstData = await thongkeService.TongHopDongTienAsync(fromDate ?? DateTime.Now, toDate ?? DateTime.Now);
+        StateHasChanged();
+    }
+}

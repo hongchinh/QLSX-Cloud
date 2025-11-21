@@ -1,0 +1,140 @@
+﻿@using System.Net
+@using System.Text
+@using QLSX.Web.Helpers
+@using QLSX.Shared.Models;
+@using System.Net.Http.Json
+@inject ILogger<DialogHangHoa> Logger
+@inject IJSRuntime jsRuntime
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject INhapXuatsService<NhapXuatModel> nhapxuatService
+@inject AppService AppService
+
+
+@namespace Dialogs
+
+<MudDialog DisableSidePadding="true">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Search" Class="mr-3" /> Tìm kiếm nhanh nhập xuất
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudContainer>
+            <EditForm Model="thuchi">
+                <MudToolBar Style="height:20px">
+                    <MudIconButton Icon="@Icons.Material.Filled.FirstPage" @onclick="@(e => NavigateTo("first"))" Color="Color.Inherit" Title="Đầu" />
+                    <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" @onclick="@(e => NavigateTo("prev"))" Color="Color.Inherit" Title="Trước" />
+                    <InputNumber @oninput="@((input) => ChangeValueRow(input))" @bind-Value="@CurrentIndex" style="width: 40px; font-weight:bold" />
+                    <div style="font-weight:bold">/@TotalIndex  </div>
+                    <MudIconButton Icon="@Icons.Material.Filled.NavigateNext" @onclick="@(e => NavigateTo("next"))" Color="Color.Inherit" Title="Tiếp" />
+                    <MudIconButton Icon="@Icons.Material.Filled.LastPage" @onclick="@(e => NavigateTo("last"))" Color="Color.Inherit" Title="Cuối" />
+                </MudToolBar>
+                <MudTextField @bind-Value="request.MaDonVi" Label="Mã đơn vị"></MudTextField>
+                <MudTextField @bind-Value="request.TenDonVi" Label="Tên đơn vị"></MudTextField>
+                <MudTextField @bind-Value="request.DiaChi" Label="Địa chỉ"></MudTextField>
+                <MudTextField @bind-Value="request.MaHangHoa" Label="Mã Hàng hóa"></MudTextField>
+                <MudTextField @bind-Value="request.TenHangHoa" Label="Tên hàng hóa"></MudTextField>
+                <MudTextField @bind-Value="request.DonViTinh" Label="Đơn vị tính"></MudTextField>
+            </EditForm>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="TimKiemNhanh" Class="px-10">Tìm kiếm</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Close" Class="px-10">Đóng</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public string Loai { get; set; }
+    [Parameter] public EventCallback<int> TimNhanhCalback { get; set; }
+    //navigator
+    #region "navigator"
+    public int CurrentIndex { get; set; }
+    public int TotalIndex { get; set; } = 0;
+
+    async Task UpdateList(int index = 0)
+    {
+        if (TotalIndex != 0)
+        {
+            await MoveToIndex(index.ToString());
+        }
+    }
+
+    async Task NavigateTo(string direction)
+    {
+        int tmp = 1;
+        int countAll = TotalIndex;
+        switch (direction)
+        {
+            case "prev":
+                tmp = CurrentIndex - 1;
+                CurrentIndex = Math.Max(1, tmp);
+                break;
+            case "next":
+                tmp = CurrentIndex + 1;
+                CurrentIndex = Math.Min(countAll, tmp);
+                break;
+            case "first":
+                CurrentIndex = 1;
+                break;
+            case "last":
+                CurrentIndex = countAll;
+                break;
+            default:
+                CurrentIndex = countAll;
+                break;
+        }
+
+        StateHasChanged();
+
+        await UpdateList(CurrentIndex);
+    }
+    private async Task ChangeValueRow(ChangeEventArgs input)
+    {
+        int value = 1;
+        int.TryParse(input.Value.ToString(), out value);
+        CurrentIndex = value >= TotalIndex ? TotalIndex : value;
+        await UpdateList(CurrentIndex);
+    }
+    #endregion
+
+    public List<QLSX.Web.Data.Responses.NavigatorResponse> lstIds { get; set; }
+    public QLSX.Web.Data.Responses.NavigatorResponse thuchi { get; set; } = new QLSX.Web.Data.Responses.NavigatorResponse();
+    public NhapXuatSearchRequest request { get; set; } = new NhapXuatSearchRequest();
+
+    private async Task TimKiemNhanh()
+    {
+        var lsResponses = new GetAllResponsePaged<QLSX.Web.Data.Responses.NavigatorResponse>();
+        request.Loai = Loai;
+        lsResponses = await nhapxuatService.TimKiemNhanhAsync(request);
+        lstIds = lsResponses.Items;
+        TotalIndex = lstIds?.Count ?? 0;
+        CurrentIndex = TotalIndex;
+        StateHasChanged();
+        if (lstIds?.Count > 0)
+        {
+            await TimNhanhCalback.InvokeAsync(lstIds[TotalIndex - 1].Id);
+        }
+    }
+
+    private async Task Close()
+    {
+        MudDialog.Close();
+    }
+    private async Task MoveToIndex(string index)
+    {
+        int iindex = 0;
+        int.TryParse(index, out iindex);
+        foreach (var item in lstIds)
+        {
+            if (item.Index == iindex - 1)
+            {
+                await TimNhanhCalback.InvokeAsync(item.Id);
+                break;
+            }
+
+        }
+    }
+
+
+}

@@ -1,0 +1,19 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "QLSX-Web\\QLSX.Web.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "QLSX-API\\QLSX.API\\QLSX.API.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "QLSX-Report\\QLSX.Report.csproj",
+        "Action": "StartWithoutDebugging"
+      }
+    ]
+  }
+]

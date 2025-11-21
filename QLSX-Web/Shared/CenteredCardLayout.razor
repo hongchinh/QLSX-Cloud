@@ -1,0 +1,13 @@
+﻿@layout LoginLayout
+@inherits LayoutComponentBase
+
+<MudThemeProvider Theme="_currentTheme" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<center>
+    @Body
+</center>
+
+@code{
+    private MudTheme _currentTheme = new MudTheme();
+}

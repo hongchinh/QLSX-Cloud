@@ -1,0 +1,237 @@
+﻿@page "/ThongKeDoanhThuThang"
+@using ChartJs.Blazor.LineChart
+@using QLSX.Web.Extensions
+@using ChartJs.Blazor
+@using ChartJs.Blazor.Common
+@using ChartJs.Blazor.Common.Axes
+@using ChartJs.Blazor.Common.Axes.Ticks
+@using ChartJs.Blazor.Common.Enums
+@using ChartJs.Blazor.Common.Handlers
+@using ChartJs.Blazor.Common.Time
+@using ChartJs.Blazor.Util
+@using ChartJs.Blazor.Interop
+@using ChartJs.Blazor.BarChart
+@using System.Drawing
+@using static QLSX.Shared.Ultils.ChartUtils
+@inject IThongKeService thongkeService
+
+<MudPaper Elevation="25" Class="py-8 px-8" Style="padding-top:2px !important">
+    <MudGrid>
+        <MudItem xs="12" sm="3">
+            <MudSelect T="int" Label="Năm xem doanh thu" AnchorOrigin="Origin.BottomCenter" @bind-Value="CurrentYear" Variant="Variant.Outlined">
+                @for (int i = 0; i <= 5; i++)
+                {
+                    <MudSelectItem T="int" Value="@(Year- i)"></MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="3">
+            <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Secondary" Size="MudBlazor.Size.Large" OnClick="RebindingDate">Xem</MudButton>
+        </MudItem>
+        <MudItem xs="12" sm="6">
+        </MudItem>
+
+        <MudItem xs="12">
+            <Chart Config="_config" @ref="_chart" ChartOptions="options"></Chart>
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudTable Items="@lstPreYear" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">Bảng dữ liệu doanh thu năm @(CurrentYear-1)</MudText>
+                    <MudSpacer />
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Tháng</MudTh>
+                    <MudTh>Doanh thu</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Tháng">@context.ColumnName</MudTd>
+                    <MudTd DataLabel="Doanh thu" Style="text-align:right">@context.Value.ToString("###,###")</MudTd>
+                </RowTemplate>
+                <FooterContent>
+                    <MudTd Class="mud-table-cell-custom-group mud-table-cell-custom-group-footer"> Tổng cộng</MudTd>
+                    <MudTd Class="mud-table-cell-custom-group mud-table-cell-custom-group-footer" Style="text-align:right">@lstPreYear.Sum(x=>x.Value).ToString("###,###")</MudTd>
+                </FooterContent>
+            </MudTable>
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudTable Items="@lstCurrentYear" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm">
+                <ToolBarContent>
+                    <MudText Typo="Typo.h6">Bảng dữ liệu doanh thu năm @(CurrentYear) </MudText>
+                    <MudSpacer />
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Tháng</MudTh>
+                    <MudTh>Doanh thu</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Tháng">@context.ColumnName</MudTd>
+                    <MudTd DataLabel="Doanh thu" Style="text-align:right">@context.Value.ToString("###,###")</MudTd>
+                </RowTemplate>
+                 <FooterContent>
+                        <MudTd Class="mud-table-cell-custom-group mud-table-cell-custom-group-footer">Tổng cộng</MudTd>
+                        <MudTd Class="mud-table-cell-custom-group mud-table-cell-custom-group-footer" Style="text-align:right">@lstCurrentYear.Sum(x=>x.Value).ToString("###,###")</MudTd>
+                    </FooterContent>
+            </MudTable>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@code {
+    private int InitalCount = 10;
+    private LineConfig _config;
+    private Random _rng = new Random();
+    private Chart _chart;
+    private int CurrentYear { get; set; } = DateTime.Now.Year;
+    private int Year { get; set; } = DateTime.Now.Year;
+    private ChartOptions options = new ChartOptions();
+
+    public static List<ThongKeDoanhThu> lstData { get; set; } = new List<ThongKeDoanhThu>()
+    {
+        new ThongKeDoanhThu { ColumnName = "1",Id = 888, Value =1 },
+        new ThongKeDoanhThu { ColumnName = "2",Id = 888, Value =1 },
+        new ThongKeDoanhThu { ColumnName = "3",Id = 888, Value =1 },
+        new ThongKeDoanhThu { ColumnName = "4",Id = 888, Value =1 },
+        new ThongKeDoanhThu { ColumnName = "5",Id = 888, Value =1 },
+        new ThongKeDoanhThu { ColumnName = "1",Id = 999, Value =1 },
+        new ThongKeDoanhThu { ColumnName = "2",Id = 999, Value =2 },
+        new ThongKeDoanhThu { ColumnName = "3",Id = 999, Value =3 },
+        new ThongKeDoanhThu { ColumnName = "4",Id = 999, Value =4 },
+        new ThongKeDoanhThu { ColumnName = "5",Id = 999, Value =5 },
+    };
+    public List<ThongKeDoanhThu> lstCurrentYear { get; set; } = new List<ThongKeDoanhThu>();
+    public List<ThongKeDoanhThu> lstPreYear { get; set; } = new List<ThongKeDoanhThu>();
+    protected override async void OnInitialized()
+    {
+        InnitConfig();
+    }
+    private void InnitConfig()
+    {
+
+        _config = new LineConfig
+            {
+                Options = new LineOptions
+                {
+                    Responsive = true,
+                    Title = new OptionsTitle
+                    {
+                        Display = true,
+                        Text = "BIỂU ĐỒ DOANH THU NĂM",
+                    },
+
+                }
+            };
+
+        IDataset<double> dataset1 = new LineDataset<double>(RandomScalingFactor(5))
+            {
+
+                Label = $"Doanh thu năm trước ",
+                SteppedLine = ChartJs.Blazor.Common.Enums.SteppedLine.False,
+                BorderColor = ColorUtil.FromDrawingColor(ChartColors.Red),
+                Fill = FillingMode.Disabled,
+            };
+
+        IDataset<double> dataset2 = new LineDataset<double>(RandomScalingFactor(5))
+            {
+
+                Label = $"Doanh thu năm hiện tại",
+                SteppedLine = ChartJs.Blazor.Common.Enums.SteppedLine.False,
+                BorderColor = ColorUtil.FromDrawingColor(ChartColors.Blue),
+                Fill = FillingMode.Disabled
+            };
+        _config.Data.Labels.Clear();
+        _config.Data.Datasets.Clear();
+        _config.Data.Labels.AddRange(Months.Take(5));
+        _config.Data.Datasets.Add(dataset1);
+        _config.Data.Datasets.Add(dataset2);
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+        if (firstRender)
+        {
+            //isLoading = false;
+            lstData = await thongkeService.ThongKeDoanhThuAsync(CurrentYear);
+
+            InitalCount = lstData.Count / 2;
+            lstCurrentYear = lstData.Where(x => x.Id == CurrentYear).ToList();
+            lstPreYear = lstData.Where(x => x.Id == CurrentYear - 1).ToList();
+            GetDataForChart(InitalCount);
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+    public IEnumerable<double> GetCurrentYear(int count)
+    {
+        double[] factors = new double[count];
+        var lst = lstData.Where(x => x.Id == CurrentYear).OrderBy(x => x.ColumnName).Select(x => x.Value).ToList();
+        for (int i = 0; i < count; i++)
+        {
+            factors[i] = double.Parse(lst[i].ToString());
+        }
+        return factors;
+    }
+    public IEnumerable<double> GetPreYear(int count)
+    {
+        double[] factors = new double[count];
+
+        var lst = lstData.Where(x => x.Id == CurrentYear - 1).OrderBy(x => x.ColumnName).Select(x => x.Value).ToList();
+        for (int i = 0; i < count; i++)
+        {
+            factors[i] = double.Parse(lst[i].ToString());
+        }
+        return factors;
+    }
+    public IEnumerable<string> GetLabel(int count)
+    {
+        var lst = lstData.Where(x => x.Id == CurrentYear).OrderBy(x => x.ColumnName).Select(x => x.ColumnName).Take(count).ToList();
+        return lst;
+    }
+    private void GetDataForChart(int count)
+    {
+        int i = 0;
+        List<double> lst = new List<double>();
+        foreach (IDataset<double> dataset in _config.Data.Datasets)
+        {
+            dataset.Clear();
+            if (i == 0)
+            {
+                lst = GetPreYear(count).ToList();
+                for (int j = 0; j < count; j++)
+                {
+                    var value = lst[j];
+                    dataset.Add(value);
+                }
+            }
+            else
+            {
+                lst = GetCurrentYear(count).ToList();
+                for (int j = 0; j < count; j++)
+                {
+                    var value = lst[j];
+                    dataset.Add(value);
+                }
+            }
+            i++;
+        }
+        _config.Data.Labels.Clear();
+        List<string> lst1 = GetLabel(count).ToList();
+        foreach (var item in lst1)
+        {
+            _config.Data.Labels.Add(item.ToString());
+        }
+        
+        _chart.Update();
+    }
+
+    private async Task RebindingDate()
+    {
+        lstData = await thongkeService.ThongKeDoanhThuAsync(CurrentYear);
+        lstCurrentYear = lstData.Where(x => x.Id == CurrentYear).ToList();
+        lstPreYear = lstData.Where(x => x.Id == CurrentYear - 1).ToList();
+        InitalCount = lstData.Count / 2;
+        GetDataForChart(InitalCount);
+        StateHasChanged();
+    }
+}

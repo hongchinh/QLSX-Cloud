@@ -1,0 +1,72 @@
+﻿@page "/customer"
+
+@using Blazored.LocalStorage
+
+@attribute [Authorize]
+@inherits CRMApp.Helpers.BlazorComponent
+@namespace CRMApp.Pages.CustomerPage
+
+@inject ICustomersService<Customer> customersService
+@inject ILocalStorageService localStorageService
+@inject IUserService userService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<h1>Manage Product Catalog</h1>
+
+@if (customerItems == null)
+{
+    <Spinner></Spinner> 
+}
+else
+{
+
+                <p class="esh-link-wrapper">
+                    <button class="btn btn-primary" @onclick="@(CreateClick)">
+                        Create New
+                    </button>
+                </p>
+
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Tên khách hàng</th>
+                            <th>Điện thoại</th>
+                            <th>Địa chỉ</th>
+                            <th>Sản phẩm</th>
+                            <th>Loại khách hàng</th>
+                            <th>Trạng thái</th>
+                            <th>Nhân viên chăm sóc</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="cursor-pointer">
+                        @foreach (var item in customerItems)
+                        {
+                            <tr @onclick="@(() => DetailsClick(item.Id))">
+                                <td>
+                                    @index 
+                                </td>
+                                <td>@item.CustomerName </td>
+                                <td>@item.Mobile1 </td>
+                                <td>@item.RegionId </td>
+                                <td>@item.CustomerTypeId </td>
+                                <td>@item.StatusId </td>
+                                <td>@item.EmployeeId</td>
+                                <td>
+                                    <button @onclick="@(() => EditClick(item.Id))" @onclick:stopPropagation="true" class="btn btn-primary">
+                                        Edit
+                                    </button>
+
+                                    <button @onclick="@(() => DeleteClick(item.Id))" @onclick:stopPropagation="true" class="btn btn-danger">
+                                        Delete
+                                    </button>
+                                </td>
+                            </tr>
+                             @index= index + 1;
+                        }
+                    </tbody>
+                </table>
+}
+        

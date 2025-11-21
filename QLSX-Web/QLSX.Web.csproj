@@ -1,0 +1,320 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <UserSecretsId>dad32029-f55e-43ce-9e63-918761227e12</UserSecretsId>
+    <ReferencePath>C:\Program Files (x86)\SAP BusinessObjects\Crystal Reports for .NET Framework 4.0\Common\SAP BusinessObjects Enterprise XI 4.0\win32_x86\dotnet\</ReferencePath>
+    <UseRazorSourceGenerator>false</UseRazorSourceGenerator>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <Optimize>False</Optimize>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <Optimize>False</Optimize>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Chat\**" />
+    <Compile Remove="Data\TraCuu\**" />
+    <Compile Remove="Logs\**" />
+    <Compile Remove="Pages\CustomerPageNew\**" />
+    <Compile Remove="Pages\NhapXuatsTonCuon\**" />
+    <Compile Remove="wwwroot\bundles\**" />
+    <Compile Remove="wwwroot\select2\**" />
+    <Content Remove="Chat\**" />
+    <Content Remove="Data\TraCuu\**" />
+    <Content Remove="Logs\**" />
+    <Content Remove="Pages\CustomerPageNew\**" />
+    <Content Remove="Pages\NhapXuatsTonCuon\**" />
+    <Content Remove="wwwroot\bundles\**" />
+    <Content Remove="wwwroot\select2\**" />
+    <EmbeddedResource Remove="Chat\**" />
+    <EmbeddedResource Remove="Data\TraCuu\**" />
+    <EmbeddedResource Remove="Logs\**" />
+    <EmbeddedResource Remove="Pages\CustomerPageNew\**" />
+    <EmbeddedResource Remove="Pages\NhapXuatsTonCuon\**" />
+    <EmbeddedResource Remove="wwwroot\bundles\**" />
+    <EmbeddedResource Remove="wwwroot\select2\**" />
+    <None Remove="Chat\**" />
+    <None Remove="Data\TraCuu\**" />
+    <None Remove="Logs\**" />
+    <None Remove="Pages\CustomerPageNew\**" />
+    <None Remove="Pages\NhapXuatsTonCuon\**" />
+    <None Remove="wwwroot\bundles\**" />
+    <None Remove="wwwroot\select2\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Components\JQDatePicker.razor.cs" />
+    <Compile Remove="Data\NhapXuat.cs" />
+    <Compile Remove="Data\NoiDungNhapXuat.cs" />
+    <Compile Remove="Data\ProductSearchRequest.cs" />
+    <Compile Remove="Data\RegionSaleVM.cs" />
+    <Compile Remove="Data\Requests\BaseSearchRequest.cs" />
+    <Compile Remove="Pages\DMHangHoa\ListCustomer.razor.cs" />
+    <Compile Remove="Services\AuthorService.cs" />
+    <Compile Remove="Services\BookStoresService.cs" />
+    <Compile Remove="Services\ClockService.cs" />
+    <Compile Remove="Services\IAuthorService.cs" />
+    <Compile Remove="Services\IPublisherService.cs" />
+    <Compile Remove="Services\PublisherService.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="Components\JQDatePicker.razor" />
+    <Content Remove="Pages\AuthorDetail.razor" />
+    <Content Remove="Pages\Authors - Copy.razor" />
+    <Content Remove="Pages\Authors.razor" />
+    <Content Remove="Pages\DMHangHoaTonCuon\CustomersCongNoPage.razor" />
+    <Content Remove="Pages\DMHangHoaTonCuon\CustomersForAdminPage.razor" />
+    <Content Remove="Pages\DMHangHoaTonCuon\CustomersForAdminPaginate.razor" />
+    <Content Remove="Pages\DMHangHoaTonCuon\CustomersSalePage.razor" />
+    <Content Remove="Pages\DMHangHoa\CustomersCongNoPage.razor" />
+    <Content Remove="Pages\DMHangHoa\CustomersForAdminPaginate.razor" />
+    <Content Remove="Pages\DMHangHoa\CustomersSalePage.razor" />
+    <Content Remove="Pages\DMHangHoa\Message.razor" />
+    <Content Remove="Pages\DMHangHoa\CustomersForAdminPage.razor" />
+    <Content Remove="Pages\DMHangHoa\ListCustomer.razor" />
+    <Content Remove="Pages\NhapXuats\NhapXuatsFormThongThuong.razor" />
+    <Content Remove="Pages\Publishers.razor" />
+    <Content Remove="wwwroot\js\select2.js" />
+    <Content Remove="wwwroot\js\signalr.js" />
+    <Content Remove="wwwroot\js\signalr.js.map" />
+    <Content Remove="wwwroot\js\signalr.min.js" />
+    <Content Remove="wwwroot\js\signalr.min.js.map" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Pages\NhapXuats\NhapXuatsForm.razor~RF3efc6b9.TMP" />
+    <None Remove="QLSX.Web.csproj.bak" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AspNetCore.Reporting" Version="2.1.0" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="11.0.0" />
+    <PackageReference Include="Blazored.LocalStorage" Version="4.2.0" />
+    <PackageReference Include="Blazored.Modal" Version="7.0.0" />
+    <PackageReference Include="Blazored.Toast" Version="3.2.2" />
+    <PackageReference Include="BlazorInputFile" Version="0.2.0" />
+    <PackageReference Include="BlazorPrettyCode" Version="1.6.0" />
+    <PackageReference Include="BlazorPro.Spinkit" Version="1.2.0" />
+    <PackageReference Include="ChartJs.Blazor.Fork" Version="2.0.2" />
+    <PackageReference Include="CsvHelper" Version="27.2.1" />
+    <PackageReference Include="Dapper" Version="2.0.123" />
+    <PackageReference Include="EmbeddedBlazorContent" Version="1.10.0" />
+    <PackageReference Include="EPPlus" Version="6.0.5" />
+    <PackageReference Include="FoolProof.Core" Version="1.1.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="3.2.0-preview2.20160.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.9" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="6.0.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.JSInterop.WebAssembly" Version="6.0.3" />
+    <PackageReference Include="Microsoft.ML" Version="1.7.1" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.7" />
+    <PackageReference Include="MudBlazor" Version="6.9.0" />
+    <PackageReference Include="MudBlazor.Extensions" Version="1.7.67" />
+    <PackageReference Include="MudBlazor.ThemeManager" Version="1.0.8" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="6.0.0" />
+    <PackageReference Include="Serilog" Version="2.11.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="5.0.0" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="3.3.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+    <PackageReference Include="System.CodeDom" Version="7.0.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.3" />
+    <PackageReference Include="System.Net.Http.Json" Version="6.0.0" />
+    <PackageReference Include="System.Reactive" Version="5.0.0" />
+    <PackageReference Include="Toolbelt.Blazor.HttpClientInterceptor" Version="10.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Models\Bots\" />
+    <Folder Include="wwwroot\Files\1\" />
+    <Folder Include="wwwroot\images\customers\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Components\Bots\Modals\SaveComplete.razor" />
+    <None Include="Components\Bots\Modals\TrainingComplete.razor" />
+    <None Include="Pages\DMHangHoaTonCuon\Create.razor" />
+    <None Include="Pages\DMHangHoaTonCuon\Delete.razor" />
+    <None Include="Pages\DMHangHoaTonCuon\Edit.razor" />
+    <None Include="Pages\DMHangHoaTonCuon\ListPage.razor" />
+    <None Include="Pages\DMPhongBan\Create.razor" />
+    <None Include="Pages\DMPhongBan\Delete.razor" />
+    <None Include="Pages\DMPhongBan\Edit.razor" />
+    <None Include="Pages\DMPhongBan\ListPage.razor" />
+    <None Include="Pages\NhapXuatsTonCuons\Delete.razor" />
+    <None Include="Pages\NhapXuatsTonCuons\NhapXuatEdit.razor" />
+    <None Include="Pages\NhapXuatsTonCuons\NhapXuatsCreate.razor" />
+    <None Include="Pages\NhapXuatsTonCuons\NhapXuatsForm.razor" />
+    <None Include="Pages\NhapXuatsTonCuons\NhapXuatsIndex.razor" />
+    <None Include="Pages\NhapXuats\Delete.razor" />
+    <None Include="Pages\NhapXuats\NhapXuatsCreate.razor" />
+    <None Include="Pages\NhapXuats\NhapXuatsForm.razor" />
+    <None Include="Pages\NhapXuats\NhapXuatsIndex.razor" />
+    <None Include="Pages\NhapXuats\NhapXuatEdit.razor" />
+    <None Include="Reports\BangCanDoiThuChi.cshtml" />
+    <None Include="Reports\BangDoiChieuCongNo.cshtml" />
+    <None Include="Reports\BangKeBanHangDenHanThanhToan.cshtml" />
+    <None Include="Reports\BangKeHanMucCongNoPhaiThu.cshtml" />
+    <None Include="Reports\BangKeHanMucCongNoPhaiTra.cshtml" />
+    <None Include="Reports\BangKeNhapDenHanThanhToan.cshtml" />
+    <None Include="Reports\BaoCaoBanHang.cshtml" />
+    <None Include="Reports\BaoCaoBanHangTheoKhachHang.cshtml" />
+    <None Include="Reports\BaoCaoDoanhThu.cshtml" />
+    <None Include="Reports\ChiTietKhoanThu.cshtml" />
+    <None Include="Reports\InPhieuChi.cshtml" />
+    <None Include="Reports\InPhieuNhap.cshtml" />
+    <None Include="Reports\InPhieuThu.cshtml" />
+    <None Include="Reports\InPhieuXuat.cshtml" />
+    <None Include="Reports\SoChiTietHangHoa.cshtml" />
+    <None Include="Reports\SoPhaiThu.cshtml" />
+    <None Include="Reports\SoPhaiThuTongHop.cshtml" />
+    <None Include="Reports\SoPhaiTra.cshtml" />
+    <None Include="Reports\SoPhaiTraTongHop.cshtml" />
+    <None Include="Reports\SoQuyTienMat.cshtml" />
+    <None Include="Reports\SoTongHopHangHoa.cshtml" />
+    <None Include="Reports\TongHopNhapXuatTon.cshtml" />
+    <None Include="wwwroot\js\test.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\QLSX-API\QLSX.Shared\QLSX.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="QLSX.Shared">
+      <HintPath>..\QLSX-API\QLSX.Shared\bin\Debug\net6.0\QLSX.Shared.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{c0c07587-41a7-46c8-8fbd-3f9c8ebe2ddc}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="Pages\BaoCao\DialogKhachHang.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\Dialogs\DialogTimKiemNhanhThuChi.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\Dialogs\DialogKhachHang.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMHangHoaTonCuon\Create.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMHangHoaTonCuon\Delete.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMHangHoaTonCuon\Edit.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMHangHoaTonCuon\ListPage.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DanhMucKhoanThuModel\Create.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DanhMucKhoanThuModel\Delete.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DanhMucKhoanThuModel\Edit.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DanhMucKhoanThuModel\ListPage.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMKhoHang\Create.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMKhoHang\Delete.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMKhoHang\Edit.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMKhoHang\ListPage.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMLoaiTien\Create.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMLoaiTien\Delete.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMLoaiTien\Edit.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMLoaiTien\ListPage.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMNhomHang\Create.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMNhomHang\Delete.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMNhomHang\Edit.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMNhomHang\ListPage.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMNhomKhachHang\Create.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMNhomKhachHang\Delete.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMNhomKhachHang\Edit.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMNhomKhachHang\ListPage.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMPhongBan\Create.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMPhongBan\Delete.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMPhongBan\Edit.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Pages\DMPhongBan\ListPage.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Views\BaoCao\Index.cshtml">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="pdf\Linux\wkhtmltopdf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="pdf\Mac\wkhtmltopdf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="pdf\Windows\wkhtmltopdf.exe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Reports">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

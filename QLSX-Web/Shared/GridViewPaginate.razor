@@ -1,0 +1,113 @@
+﻿@typeparam TItem
+
+<div class="col-12 row">
+	<table class="table table-bordered table-striped mb-0" id="GridTable">
+		<thead class="bg-info">
+			<tr>
+				@GridColumns
+			</tr>
+		</thead>
+		<tbody>
+			@if (ItemList != null)
+			{
+				@foreach (var item in ItemList)
+				{
+		   <tr>
+						@GridRow(item)
+		   </tr>
+				}
+			}
+
+  </tbody>
+ </table>
+</div>
+
+<br />
+<div>
+ <button class="btn btn-secondary" @onclick="@(e => NavigateTo("first"))">@("<<")</button>
+ <button class="btn btn-secondary" @onclick="@(e => NavigateTo("prev"))">Trước</button>
+	@for (int i = Math.Max(0, CurrentPage); i < Math.Min(CurrentPage + 3, TotalPages); i++)
+	{
+		var pageNumber = i;
+	 <button class="btn @(CurrentPage == pageNumber? "btn-dark":"btn-info")"
+			@onclick="@(e => UpdateList(pageNumber))">
+			@(i + 1)
+	 </button>
+	}
+ <button class="btn btn-secondary" @onclick="@(e => NavigateTo("next"))">Tiếp</button>
+ <button class="btn btn-secondary" @onclick="@(e => NavigateTo("last"))">@(">>")</button>
+	@TotalRecords bản ghi
+</div>
+
+@code {
+	[Parameter]
+	public EventCallback<string> Movepage { get; set; }
+
+
+	[Parameter]
+	public RenderFragment GridColumns { get; set; }
+
+	[Parameter]
+	public RenderFragment<TItem> GridRow { get; set; }
+	
+	[Parameter]
+	public List<TItem> Items { get; set; }
+
+	public List<TItem> ItemList { get; set; }
+	[Parameter]
+	public int PageSize { get; set; }
+	[Parameter]
+	public int TotalPages { get; set; }
+	[Parameter]
+	public int CurrentPage { get; set; }
+	[Parameter]
+	public int TotalRecords { get; set; }
+
+	[Parameter]
+	public bool ReloadList { get; set; }
+
+	protected override void OnInitialized()
+	{
+		if (Items != null)
+		{
+			ItemList = Items;
+		}
+		base.OnInitialized();
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (!firstRender && ReloadList)
+		{
+			ItemList = Items;
+			ReloadList = false;
+
+			StateHasChanged();
+		}
+
+		base.OnAfterRender(firstRender);
+	}
+
+	async Task UpdateList(int pageNumber = 0)
+	{
+		if (Items != null)
+		{
+			await Movepage.InvokeAsync(pageNumber.ToString());
+		}
+	}
+
+	async Task NavigateTo(string direction)
+	{
+		if (direction == "prev" && CurrentPage != 0)
+			CurrentPage -= 1;
+		if (direction == "next" && CurrentPage != TotalPages - 1)
+			CurrentPage += 1;
+		if (direction == "first")
+			CurrentPage = 0;
+		if (direction == "last")
+			CurrentPage = TotalPages - 1;
+
+		await UpdateList(CurrentPage);
+	}
+
+}

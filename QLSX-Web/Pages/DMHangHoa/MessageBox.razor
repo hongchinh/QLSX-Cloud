@@ -1,0 +1,17 @@
+﻿@namespace QLSX.Web.Pages.DMHangHoaPage
+
+<MudDialog>
+    <DialogContent>
+        @message
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary"  OnClick="Cancel">OK</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter]
+    public string message { get; set; }
+    
+    void Cancel() => MudDialog.Cancel();
+}

@@ -1,0 +1,237 @@
+﻿@using System.Net
+@using System.Text
+@using QLSX.Web.Helpers
+@using QLSX.Shared.Models;
+@using System.Net.Http.Json
+@using QLSX.Web.Data
+@using QLSX.Web.Services
+@using Blazored.LocalStorage
+@using OfficeOpenXml
+@using OfficeOpenXml.Style
+@using System.Globalization
+
+@inject ILogger<DialogShowCongNo> Logger
+@inject IJSRuntime jsRuntime
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject ITraCuuService listService
+@inject IDialogService DialogService
+@inject IToastService toastService
+
+@namespace QLSX.Web.Pages.TraCuuCongNo
+<MudDialog DisableSidePadding="true">
+    <DialogContent>
+        <MudContainer>
+            <MudTable ServerData="@(new Func<TableState, Task<TableData<ViewNhapXuat>>>(ServerReload))"
+                      Height="400px" FixedHeader="true" FixedFooter="true"
+                      Dense="true" Hover="true" Bordered="true" Striped="true" Loading="@Loading" @ref="table"
+                      T="ViewNhapXuat">
+                <HeaderContent>
+                    <MudTh><MudTableSortLabel SortLabel="NgayCT" T="ViewNhapXuat">Ngày CT</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="SoCT" T="ViewNhapXuat">Số Chứng từ</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="MaDonVi" T="ViewNhapXuat">Mã Đơn vị</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="TenDonVi" T="ViewNhapXuat">Tên Đơn vị</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="DiaChi" T="ViewNhapXuat">Địa chỉ</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="SoTien" T="ViewNhapXuat">Số tiền</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="DienGiai" T="ViewNhapXuat">Diễn giải</MudTableSortLabel></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="NgayCT">
+                        <MudText> @string.Format("{0:dd/MM/yyyy}",@context.NgayCT)</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="SoCT">
+                        @if (context.Loai.StartsWith("nhap") || context.Loai.StartsWith("xuat"))
+                        {
+                            <MudButton Color="Color.Primary" Size="Size.Small" OnClick="@(async ()=> await SuaNhapXuatClick( context.Id,context.Loai))">@context.SoCT</MudButton>
+                        }
+                        else
+                        {
+                            <MudButton Color="Color.Primary" Size="Size.Small" OnClick="@(async ()=> await SuaThuChiClick(context.Id,context.Loai ))">@context.SoCT</MudButton>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="MaDonVi">
+                        <MudText> @context.MaDonVi</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="TenDonVi">
+                        <MudText> @context.TenDonVi</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="DiaChi">
+                        <MudText> @context.DiaChi</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="SoTien">
+                        <MudText Style="text-align:right"> @context.SoTien.ToString("###,###") </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="DienGiai">
+                        <MudText> @context.DienGiai</MudText>
+                    </MudTd>
+
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText>Không có bản ghi nào tìm thấy</MudText>
+                </NoRecordsContent>
+                <LoadingContent>
+                    <MudText>Đang tải dữ liệu...</MudText>
+                </LoadingContent>
+
+                <FooterContent>
+                    <MudTd colspan="5" Style=" font-weight:bold"> TỔNG CỘNG</MudTd>
+                    <MudTd Style=" font-weight:bold">@pagedData?.Sum(x=> x.SoTien).ToString("###,###") </MudTd>
+                    <MudTd></MudTd>
+                </FooterContent>
+            </MudTable>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="Cancel">Bỏ qua</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public string Loai { get; set; }
+    [Parameter] public string TuNgay { get; set; }
+    [Parameter] public string DenNgay { get; set; }
+    [Parameter] public string MaDonVi { get; set; }
+    [Parameter] public int SoDu { get; set; }
+
+    public GetAllResponsePaged<ViewNhapXuat> lsResponses { get; set; }
+
+    private string searchString1 = "";
+
+    public ViewCongNoRequest itemRequest { get; set; } =
+      new ViewCongNoRequest
+          {
+              MaDonVi = "",
+              Page = 0,
+              PageSize = 10,
+              TotalPages = 0
+          };
+
+    public List<ViewNhapXuat> productsList { get; set; }
+    private ViewNhapXuat selectedItem1 = null;
+    public List<ViewNhapXuat> filteredproductsList { get; set; }
+    private IEnumerable<ViewNhapXuat> pagedData;
+    private MudTable<ViewNhapXuat> table;
+    private int totalItems;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    private string searchString { get; set; } = "";
+    private bool Loading { get; set; } = false;
+    private List<string> clickedEvents = new();
+    void Cancel() => MudDialog.Cancel();
+
+    /// <summary>
+    /// Here we simulate getting the paged, filtered and ordered data from the server
+    /// </summary>
+    private async Task<TableData<ViewNhapXuat>> ServerReload(TableState state)
+    {
+        Loading = true;
+        itemRequest.SortLable = state.SortLabel;
+        itemRequest.SortDirection = (QLSX.Shared.Enums.SortDirection)state.SortDirection;
+        itemRequest.Loai = Loai;
+        itemRequest.TuNgay = TuNgay;
+        itemRequest.DenNgay = DenNgay;
+        itemRequest.MaDonVi = MaDonVi;
+        itemRequest.sodu = SoDu;
+
+        itemRequest.Page = state.Page;
+        itemRequest.PageSize = state.PageSize;
+        lsResponses = new GetAllResponsePaged<ViewNhapXuat>();
+        lsResponses = await listService.ViewCongNoAsync(itemRequest);
+        IEnumerable<ViewNhapXuat> data = lsResponses.Items; ;
+        totalItems = lsResponses.TotalRecords;
+        if (data == null)
+        {
+            data = new List<ViewNhapXuat>();
+        }
+        pagedData = data;
+        Loading = false;
+        return new TableData<ViewNhapXuat>() { TotalItems = totalItems, Items = pagedData };
+    }
+    private void RowClickEvent(TableRowClickEventArgs<ViewNhapXuat> tableRowClickEventArgs)
+    {
+        // clickedEvents.Add("Row has been clicked");
+        selectedItem1 = tableRowClickEventArgs.Item;
+    }
+    private int selectedRowNumber = -1;
+    private string SelectedRowClassFunc(ViewNhapXuat element, int rowNumber)
+    {
+        return string.Empty;
+        //selectedItem1 = element;
+        //if (selectedRowNumber == rowNumber)
+        //{
+        //    selectedRowNumber = -1;
+        //    clickedEvents.Add("Selected Row: None");
+        //    return string.Empty;
+        //}
+        //else if (table.SelectedItem != null && table.SelectedItem.Equals(element))
+        //{
+        //    selectedRowNumber = rowNumber;
+        //    clickedEvents.Add($"Selected Row: {rowNumber}");
+        //    return "selected";
+        //}
+        //else
+        //{
+        //    return string.Empty;
+        //}
+    }
+    private async Task SuaNhapXuatClick(int id, string loai)
+    {
+        string title = "Sửa";
+        if (loai == "nhap")
+        {
+            title = "Sửa Phiếu nhập";
+        }
+        else if (loai == "xuat")
+        {
+            title = "Sửa Phiếu xuất";
+
+        }
+        else if (loai == "nhaptra")
+        {
+            title = "Sửa Phiếu nhập trả";
+        }
+        else if (loai == "xuattra")
+        {
+            title = "Sửa Phiếu xuất trả";
+        }
+        var parameters = new DialogParameters { ["NhapXuatId"] = id, ["loaiNX"] = loai, ["Title"] = title };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.ExtraExtraLarge, FullScreen = true, FullWidth = true };
+        var result = await DialogService.Show<QLSX.Web.Pages.NhapXuatPage.NhapXuatEdit>("Sửa", parameters, options).Result;
+        if (!result.Canceled)
+        {
+            var itemSelected = (NhapXuatModel)(result.Data ?? null);
+            if (itemSelected != null)
+            {
+                await table.ReloadServerData();
+            }
+        }
+    }
+    private async Task SuaThuChiClick(int id, string loai)
+    {
+        string title = "Sửa";
+        if (loai == "thutm")
+        {
+            title = "Sửa Phiếu thu";
+        }
+        else if (loai == "chitm")
+        {
+            title = "Sửa Phiếu chi";
+
+        }
+        var parameters = new DialogParameters { ["ThuChiId"] = id, ["loaiThuChi"] = loai, ["Title"] = title };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.ExtraExtraLarge, FullScreen = true, FullWidth = true };
+        var result = await DialogService.Show<QLSX.Web.Pages.ThuChiPage.ThuChiEdit>("Sửa", parameters, options).Result;
+        if (!result.Canceled)
+        {
+            var itemSelected = (ThuChiModel)(result.Data ?? null);
+            if (itemSelected != null)
+            {
+                await table.ReloadServerData();
+            }
+        }
+    }
+
+}

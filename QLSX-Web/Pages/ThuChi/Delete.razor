@@ -1,0 +1,79 @@
+﻿@inject ILogger<Delete> Logger
+@inject IJSRuntime JSRuntime
+@inject IThuChiService<ThuChiModel> thuchitService
+@inject IDMKhoanThuService<DanhMucKhoanThuModel> DanhMucKhoanThuModelService
+@inject IDMKhoanChiService<DanhMucKhoanChiModel> dmKhoanChiService
+@inject IDMLoaiTienService<DanhMucLoaiTienModel> dmLoaiTienService
+@inject NavigationManager navigationManager
+
+@inherits QLSX.Web.Helpers.BlazorComponent
+
+@namespace QLSX.Web.Pages.ThuChiPage
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.DeleteForever" Class="mr-3 mb-n1" />
+            Xóa
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12" sm="2">
+                <MudTextField Value="@server.Id.ToString()" Label="Id" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="2">
+                <MudTextField Value="@server.Loai" Label="Loại" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="2">
+                <MudTextField Value="@server.SoPhieu" Label="Số CT" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="2">
+                <MudTextField Value="@server.NgayCT" Label="Ngày CT" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="0" sm="4" Class="m-0 p-0"></MudItem>
+
+            <MudItem xs="12" sm="2">
+                <MudTextField Value="@server.MaDoiTuong" Label="Mã đơn vị" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="5">
+                <MudTextField Value="@server.TenDoiTuong" Label="Tên đơn vị" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="5">
+                <MudTextField Value="@server.DiaChi" Label="Địa chỉ" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+
+            <MudItem xs="12" sm="2">
+                <MudTextField Value="@server.SoTien?.ToString("###,###")" Label="Số tiền" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="2">
+                <MudTextField Value="@server.DMLoaiTiens?.LoaiTien" Label="Loại tiền" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="8">
+                <MudTextField Value="@server.GhiChu" Label="Ghi chú" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel" Variant="Variant.Filled" Color="Color.Error">Bỏ qua</MudButton>
+        <MudButton StartIcon="@Icons.Material.Filled.Delete" Color="Color.Primary" Variant="Variant.Filled" OnClick="@(() => DeleteClick(server.Id))" Class="me-3">Xóa</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public ThuChiModel server { get; set; } = new ThuChiModel();
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    private async void DeleteClick(int id)
+    {
+        var isSucess = await thuchitService.DeleteAsync(server.Id);
+        MudDialog.Close(DialogResult.Ok(isSucess));
+    }
+}

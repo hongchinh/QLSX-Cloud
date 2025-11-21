@@ -1,0 +1,289 @@
+﻿@using QLSX.Shared.Models.Request
+@inject IDialogService DialogService
+@inject INhapXuatsService<NhapXuatModel> nhapxuatService
+@inject IDonDatHangsService<PhieuNhapXuatAllModel> donDatHangService
+
+<style>
+    .styleDialog .mud-input > input.mud-input-root-outlined {
+        padding: 7px;
+    }
+
+    .mud-grid-spacing-xs-3 > .mud-grid-item {
+        padding: 0 5px;
+    }
+
+    .styleDialog .mud-icon-button-edge-end {
+        margin-inline-end: 0px;
+    }
+
+    .mud-dialog .mud-dialog-title {
+        padding: 5px;
+    }
+
+    .styleDialog .mud-button {
+        padding: 8px;
+    }
+
+    .NoViewCheckbox .mud-table-cell .mud-checkbox {
+        /* display: none; */
+    }
+
+    .styleInputColumn {
+        width: 90px !important;
+    }
+
+    .mud-input-control.mud-input-number-control .mud-input-numeric-spin {
+        display: none;
+    }
+
+    .mud-input-control.mud-input-number-control.mud-input-showspin .mud-input:not(.mud-input-adorned-end) input.mud-input-root-margin-dense {
+        padding-inline-end: 0;
+    }
+
+    .selected {
+        background-color: #FFA500 !important;
+    }
+
+        .selected > td {
+            color: #000000 !important;
+        }
+
+            .selected > td .mud-input {
+                color: #000000 !important;
+            }
+</style>
+
+<MudDialog>
+    <DialogContent>
+        <MudText Color="Color.Primary"><b>Đơn vị: @DanhSachDonHangTraNoModel.MaDonVi - @DanhSachDonHangTraNoModel.TenDonVi</b></MudText>
+        <MudText Color="Color.Primary"><b>Số phiếu xuất: @DanhSachDonHangTraNoModel.SoPhieuXuat</b></MudText>
+        <MudGrid Class="styleDialog mt-3">
+            <MudItem xs="12" sm="4" Style="width: 300px">
+                <MudTable Items="@donHangDonViList"
+                          T="NhapXuatModel"
+                          Hover="true"
+                          Breakpoint="Breakpoint.Sm"
+                          @ref="mudNhapXuatTable"
+                          RowClass="cursor-pointer"
+                          Height="430px"
+                          FixedHeader="true"
+                          Dense
+                          RowClassFunc="@SelectedNhapXuatRowClassFunc"
+                          OnRowClick="RowClickNhapXuatEvent">
+                    <HeaderContent>
+                        <MudTh Style="width: 75px"><MudTableSortLabel SortBy="new Func<NhapXuatModel, object>(x=>x.SoChungTu)">Số CT</MudTableSortLabel></MudTh>
+                        <MudTh Style="width: 125px"><MudTableSortLabel SortBy="new Func<NhapXuatModel, object>(x=>x.NgayCT)">Ngày CT</MudTableSortLabel></MudTh>
+                        <MudTh Style="width: 90px"><MudTableSortLabel SortBy="new Func<NhapXuatModel, object>(x=>x.TongCong)">Tổng tiền</MudTableSortLabel></MudTh>
+                        <MudTh Style="min-width: 110px"><MudTableSortLabel SortBy="new Func<NhapXuatModel, object>(x=>x.GhiChu)">Ghi chú</MudTableSortLabel></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Số CT">@context.SoChungTu</MudTd>
+                        <MudTd DataLabel="Ngày CT">@context.NgayCT</MudTd>
+                        <MudTd DataLabel="Tổng tiền">@context.TongCong</MudTd>
+                        <MudTd DataLabel="Ghi chú">@context.GhiChu</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudItem>
+
+            <MudItem xs="12" sm="8">
+                <MudTable Items="@noiDungNhapXuatList"
+                          T="NoiDungNhapXuatModel"
+                          Hover="true"
+                          Breakpoint="Breakpoint.Sm"
+                          @ref="mudNoiDungNhapXuatTable"
+                          RowClass="cursor-pointer"
+                          Height="180px"
+                          FixedHeader="true"
+                          Dense
+                          RowClassFunc="@SelectedNoiDungNhapXuatRowClassFunc"
+                          OnRowClick="RowClickNoiDungNhapXuatEvent">
+                    <HeaderContent>
+                        <MudTh>STT</MudTh>
+                        <MudTh>Mã hàng hóa</MudTh>
+                        <MudTh>Tên hàng hóa</MudTh>
+                        <MudTh>ĐVT</MudTh>
+                        <MudTh>Chiều dài/tấm</MudTh>
+                        <MudTh>Số lượng</MudTh>
+                        <MudTh>Tổng chiều dài</MudTh>
+                        <MudTh>Khổ rộng</MudTh>
+                        <MudTh>Tổng diện tích</MudTh>
+                        <MudTh>Đơn giá</MudTh>
+                        <MudTh>Số tiền</MudTh>
+                        <MudTh>Tỉ lệ(%) chuyển khoản</MudTh>
+                        <MudTh>Số tiền CK</MudTh>
+                        <MudTh>Số còn lại</MudTh>
+                        <MudTh>Ghi chú</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="STT">@context.Stt</MudTd>
+                        <MudTd DataLabel="Mã hàng hóa">@context.MaHangHoa</MudTd>
+                        <MudTd DataLabel="Tên hàng hóa">@context.TenHangHoa</MudTd>
+                        <MudTd DataLabel="ĐVT">@context.DonViTinh</MudTd>
+                        <MudTd DataLabel="Chiều dài/tấm">@context.ChieuDai</MudTd>
+                        <MudTd DataLabel="Số lượng">@context.SoLuong</MudTd>
+                        <MudTd DataLabel="Tổng chiều dài">@context.TongChieuDai</MudTd>
+                        <MudTd DataLabel="Khổ rộng">@context.KhoRongTon</MudTd>
+                        <MudTd DataLabel="Tổng diện tích">@context.TongDienTich</MudTd>
+                        <MudTd DataLabel="Đơn giá">@context.DonGia</MudTd>
+                        <MudTd DataLabel="Số tiền">@context.SoTien</MudTd>
+                        <MudTd DataLabel="Tỉ lệ(%) chuyển khoản">@context.TyLeCK</MudTd>
+                        <MudTd DataLabel="Số tiền CK">@context.SoTienCK</MudTd>
+                        <MudTd DataLabel="Số còn lại">@context.SoConLai</MudTd>
+                        <MudTd DataLabel="Ghi chú">@context.GhiChu</MudTd>
+                    </RowTemplate>
+                </MudTable>
+
+                <MudDataGrid Items="@hangHoaChooseList"
+                             T="NoiDungNhapXuatTraNoModel"
+                             SortMode="SortMode.None"
+                             Dense="true"
+                             FixedHeader="true"
+                             Virtualize="true"
+                             DragDropColumnReordering="true"
+                             ApplyDropClassesOnDragStarted="true"
+                             DragIndicatorIcon="@Icons.Material.Filled.DragIndicator"
+                             ReadOnly="false"
+                             Hover="true"
+                             Bordered="true"
+                             CommittedItemChanges="@CalculateParam"
+                             Height="250px"
+                             EditMode="DataGridEditMode.Cell">
+                    <Columns>
+                        <PropertyColumn IsEditable="false" Property="x => x.Stt" Title="STT" />
+                        <PropertyColumn IsEditable="false" Property="x => x.MaHangHoa" Title="Mã hàng hóa" />
+                        <PropertyColumn IsEditable="false" Property="x => x.TenHangHoa" Title="Tên hàng hóa" />
+                        <PropertyColumn IsEditable="false" Property="x => x.DonViTinh" Title="ĐVT" />
+                        <PropertyColumn IsEditable="false" Property="x => x.ChieuDai" Title="Chiều dài/tấm" />
+                        <PropertyColumn IsEditable="true" Property="x => x.SoLuong" Title="Số lượng" Class="styleInputColumn" />
+                        <PropertyColumn IsEditable="false" Property="x => x.TongChieuDai" Title="Tổng chiều dài" />
+                        <PropertyColumn IsEditable="false" Property="x => x.KhoRongTon" Title="Khổ rộng" />
+                        <PropertyColumn IsEditable="false" Property="x => x.TongDienTich" Title="Tổng diện tích" />
+                        <PropertyColumn IsEditable="false" Property="x => x.DonGia" Title="Đơn giá" />
+                        <PropertyColumn IsEditable="false" Property="x => x.SoTien" Title="Số tiền" />
+                        <PropertyColumn IsEditable="false" Property="x => x.TyLeCK" Title="Tỉ lệ(%) chuyển khoản" />
+                        <PropertyColumn IsEditable="false" Property="x => x.SoTienCkNv" Title="Số tiền CK" />
+                        <PropertyColumn IsEditable="false" Property="x => x.SoTienOk" Title="Số còn lại" />
+                        <PropertyColumn IsEditable="false" Property="x => x.DienGiai" Title="Ghi chú" />
+                    </Columns>
+                </MudDataGrid>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudGrid Justify="Justify.Center" Spacing="0" Class="styleDialog mt-2">
+            <MudButton OnClick="Submit" Size="Size.Medium" Color="Color.Primary" Variant="Variant.Filled">Chọn</MudButton>
+        </MudGrid>
+    </DialogActions>
+</MudDialog>
+
+<LoadingProgress IsLoading="isLoading"></LoadingProgress>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public DanhSachDonHangTraNoModel DanhSachDonHangTraNoModel { get; set; }
+    List<NhapXuatModel> donHangDonViList = new();
+    List<NoiDungNhapXuatModel> noiDungNhapXuatList = new();
+    List<NoiDungNhapXuatTraNoModel> hangHoaChooseList = new();
+    private MudTable<NhapXuatModel> mudNhapXuatTable;
+    private MudTable<NoiDungNhapXuatModel> mudNoiDungNhapXuatTable;
+    private bool isLoading = false;
+    int Stt = 1;
+    private int selectedNhapXuatRowNumber = -1;
+    private int selectedNoiDungNhapXuatRowNumber = -1;
+    private string loaiPhieuSelected = string.Empty;
+    private int ididSelected = -1;
+
+
+    private string SelectedNhapXuatRowClassFunc(NhapXuatModel element, int rowNumber)
+    {
+        if (mudNhapXuatTable.SelectedItem != null && mudNhapXuatTable.SelectedItem.Equals(element))
+        {
+            selectedNhapXuatRowNumber = rowNumber;
+            return "selected";
+        }
+        else
+        {
+            return string.Empty;
+        }
+    }
+
+    private async Task RowClickNhapXuatEvent(TableRowClickEventArgs<NhapXuatModel> tableRowClickEventArgs)
+    {
+        var nhapXuatSelected = tableRowClickEventArgs.Item;
+        if (nhapXuatSelected != null && loaiPhieuSelected != nhapXuatSelected.LoaiPhieu)
+        {
+            noiDungNhapXuatList = await nhapxuatService.GetHangHoaByLoaiPhieuAsync(nhapXuatSelected.LoaiPhieu);
+            loaiPhieuSelected = nhapXuatSelected.LoaiPhieu;
+            StateHasChanged();
+        }
+    }
+
+    private string SelectedNoiDungNhapXuatRowClassFunc(NoiDungNhapXuatModel element, int rowNumber)
+    {
+        if (mudNoiDungNhapXuatTable.SelectedItem != null && mudNoiDungNhapXuatTable.SelectedItem.Equals(element))
+        {
+            selectedNoiDungNhapXuatRowNumber = rowNumber;
+            return "selected";
+        }
+        else
+        {
+            return string.Empty;
+        }
+    }
+
+    private void RowClickNoiDungNhapXuatEvent(TableRowClickEventArgs<NoiDungNhapXuatModel> tableRowClickEventArgs)
+    {
+        var donHangSelected = tableRowClickEventArgs.Item;
+        if (donHangSelected != null && ididSelected != donHangSelected.IdId)
+        {
+            if (!hangHoaChooseList.Exists(item => item.IdId == donHangSelected.IdId))
+            {
+                var newDonHang = new NoiDungNhapXuatTraNoModel(donHangSelected);
+                newDonHang.LoHang = DanhSachDonHangTraNoModel.SoPhieuXuat;
+                newDonHang.Stt = Stt.ToString();
+                hangHoaChooseList.Add(newDonHang);
+                Stt++;
+                ididSelected = donHangSelected.IdId;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private void CalculateParam(NoiDungNhapXuatTraNoModel model)
+    {
+        model.CalculateSoTien();
+        StateHasChanged();
+    }
+
+    private async Task Submit()
+    {
+        foreach (var item in hangHoaChooseList)
+        {
+            item.CalculateSoTien();
+        }
+        var saveNoiDungDonHangResult = await donDatHangService.SaveNoiDungDonHangTraNoAsync(new SaveNoiDungDonHangTraNoRequest()
+            {
+                NoiDungTraNoList = hangHoaChooseList,
+                SoPhieuXuatKho = DanhSachDonHangTraNoModel.SoPhieuXuat
+            });
+        if (saveNoiDungDonHangResult)
+        {
+            MudDialog.Close(DialogResult.Ok(true));
+            return;
+        }
+        MudDialog.Close(DialogResult.Ok(false));
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isLoading = true;
+            donHangDonViList = await nhapxuatService.GetDonHangByMaDonViAsync(DanhSachDonHangTraNoModel.MaDonVi);
+
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+}

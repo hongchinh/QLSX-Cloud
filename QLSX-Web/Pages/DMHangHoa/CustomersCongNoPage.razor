@@ -1,0 +1,162 @@
+﻿@page "/customercongno/{customerCode}"
+@using CRMApp.Data
+@using CRMApp.Services
+@using CuriousDriveRazorLibrary
+@using Blazored.LocalStorage
+
+@inject ICustomersService<Customer> customerService
+@inject ICustomersService<DonHang> customerServiceSale
+
+@inject IUserService userService
+@inject IProductService<Product> productService
+
+@inject IEmloyeeService<User> employeeService
+@inject IRegionService<Region> regionService
+@inject IStatusService<CustomerStatus> statusService
+@inject ITypeService<CustomerType> typeService
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService localStorageService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+@attribute [Authorize]
+@inherits CRMApp.Helpers.BlazorComponent
+@inject NavigationManager NavigationManager
+
+@namespace CRMApp.Pages.DMHangHoa
+
+<div class="col-12">
+
+    <h3><b>Danh sách đơn hàng </b></h3>
+
+    Mã khách hàng : @customer.MaDoiTuong     <br />
+    Tên khách hàng : @customer.TenDoiTuong   <br />
+    Điện thoại : @customer.DienThoai  <br />
+
+    <SpinLoader IsLoading="isLoading">
+        <LoadingTemplate>
+            <div class="col-12" style="background-color: lightgray; height:400px; vertical-align:middle">
+                <br /><br />
+                <Chase Center="true" Color="#c21f13" Size="70px"></Chase>
+            </div>
+        </LoadingTemplate>
+        <ContentTemplate>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="width:5%">Ngày mua</th>
+                        <th style="width:5%">Số CT</th>
+                        <th style="max-width:200px !important">Mã hàng hóa</th>
+                        <th style="width:55%">Tên hàng hóa</th>
+                        <th style="width:5%">Số lượng</th>
+                        <th style="width:5%">Tổng chiều dài</th>
+                        <th style="width:5%">Tổng m2</th>
+                        <th style="width:5%">Số tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                   
+                        @foreach (var sale in lstSales)
+                        {
+                            <tr>
+
+                                <td width="90px">@sale.NgayCt.ToString("dd/MM/yyyy")  </td>
+                                <td width="100px">@sale.SoChungTu</td>
+                                <td width="200px" style="max-width: 200px !important">@sale.MaHangHoa</td>
+                                <td>@sale.TenHangHoa</td>
+                                <td width="50px">@sale.SoLuong.ToString("###,###.##")</td>
+                                <td  width="100px">@sale.TongChieuDai.ToString("###,###.##")  </td>
+                                <td  width="100px">@sale.TongDienTich.ToString("###,###.##")  </td>
+                                <td  width="100px">@sale.SoTien.ToString("###,###")    </td>
+                            </tr>
+                        }
+
+</tbody>
+            </table>
+
+
+        </ContentTemplate>
+    </SpinLoader>
+</div>
+
+@code { [Parameter]
+    public string customerCode { get; set; }
+
+    public List<DonHang> lstSales { get; set; }
+    public List<DonHang> lstSalesGroup { get; set; }
+    public DonHang customer { get; set; }
+
+
+    public bool IsVisible { get; set; }
+    public bool Result { get; set; }
+    public bool IsGridViewFiltered { get; set; }
+    bool isLoading = true;
+
+    protected override void OnInitialized()
+    {
+        Console.WriteLine("Customer - OnInitialized");
+        base.OnInitialized();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        customer = new DonHang();
+        Console.WriteLine("Customer - OnInitializedAsync");
+
+        await base.OnInitializedAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        Console.WriteLine("Customers - OnParametersSet");
+        base.OnParametersSet();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Console.WriteLine("Customers - OnParametersSetAsync");
+        await base.OnParametersSetAsync();
+    }
+
+    protected override bool ShouldRender()
+    {
+        base.ShouldRender();
+        Console.WriteLine("Customers - ShouldRender");
+        return true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Console.WriteLine("Customers - OnAfterRender - firstRender = " + firstRender);
+        base.OnAfterRender(firstRender);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        Console.WriteLine("Customers - OnAfterRenderAsync - firstRender = " + firstRender);
+
+        if (firstRender)
+        {
+            await LoadList();
+            isLoading = false;
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public void Dispose()
+    {
+        Console.WriteLine("Customers - Dispose");
+    }
+
+    private async Task LoadList()
+    {
+        await Task.Delay(500);
+        lstSales = lstSalesGroup = await customerServiceSale.GetSaleByCustomerCodeAsync(customerCode);
+        if (lstSales.Count > 0)
+        {
+            customer = lstSales[0];
+        }
+        StateHasChanged();
+
+    } }

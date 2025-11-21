@@ -1,0 +1,401 @@
+﻿@page "/PhanQuyenSuDung"
+
+@using QLSX.Shared.Models
+@using QLSX.Web.Data
+@using QLSX.Web.Services
+@using Blazored.LocalStorage
+@using QLSX.Web.Shared
+
+@inject IEmloyeeService<UserModel> employeeService
+@inject IPhanQuyenSuDungService< QLSX.Shared.Models.QuyenSuDungModel> permisstionService
+
+@inject IUserService userService
+@inject ILocalStorageService localStorageService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+@inject AppService appService
+
+@attribute [Authorize]
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject IToastService toastService
+
+@namespace QLSX.Web.Pages.PhanQuyenSuDung
+
+<br />
+
+<style>
+    .mud-table-cell-custom-group {
+        font-weight: 500;
+    }
+
+    .mud-table-cell-custom-group-footer {
+        padding-bottom: 50px;
+        text-align: right;
+    }
+</style>
+
+<AuthorizeView Roles="Admin">
+    <Authorized>
+
+
+        <MudItem xs="12" sm="6">
+            <MudPaper Elevation="0">
+                <MudSelect T="UserModel" Dense="true" ValueChanged="OnValueChanged"  Label="Chọn nhân viên" Variant="Variant.Outlined">
+                    <MudSelectItem Value="@( new UserModel() )"> Chọn nhân viên </MudSelectItem>
+                    @if (usersList != null)
+                    {
+                        @foreach (var item in usersList)
+                        {
+                            <MudSelectItem Value="item">  @item.HoTen ( @item.EmailAddress  )   </MudSelectItem>
+                        }
+                    }
+                </MudSelect>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="5">
+            <MudButton Style="ml-1" Variant="Variant.Filled" Class="mt-3"
+                       @onclick="@(() => LuuDuLieu())"
+                       Size="Size.Large" StartIcon="@Icons.Material.Filled.SaveAs"
+                       Color="Color.Primary">Lưu dữ liệu</MudButton>
+        </MudItem>
+        <MudItem xs="12" sm="12">
+            <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+                <MudTabPanel Text="Phân quyền chức năng">
+                    <div class="col-md-12">
+                        <MudTable Items="@lstQuyen" Hover="true"
+                                  Breakpoint="Breakpoint.Sm"
+                                  Loading="@_loading"
+                                  IsEditRowSwitchingBlocked="true" LoadingProgressColor="Color.Info">
+                            <HeaderContent>
+                                <MudTh>Chức năng</MudTh>
+                                <MudTh>Quyền <MudCheckBox @bind-Checked="@isEnable" /> </MudTh>
+                                <MudTh>Thêm <MudCheckBox @bind-Checked="@isThem" /></MudTh>
+                                <MudTh>Xóa <MudCheckBox @bind-Checked="@isSua" /></MudTh>
+                                <MudTh>Sửa <MudCheckBox @bind-Checked="@isXoa" /></MudTh>
+                                <MudTh>Xem in <MudCheckBox @bind-Checked="@isXemIn" /></MudTh>
+                            </HeaderContent>
+                            <RowTemplate Context="ctx">
+                                <MudTd DataLabel="TenQuyen">@ctx.ChucNang</MudTd>
+                                <MudTd DataLabel="Enable"><MudCheckBox @bind-Checked="@ctx.Selectted" /></MudTd>
+                                <MudTd DataLabel="Them"> <MudCheckBox @bind-Checked="@ctx.Them" /></MudTd>
+                                <MudTd DataLabel="Sua"><MudCheckBox @bind-Checked="@ctx.Sua" /></MudTd>
+                                <MudTd DataLabel="Xoa"> <MudCheckBox @bind-Checked="@ctx.Xoa" /></MudTd>
+                                <MudTd DataLabel="XemIn"><MudCheckBox @bind-Checked="@ctx.XemIn" /></MudTd>
+                            </RowTemplate>
+
+
+                        </MudTable>
+                    </div>
+                </MudTabPanel>
+                <MudTabPanel Text="Phân quyền báo cáo">
+                    <div class="col-md-12">
+                        <MudTable Items="@lstQuyenBaoCao" Hover="true"
+                                  Breakpoint="Breakpoint.Sm"
+                                  Loading="@_loading1"
+                                  GroupBy="@_groupDefinition"
+                                  GroupHeaderStyle="background-color:var(--mud-palette-background-grey)"
+                                  GroupFooterClass="mb-4"
+                                  IsEditRowSwitchingBlocked="true" LoadingProgressColor="Color.Info">
+                            <ColGroup>
+                                <col style="width: 60px;" />
+                                <col />
+                                <col />
+                            </ColGroup>
+                            <HeaderContent>
+                                <MudTh>Chức năng</MudTh>
+                                <MudTh>Quyền <MudCheckBox @bind-Checked="@isEnable1" /> </MudTh>
+                            </HeaderContent>
+                            <GroupHeaderTemplate Context="ctx2">
+                                <MudTh colspan="3">@($"{ctx2.GroupName}: {ctx2.Key}")</MudTh>
+                                </GroupHeaderTemplate>
+                                <RowTemplate Context="ctx2">
+                                    <MudTd DataLabel="TenBaoCao">@ctx2.TenBaoCao</MudTd>
+                                    <MudTd DataLabel=""><MudCheckBox @bind-Checked="@ctx2.Selected" /></MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        </div>
+                    </MudTabPanel>
+
+                </MudTabs>
+            </MudItem>
+
+
+        </Authorized>
+        <NotAuthorized>
+            <NotPermission></NotPermission>
+        </NotAuthorized>
+    </AuthorizeView>
+
+
+    @code {
+    private bool _loading;
+    private bool _loading1;
+
+    public List<UserModel> usersList { get; set; } = new List<UserModel>();
+    public List<QuyenSuDungModel> lstQuyen { get; set; }
+    public List<PhanQuyenBaoCaoModel> lstQuyenBaoCao { get; set; }
+
+    bool isLoading = true;
+    bool isLoading1 = true;
+
+    private int Defaltvalue { get; set; } = 0;
+
+    bool _isEnable1 = false;
+    bool _isEnable = false;
+    bool _isThem = false;
+    bool _isSua = false;
+    bool _isXoa = false;
+    bool _isXemIn = false;
+
+    private TableGroupDefinition<PhanQuyenBaoCaoModel> _groupDefinition = new()
+        {
+            GroupName = "Loại ",
+            Indentation = false,
+            Expandable = true,
+            Selector = (e) => e.Loai
+        };
+
+    public bool isEnable
+    {
+        get => _isEnable;
+        set
+        {
+            _isEnable = value;
+            if (lstQuyen == null) return;
+            if (_isEnable)
+            {
+                foreach (var item in lstQuyen)
+                {
+                    item.Selectted = true;
+                }
+            }
+            else
+            {
+                foreach (var item in lstQuyen)
+                {
+                    item.Selectted = false;
+                }
+            }
+        }
+    }
+    public bool isEnable1
+    {
+        get => _isEnable1;
+        set
+        {
+            _isEnable1 = value;
+            if (lstQuyenBaoCao == null) return;
+            if (_isEnable1)
+            {
+                foreach (var item in lstQuyenBaoCao)
+                {
+                    item.Selected = true;
+                }
+            }
+            else
+            {
+                foreach (var item in lstQuyenBaoCao)
+                {
+                    item.Selected = false;
+                }
+            }
+        }
+    }
+    public bool isThem
+    {
+        get => _isThem;
+        set
+        {
+            _isThem = value;
+            if (lstQuyen == null) return;
+            if (_isThem)
+            {
+                foreach (var item in lstQuyen)
+                {
+                    item.Them = true;
+                }
+            }
+            else
+            {
+                foreach (var item in lstQuyen)
+                {
+                    item.Them = false;
+                }
+            }
+        }
+    }
+
+    public bool isSua
+    {
+        get => _isSua;
+        set
+        {
+            _isSua = value;
+            if (lstQuyen == null) return;
+            if (_isSua)
+            {
+                foreach (var item in lstQuyen)
+                {
+                    item.Sua = true;
+                }
+            }
+            else
+            {
+                foreach (var item in lstQuyen)
+                {
+                    item.Sua = false;
+                }
+            }
+        }
+    }
+    public bool isXoa
+    {
+        get => _isXoa;
+        set
+        {
+            _isXoa = value;
+            if (lstQuyen == null) return;
+            if (_isXoa)
+            {
+                foreach (var item in lstQuyen)
+                {
+                    item.Xoa = true;
+                }
+            }
+            else
+            {
+                foreach (var item in lstQuyen)
+                {
+                    item.Xoa = false;
+                }
+            }
+        }
+    }
+    public bool isXemIn
+    {
+        get => _isXemIn;
+        set
+        {
+            _isXemIn = value;
+            if (lstQuyen == null) return;
+            if (_isXemIn)
+            {
+                foreach (var item in lstQuyen)
+                {
+                    item.XemIn = true;
+                }
+            }
+            else
+            {
+                foreach (var item in lstQuyen)
+                {
+                    item.XemIn = false;
+                }
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        usersList = new List<UserModel>();
+        await base.OnInitializedAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            usersList = await employeeService.GetAllAsync();
+
+            StateHasChanged();
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task OnSelectedValuesChanged(IEnumerable<int> values)
+    {
+        _loading = true;
+        isEnable = false;
+        isThem = false;
+        isSua = false;
+        isXoa = false;
+        isXemIn = false;
+        Defaltvalue = 0;
+        if (Defaltvalue == 0) return;
+        LoadQuyen(Defaltvalue);
+        _loading = false;
+
+        _loading1 = true;
+        LoadBaoCao(Defaltvalue);
+        _loading1 = false;
+
+    }
+
+
+    public void Dispose()
+    {
+    }
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+    }
+
+    protected override bool ShouldRender()
+    {
+        base.ShouldRender();
+        return true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+    }
+    private async Task LuuDuLieu()
+    {
+        await permisstionService.UpdateListAsync(lstQuyen);
+        await permisstionService.UpdateListAsync(lstQuyenBaoCao);
+        toastService.ShowSuccess("Lưu dữ liệu thành công");
+    }
+    private async Task LoadQuyen(int userId)
+    {
+        QLSX.Shared.Models.BaseSearchRequest request = new QLSX.Shared.Models.BaseSearchRequest();
+        request.PageSize = 100;
+        var lst = await permisstionService.GetAllPagedAsync(request, userId);
+        lstQuyen = lst.Items;
+        StateHasChanged();
+    }
+    private async Task LoadBaoCao(int userId)
+    {
+        QLSX.Shared.Models.BaseSearchRequest request = new QLSX.Shared.Models.BaseSearchRequest();
+        request.PageSize = 100;
+        var lst = await permisstionService.GetAllBaoCaoPagedAsync(request, userId);
+        lstQuyenBaoCao = lst.Items;
+        StateHasChanged();
+    }
+    private UserModel selectedStage { get; set; }
+    private void OnValueChanged(UserModel selected)
+    {
+        selectedStage = selected;
+        
+        _loading = true;
+        isEnable = false;
+        isThem = false;
+        isSua = false;
+        isXoa = false;
+        isXemIn = false;
+        Defaltvalue = selected.Id ;
+        if (Defaltvalue == 0) return;
+        LoadQuyen(Defaltvalue);
+        _loading = false;
+
+        _loading1 = true;
+        LoadBaoCao(Defaltvalue);
+        _loading1 = false;
+    }
+}

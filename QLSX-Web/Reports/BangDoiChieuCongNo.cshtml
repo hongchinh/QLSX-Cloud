@@ -1,0 +1,150 @@
+@using QLSX.Shared.Data.Responses
+@using QLSX.Shared.Data.Responses.BaoCao
+
+@model ReportResponseBase<BangDoiChieuCongNoResponse>
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link
+      rel="stylesheet"
+      href="@Model.Host/lib/bootstrap/dist/css/bootstrap.css"
+    />
+    <link
+      rel="stylesheet"
+      href="@Model.Host/lib/bootstrap/dist/css/bootstrap-grid.css"
+    />
+    <link
+      rel="stylesheet"
+      href="@Model.Host/lib/bootstrap/dist/css/bootstrap-reboot.css"
+    />
+    <link
+      rel="stylesheet"
+      href="@Model.Host/lib/bootstrap/dist/css/bootstrap-theme.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+    />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="@Model.Host/css/report.css" />
+    <title>Bảng đối chiếu công nợ</title>
+  </head>
+  <body>
+		Html.RenderPartial("HeaderFull", @Model.ThongTin);
+    <div class="row" style="margin-top: 10px !important">
+      <div class="col-md-12" style="text-align: center">
+        <h1>Bảng đối chiếu công nợ</h1>
+      </div>
+    </div>
+    <div class="row" style="margin-top: 5px !important">
+      <div class="col-md-12" style="text-align: center"><i> </i></div>
+    </div>
+    <div>
+      <span>Chúng tôi thông báo đến:</span>
+      <span><b>@Model.ListData[0]?.Ten</b></span>
+      <span><b>@Model.ListData[0]?.SoDienThoai</b></span>
+    </div>
+    <div class="row">
+      <div class="col-md-6">
+        <span>Địa chỉ:</span>
+        <span><b>@Model.ListData[0]?.DiaChi</b></span>
+      </div>
+      <div class="col-md-6">
+        <span>Điện thoại:</span>
+        <span><b>@Model.ListData[0]?.SoDienThoai</b></span>
+      </div>
+    </div>
+    <div>
+      <ol>
+        <li>
+          Tính đến ngày <b>@Model.ListData[0]?.NgayCuoiCung</b>, quý khách còn nợ chúng tôi
+          <b>@Model.ListData[0]?.TongNo</b> đồng.
+        </li>
+        <li>
+          Chi tiết công nợ phát sinh từ ngày <b>@Model.ListData[0]?.NgayBatDau</b> đến ngày
+          <b>@Model.ListData[0]?.NgayCuoiCung</b> gồm các khoản sau
+          @if (Model.ListData.Count > 0)
+          {
+            @foreach(var group in Model.ListData.GroupBy(x=>x.SoChungTu, (key, grp) => new { Name= key,List= grp})) {
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th rowspan="2" class="text-center">Số chứng từ</th>
+                  <th rowspan="2" class="text-center">Ngày chứng từ</th>
+                  <th rowspan="2" class="text-center w35">Diễn giải</th>
+                  <th rowspan="2" class="text-center">Số tiền nợ</th>
+                  <th rowspan="2" class="text-center">Số tiền có</th>
+                </tr>
+              </thead>
+              <tbody>
+                @foreach (var item in group.List)
+                {
+                <tr>
+                  <th>@item.SoChungTu</th>
+                  <th>@item.NgayChungTu</th>
+                  <th>@item.DienGiai</th>
+                  <th style="font-weight: normal; text-align: right">@item.SoTienNo.ToString("###,###.##")</th>
+                  <th style="font-weight: normal; text-align: right">@item.SoTienCo.ToString("###,###.##")</th>
+                </tr>
+                }
+
+                <tr>
+                  <th style="font-weight: bold; text-align: right" colspan="3">
+                    Tổng cộng phát sinh
+                  </th>
+                  <th style="font-weight: bold; text-align: right">@Model.ListData?.Sum(x=> x.SoTienNo).ToString("###,###.##") </th>
+                  <th style="font-weight: bold; text-align: right">@Model.ListData?.Sum(x=> x.SoTienCo).ToString("###,###.##") </th>
+                </tr>
+              </tbody>
+            </table>
+            }
+          } else {
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th rowspan="2" class="text-center">Số chứng từ</th>
+                  <th rowspan="2" class="text-center">Ngày chứng từ</th>
+                  <th rowspan="2" class="text-center w35">Diễn giải</th>
+                  <th rowspan="2" class="text-center">Số tiền nợ</th>
+                  <th rowspan="2" class="text-center">Số tiền có</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th style="font-weight: bold; text-align: center" colspan="5">
+                    Không có dữ liệu
+                  </th>
+                </tr>
+              </tbody>
+            </table>
+          }
+        </li>
+        <li>
+          Tính đến hết ngày <b>@Model.ListData[0]?.NgayCuoiCung</b>, Quý khách còn nợ chúng tôi là
+          <b>@Model.ListData[0]?.TongNo</b> đồng
+        </li>
+      </ol>
+    </div>
+    <table
+      border="0"
+      cellspacing="0"
+      cellpadding="0"
+      style="width: 100%; font-family: Tahoma"
+    >
+      <tr>
+        <td width="33%"></td>
+        <td width="33%"></td>
+        <td width="33%"></td>
+      </tr>
+      <tr>
+        <td><b>Xác nhận của đơn vị</b></td>
+        <td><b>@Model.ThongTin.ChucDanhKeToan</b></td>
+        <td><b>@Model.ThongTin.ChucDanhThuTruong</b></td>
+      </tr>
+    </table>
+  </body>
+</html>
+

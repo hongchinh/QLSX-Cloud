@@ -1,0 +1,72 @@
+﻿@inject ILogger<Edit> Logger
+@inject IJSRuntime JSRuntime
+@inject IDMNhomKhachHangService<DanhMucNhomKhachHangModel> itemService
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject ISnackbar Snackbar
+
+
+@namespace QLSX.Web.Pages.DMNhomKhachHangPage
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Edit" Class="mr-3 mb-n1" />
+            Tạo mới
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="formData" @bind-IsValid="@success" @bind-Errors="@errors">
+            <EditForm Model="server">
+                <DataAnnotationsValidator />
+                <MudPaper Elevation="25" Class="py-8 px-8" Style="padding-top:2px !important">
+                    <ValidationSummary></ValidationSummary>
+                    <MudGrid Spacing="1">
+                        <MudItem xs="6" sm="3">
+                            <MudTextField Margin="Margin.Dense" @bind-Value="@server.MaNhom" Label="Mã nhóm" Variant="Variant.Outlined" />
+                            <ValidationMessage For="(() => server.MaNhom)" />
+                        </MudItem>
+                        <MudItem xs="6" sm="9">
+                            <MudTextField Margin="Margin.Dense" @bind-Value="@server.TenNhom" Label="Tên nhóm" Variant="Variant.Outlined" />
+                        </MudItem>
+
+                    </MudGrid>
+                </MudPaper>
+            </EditForm>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel" Variant="Variant.Filled" Color="Color.Error">Bỏ qua</MudButton>
+        <MudButton Class="me-3" StartIcon="@Icons.Material.Filled.Save" Color="Color.Primary" Variant="Variant.Filled" OnClick="@(() => SaveClick())">Lưu</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public DanhMucNhomKhachHangModel server { get; set; } = new DanhMucNhomKhachHangModel();
+
+    MudForm formData;
+    bool success;
+    string[] errors = { };
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private async Task SaveClick()
+    {
+        await formData.Validate();
+        if (errors.Count() == 0)
+        {
+            var itemByCode = await itemService.GetByCodeAsync(server.MaNhom);
+            if (itemByCode.Id > 0 && itemByCode.Id != server.Id)
+            {
+                Snackbar.Add("Mã nhóm đã tồn tại, chọn loại khác.", Severity.Error);
+            }
+            else
+            {
+                var itemEdit = await itemService.UpdateAsync(server.Id, server);
+                MudDialog.Close(DialogResult.Ok(itemEdit.Id > 0));
+            }
+        }
+    }
+}

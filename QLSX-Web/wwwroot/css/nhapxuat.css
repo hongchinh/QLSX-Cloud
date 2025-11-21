@@ -1,0 +1,35 @@
+﻿table#tblNoiDungNhapXuatId tr {
+    border: 1px solid #f3f3f3
+}
+table#tblNoiDungNhapXuatId .form-control{
+    border-radius: 0px !important;
+}
+table#tblNoiDungNhapXuatId .btn{
+    border-radius: 0px !important;
+}
+
+/*#tblNoiDungNhapXuatId > .tableEdit > thead > tr > th, 
+.tableEdit > tbody > tr > th, .tableEdit > tfoot > tr > th, 
+.tableEdit > thead > tr > td, 
+.tableEdit > tbody > tr > td, 
+.tableEdit > tfoot > tr > td{
+    padding:0px !important
+}*/
+
+.numberformat{
+    text-align: right !important
+}
+
+.footer {
+    padding: 10px !important
+}
+
+.pd-5{
+    padding: 5px !important
+}
+.pd-0 {
+    padding: 0px !important
+}
+.tab-pane{
+    min-height:184px !important;
+}

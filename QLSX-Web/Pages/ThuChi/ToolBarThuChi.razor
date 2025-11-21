@@ -1,0 +1,198 @@
+﻿@using Dialogs
+@using Newtonsoft.Json
+@using Microsoft.AspNetCore.Mvc;
+@using QLSX.Shared.Models
+@using AutoMapper
+@using Microsoft.Extensions.Configuration;
+@using System.Globalization
+@using Blazored.LocalStorage
+
+@inject IDMHangHoaService<DanhMucHangHoaModel> dmhanghoaService
+@inject IDMKhachHangService<DanhMucKhachHangModel> dmkhachhangService
+@inject INhapXuatsService<NhapXuatModel> nhapxuatService
+@inject IDMTinhGiaService<QLSX.Shared.Models.DMTinhGia> tinhgiaService
+@inject AppService AppService
+@inject IReportService reportService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager navigationManager
+@inject IToastService toastService
+@inject IDialogService DialogService
+@inject IMapper mapper;
+@inject IConfiguration configuration
+@inject ILocalStorageService localStorageService
+@inject ISnackbar Snackbar
+
+
+@namespace QLSX.Web.Pages.ThuChiPage
+<div id="idToolbar">
+    <MudToolBar Style="background-color:darkslategrey">
+
+        @if (IsCreateOrEdit)
+        {
+            <MudButton Class="ml-1" Variant="Variant.Filled" @onclick="@( () => HuyClick())" StartIcon="@Icons.Material.Filled.Close" Size="Size.Small" Color="Color.Warning">Đóng</MudButton>
+            <MudButton Class="ml-1" Variant="Variant.Filled" @onclick="@( async () => await SaveDataToDB())" StartIcon="@Icons.Material.Filled.Save" Size="Size.Small" Color="Color.Warning">Cất</MudButton>
+        }
+        else
+        {
+            <MudButton Class="ml-1" Variant="Variant.Filled" @onclick="@( () => HuyClick())" StartIcon="@Icons.Material.Filled.Close" Size="Size.Small" Color="Color.Warning">Đóng</MudButton>
+            @if (!IsReadOnly)
+            {
+                <MudButton Class="ml-1" Variant="Variant.Filled" @onclick="@( () => SuaClick())" StartIcon="@Icons.Material.Filled.Cancel" Size="Size.Small" Color="Color.Warning">Hủy</MudButton>
+                <MudButton Class="ml-1" Variant="Variant.Filled" @onclick="@( async () => await SaveDataToDB())" StartIcon="@Icons.Material.Filled.Save" Size="Size.Small" Color="Color.Warning">Cất</MudButton>
+            }
+            else
+            {
+                <MudButton Class="ml-1" Disabled="IsEnableSua" Variant="Variant.Filled" @onclick="@( () => SuaClick())" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Warning">Sửa</MudButton>
+            }
+            <MudButton Class="ml-1" Disabled="IsEnableXoa" Variant="Variant.Filled" @onclick="@(async() => await DeleteClick())" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Warning">Xóa</MudButton>
+            <MudButton Class="ml-1" Variant="Variant.Filled" @onclick="@(() => OpenDialogTimNhanh())" StartIcon="@Icons.Material.Filled.Search" Size="Size.Small" Color="Color.Info">Tìm nhanh</MudButton>
+
+            @if (thuchi.Loai == "thutm")
+            {
+                <MudButton Class="ml-1" Variant="Variant.Filled" ButtonType="ButtonType.Button" OnClick=" async  ()=> await PrintClick(thuchi)" StartIcon="@Icons.Material.Filled.Print" Size="Size.Small" Color="Color.Warning">In</MudButton>
+            }
+            else if (thuchi.Loai == "chitm")
+            {
+                <MudButton Class="ml-1" Variant="Variant.Filled" ButtonType="ButtonType.Button" OnClick=" async  ()=> await PrintClick(thuchi)" StartIcon="@Icons.Material.Filled.Print" Size="Size.Small" Color="Color.Warning">In</MudButton>
+            }
+
+        }
+
+    </MudToolBar>
+</div>
+@code {
+    [CascadingParameter] private Task<AuthenticationState> authenticationStateTask { get; set; }
+    [Parameter] public ThuChiModel thuchi { get; set; } = new ThuChiModel();
+    [Parameter] public QuyenSuDungModel quyenSuDung { get; set; }
+    [Parameter] public bool IsCreateOrEdit { get; set; }
+    [Parameter] public bool saveAndCreate { get; set; }
+    [Parameter] public EventCallback SaveData { get; set; }
+    [Parameter] public EventCallback CancelClick { get; set; }
+    [Parameter] public EventCallback<bool> SuaClickCallBack { get; set; }
+
+    public string hostReport { get; set; }
+    public string mdvsd { get; set; }
+
+    public bool IsEnableThem { get; set; }
+    public bool IsEnableSua { get; set; }
+    public bool IsEnableHuy { get; set; }
+    public bool IsEnableXoa { get; set; }
+    public bool IsEnableXemIn { get; set; }
+    public bool IsReadOnly { get; set; } = true;
+
+    private void EnableButton(bool enable)
+    {
+        IsEnableThem = enable;
+        IsEnableHuy = !enable;
+        IsEnableSua = enable;
+        IsEnableXoa = enable;
+        IsEnableXemIn = enable;
+
+        //if (!quyenSuDung.Them) IsEnableThem = false;
+        //if (!quyenSuDung.Sua) IsEnableSua = false;
+        //if (!quyenSuDung.Xoa) IsEnableXoa = false;
+        //if (!quyenSuDung.XemIn) IsEnableXemIn = false;
+
+        StateHasChanged();
+    }
+    private async Task SuaClick()
+    {
+        IsReadOnly = !IsReadOnly;
+        await SuaClickCallBack.InvokeAsync(IsReadOnly);
+    }
+    private async Task HuyClick()
+    {
+        await CancelClick.InvokeAsync();
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            hostReport = configuration.GetValue<string>("AppSettings:ReportUrl");
+            var user = (await authenticationStateTask).User;
+            mdvsd = user.FindFirst(c => c.Type == "TenantId")?.Value ?? "0";
+            EnableButton(false);
+            StateHasChanged();
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task SaveDataToDB()
+    {
+        await SaveData.InvokeAsync();
+        EnableButton(false);
+    }
+
+    [JSInvokable]
+    private async Task PrintClick(ThuChiModel thuchi)
+    {
+        string urlPrint = @"{0}/Reports/Viewer?ReportFileName={1}&id={2}&mdvsd={3}";
+        if (thuchi.Loai == "thutm")
+        {
+            urlPrint = string.Format(urlPrint, hostReport, "rptPhieuThu", thuchi.Id, thuchi.DMDonViSuDungId);
+
+        }
+        else
+        {
+            urlPrint = string.Format(urlPrint, hostReport, "rptPhieuChi", thuchi.Id, thuchi.DMDonViSuDungId);
+        }
+        await JSRuntime.InvokeAsync<WindowDimensions>("printReport", urlPrint);
+    }
+
+    private void OpenDialogTimNhanh()
+    {
+        var parameters = new DialogParameters { ["TimNhanhCalback"] = EventCallback.Factory.Create<int>(this, TimNhanhCalback), ["Loai"] = thuchi.Loai };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<DialogTimKiemNhanhNhapXuat>("Tìm kiếm nhanh", parameters, options);
+    }
+
+    private async Task TimNhanhCalback(int id)
+    {
+        //var thuchinew = await thuchitService.GetByIdAsync(id);
+        //if (thuchinew.Total == 0)
+        //{
+        //    return;
+        //}
+        //thuchi = mapper.Map<ThuChiModel>(thuchinew);
+
+        StateHasChanged();
+    }
+
+    private async Task SaveStatus()
+    {
+        await localStorageService.SetItemAsync($"{thuchi.Loai}-SaveStatus", saveAndCreate);
+    }
+
+    private async Task DeleteClick()
+    {
+        var parameters = new DialogParameters { ["server"] = thuchi };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<Delete>("Xóa", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            int.TryParse(result.Data.ToString(), out int deletedServer);
+            await nhapxuatService.DeleteAsync(thuchi.Id);
+            Snackbar.Add("Bạn phải xóa dữ liệu thành công", Severity.Info);
+
+            NhapXuatSearchRequest request = new NhapXuatSearchRequest();
+            request.Loai = thuchi.Loai;
+            request.DMDonViSuDungId = AppService.DMDonViSuDungId;
+            // get list IDs from nhap xuat
+            var lstIDs = await nhapxuatService.GetAllNhapXuatIDs(request);
+
+            if (lstIDs.Count == 0)
+            {
+                navigationManager.NavigateTo("thuchis?rid=" + Guid.NewGuid(), true);
+            }
+            else
+            {
+                int id = lstIDs[lstIDs.Count - 1];
+                navigationManager.NavigateTo("thuchis/" + thuchi.Loai + "/edit/" + id + "?rid=" + Guid.NewGuid(), true);
+            }
+        }
+    }
+
+}
+

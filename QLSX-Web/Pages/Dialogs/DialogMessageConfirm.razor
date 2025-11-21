@@ -1,0 +1,32 @@
+﻿@using System.Net
+@using System.Text
+@using QLSX.Web.Helpers
+@using QLSX.Shared.Models;
+@using System.Net.Http.Json
+@inject ILogger<DialogHangHoa> Logger
+@inject IJSRuntime jsRuntime
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject INhapXuatsService<NhapXuatModel> nhapxuatService
+@inject AppService AppService
+
+
+@namespace Dialogs
+
+<MudDialog>
+    <DialogContent>
+        <div class="d-flex flex-column py-1">
+            @NoiDung
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">No</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Yes</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public string NoiDung { get; set; }
+    void Submit() => MudDialog.Close(DialogResult.Ok(true));
+    void Cancel() => MudDialog.Cancel();
+}

@@ -1,0 +1,104 @@
+@using QLSX.Shared.Data.Responses
+@using QLSX.Shared.Data.Responses.BaoCao
+
+@model ReportResponseBase<BangKeHanMucCongNoPhaiTraResponse>
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link
+      rel="stylesheet"
+      href="@Model.Host/lib/bootstrap/dist/css/bootstrap.css"
+    />
+    <link
+      rel="stylesheet"
+      href="@Model.Host/lib/bootstrap/dist/css/bootstrap-grid.css"
+    />
+    <link
+      rel="stylesheet"
+      href="@Model.Host/lib/bootstrap/dist/css/bootstrap-reboot.css"
+    />
+    <link
+      rel="stylesheet"
+      href="@Model.Host/lib/bootstrap/dist/css/bootstrap-theme.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+    />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="@Model.Host/css/report.css" />
+    <title>Bảng kê hạn mức công nợ phải thu</title>
+  </head>
+  <body>
+    Html.RenderPartial("Header", @Model.ThongTin);
+    <div class="row" style="margin-top: 10px !important">
+      <div class="col-md-12" style="text-align: center">
+        <h1 style="color: blue">Bảng kê hạn mức công nợ phải thu</h1>
+      </div>
+    </div>
+    <div class="row" style="margin-top: 10px !important">
+      <div class="col-md-12" style="text-align: center">
+        <span><i>Từ ngày @Model.ListData[0]?.NgayBatDau  Đến ngày: @Model.ListData[0]?.NgayCuoiCung</i></span>
+      </div>
+    </div>
+    <div>
+      @if (Model.ListData.Count > 0)
+      {
+           var stt = 0;
+        @foreach(var group in Model.ListData.GroupBy(x=>x.TenDoiTuong, (key, grp) => new { Name= key,List= grp})) {
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th rowspan="2" class="text-center">STT</th>
+              <th rowspan="2" class="text-center">Mã đối tượng</th>
+              <th rowspan="2" class="text-center w35">Tên đối tượng</th>
+              <th rowspan="2" class="text-center">Hạn mức</th>
+              <th rowspan="2" class="text-center">Dư công nợ</th>
+              <th rowspan="2" class="text-center">Chênh lệch</th>
+            </tr>
+          </thead>
+          <tbody>
+             
+            @foreach (var item in group.List)
+            {
+             stt = stt + 1 ; 
+                            <tr>
+                                <th>@stt</th>
+              <th>@item.MaDoiTuong</th>
+              <th>@item.TenDoiTuong</th>
+              <th style="font-weight: normal; text-align: right">@item.HanMuc.ToString("###,###.##")</th>
+              <th style="font-weight: normal; text-align: right">@item.DuCongNo.ToString("###,###.##")</th>
+              <th style="font-weight: normal; text-align: right">@item.ChenhLech.ToString("###,###.##")</th>
+            </tr>
+            }
+          </tbody>
+        </table>
+        }
+      } else {
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th rowspan="2" class="text-center">STT</th>
+              <th rowspan="2" class="text-center">Mã đối tượng</th>
+              <th rowspan="2" class="text-center w35">Tên đối tượng</th>
+              <th rowspan="2" class="text-center">Hạn mức</th>
+              <th rowspan="2" class="text-center">Dư công nợ</th>
+              <th rowspan="2" class="text-center">Chênh lệch</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th style="font-weight: bold; text-align: center" colspan="6">
+                Không có dữ liệu
+              </th>
+            </tr>
+          </tbody>
+        </table>
+      }
+    </div>
+  </body>
+</html>
+

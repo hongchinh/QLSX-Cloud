@@ -1,0 +1,315 @@
+﻿@page "/customersforadmin"
+@using CRMApp.Data
+@using CRMApp.Services
+@using CuriousDriveRazorLibrary
+@using Blazored.LocalStorage
+
+@inject ICustomersService<Customer> customerService
+@inject IUserService userService
+@inject IProductService<Product> productService
+
+@inject IEmloyeeService<User> employeeService
+@inject IRegionService<Region> regionService
+@inject IStatusService<CustomerStatus> statusService
+@inject ITypeService<CustomerType> typeService
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService localStorageService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+@attribute [Authorize]
+@inherits CRMApp.Helpers.BlazorComponent
+@inject NavigationManager NavigationManager
+
+@namespace CRMApp.Pages.CustomerPage.CustomersPage
+
+<div class="col-12">
+
+    <h3><b>Danh sách khách hàng</b></h3>
+    <div class="row">
+        <div class="col-12">
+            <div class="col-md-2">
+                <p class="esh-link-wrapper">
+                    <button class="btn btn-primary" @onclick="@(() => CreateClick(UserLogin.UserId))">
+                        Tạo mới khách hàng
+                    </button>
+                </p>
+            </div>
+            <div class="col-md-10">
+                <input type="date" />
+            </div>
+            </div>
+
+        </div>
+   
+    <SpinLoader IsLoading="isLoading">
+        <LoadingTemplate>
+            <div class="col-12" style="background-color: lightgray; height:400px; vertical-align:middle">
+                <br /><br />
+                <Chase Center="true" Color="#c21f13" Size="70px"></Chase>
+            </div>
+        </LoadingTemplate>
+        <ContentTemplate>
+            @if (filteredCustomerList != null)
+            {
+<GridView Items="filteredCustomerList" ReloadList="IsGridViewFiltered">
+    <GridColumns>
+        <GridColumn ColumnTitle="#"></GridColumn>
+        <GridColumn ColumnTitle="Tên khách hàng" IsSearch="true"
+                    OnSearchTextChanged="@(e => OnCustomerSearchTextChanged111(e, "CustomerName"))"></GridColumn>
+        <GridColumn ColumnTitle="Khu vực" IsSearch="true"
+                    OnSearchTextChanged="@(e => OnCustomerSearchTextChanged111(e, "RegionName"))"></GridColumn>
+        <GridColumn ColumnTitle="Chăm sóc" IsSearch="true"
+                    OnSearchTextChanged="@(e => OnCustomerSearchTextChanged111(e, "ChamSoc"))"></GridColumn>
+        <GridColumn ColumnTitle="Ghi chú" IsSearch="true"
+                    OnSearchTextChanged="@(e => OnCustomerSearchTextChanged111(e, "ReasonOfStop"))"></GridColumn>
+        <AuthorizeView>
+            <Authorized>
+                <GridColumn ColumnTitle="Actions"></GridColumn>
+            </Authorized>
+        </AuthorizeView>
+    </GridColumns>
+    <GridRow Context="customer">
+        <td>
+            @customer.Stt
+        </td>
+        <td>
+            <div>
+                <div style="width:20%; float:left">
+                    <img style="height: 40px; width:40px;" onerror="this.src='/img/noimage.png'" src="@customer.PictureUri" />
+                </div>
+                <div style="width:80%; float:right">
+                    <b>
+                        <a @onclick="@(() => EditClick(customer.CustomerId))" @onclick:stopPropagation="true">@customer.CustomerName</a>
+                    </b> <br />
+                    @customer.Mobile1  @(string.IsNullOrEmpty (customer.Mobile2) ? "" : "/" + customer.Mobile2 ) <br />
+                    @if (customer.IsNotCS)
+                        {<b style="color: red;">@customer.TinhTrang</b>}
+                        else
+                        { <b>@customer.TinhTrang</b>}
+                </div>
+            </div>
+            
+        </td>
+        <td>
+            @customer.RegionName <br />
+            @customer.CustomerTypeName <br />
+            @customer.StatusName
+        </td>
+        <td width="20%">
+          @customer.CreateDate.ToString("dd/MM/yyyy")  :   @customer.Contents <br />
+            <b>@customer.DateNext.ToString("dd/MM/yyyy") : @customer.ContentsNext </b><br />
+            @customer.EmployeeName 
+        </td>
+        <td width="5%">
+            @customer.ReasonOfStop
+    </td>
+    <AuthorizeView>
+        @*<AuthorizeView Roles="Publisher" Policy="SeniorEmployee">*@
+        <Authorized>
+            <th>
+                <a href="/customercares/@customer.CustomerId" class="btn btn-primary w-100">
+                    Chăm sóc
+                </a>
+                @if (@customer.lstDonHang.Count > 0)
+                    {
+                    <a href="/customersales/@customer.CustomerId" class="btn btn-vimeo w-100">
+                        Số đơn hàng <b>(@customer.lstDonHang.GroupBy(x => new { x.SoChungTu }).ToList().Count()  )</b> 
+                    </a>
+                    }
+
+            </th>
+        </Authorized>
+    </AuthorizeView>
+</GridRow>
+</GridView>}
+        </ContentTemplate>
+    </SpinLoader>
+
+    <Edit CusStatus="@customerStatusList"
+          CusTypes="@customerTypeList"
+          CusUsers="@customerUser"
+          CusRegions="@customerRegion"
+          CusProducts="@cusProductList"
+          OnSaveClick="ReloadCatalogItems" @ref="EditComponent"></Edit>
+
+    <Create CusStatus="@customerStatusList"
+            CusTypes="@customerTypeList"
+            CusUsers="@customerUser"
+            CusRegions="@customerRegion"
+            CusProducts="@cusProductList"
+            OnSaveClick="ReloadCatalogItems" @ref="CreateComponent"></Create>
+    <Delete OnSaveClick="ReloadCatalogItems" @ref="DeleteComponent"></Delete>
+</div>
+
+@code { public List<Region> customerRegion { get; set; }
+    public List<CustomerType> customerTypeList { get; set; }
+    public List<CustomerStatus> customerStatusList { get; set; }
+    public List<User> customerUser { get; set; }
+
+    public List<Product> cusProductList { get; set; }
+
+    public CustomerVM customer { get; set; }
+    public List<CustomerVM> customersList { get; set; }
+    public List<CustomerVM> filteredCustomerList { get; set; }
+
+    public bool IsVisible { get; set; }
+    public bool Result { get; set; }
+    public string RecordName { get; set; }
+    public string[] Cities { get; set; }
+    public bool IsGridViewFiltered { get; set; }
+    bool isLoading = true;
+    int Stt = 1;
+    public User UserLogin;
+
+    public BaseRequest itemRequest { get; set; }
+
+    private Edit EditComponent { get; set; }
+    private Delete DeleteComponent { get; set; }
+    private Create CreateComponent { get; set; }
+
+
+
+    protected override void OnInitialized()
+    {
+        Console.WriteLine("Customer - OnInitialized");
+        base.OnInitialized();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine("Customer - OnInitializedAsync");
+
+        customer = new CustomerVM();
+        customersList = new List<CustomerVM>();
+        UserLogin = new User();
+        Stt = 1;
+      
+        await base.OnInitializedAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        Console.WriteLine("Customers - OnParametersSet");
+        base.OnParametersSet();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Console.WriteLine("Customers - OnParametersSetAsync");
+        await base.OnParametersSetAsync();
+    }
+
+    protected override bool ShouldRender()
+    {
+        base.ShouldRender();
+        Console.WriteLine("Customers - ShouldRender");
+        return true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Console.WriteLine("Customers - OnAfterRender - firstRender = " + firstRender);
+        base.OnAfterRender(firstRender);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        Console.WriteLine("Customers - OnAfterRenderAsync - firstRender = " + firstRender);
+
+        if (firstRender)
+        {
+            await LoadCustomers();
+            customerRegion = await regionService.GetAllAsync();
+            customerTypeList = await typeService.GetAllAsync();
+            customerStatusList = await statusService.GetAllAsync();
+            customerUser = await employeeService.GetAllAsync();
+            UserLogin = await localStorageService.GetItemAsync<User>("UserLogin");
+            cusProductList = await productService.GetAllAsync();
+            isLoading = false;
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public void Dispose()
+    {
+        Console.WriteLine("Customers - Dispose");
+    }
+
+    private async Task LoadCustomers()
+    {
+        await Task.Delay(500);
+        Stt = 1;
+
+        customersList = filteredCustomerList = await customerService.GetAllByUserIdForAdminAsync();
+
+        if (customersList == null)
+        {
+            RefreshRequest refreshRequest = new RefreshRequest();
+            refreshRequest.AccessToken = await localStorageService.GetItemAsync<string>("accessToken");
+            refreshRequest.RefreshToken = await localStorageService.GetItemAsync<string>("refreshToken");
+            var user1 = await userService.RefreshTokenAsync(refreshRequest);
+            if (user1 == null)
+            {
+                NavigationManager.NavigateTo("/login");
+                return;
+            }
+            await localStorageService.SetItemAsync("accessToken", user1.AccessToken);
+
+            customersList = filteredCustomerList = await customerService.GetAllByUserIdForAdminAsync();
+        }
+        StateHasChanged();
+
+    }
+
+    private void OnCustomerSearchTextChanged111(ChangeEventArgs changeEventArgs, string columnTitle)
+    {
+        string searchText = changeEventArgs.Value.ToString();
+        IsGridViewFiltered = true;
+        Stt = 1;
+        switch (columnTitle)
+        {
+
+            case "CustomerName":
+                filteredCustomerList = customersList.Where(cus => cus.CustomerName.ToLower().Contains(searchText) ||
+                cus.Mobile1.ToLower().Contains(searchText) || cus.Mobile2.ToLower().Contains(searchText)).ToList();
+                break;
+            case "RegionName":
+                filteredCustomerList = customersList.Where(cus => cus.RegionName.ToLower().Contains(searchText)).ToList();
+                break;
+
+            case "ChamSoc":
+                filteredCustomerList = customersList.Where(cus => cus.Contents.ToString().ToLower().Contains(searchText)
+                || cus.ContentsNext.ToString().ToLower().Contains(searchText)
+                || cus.EmployeeName.ToString().ToLower().Contains(searchText)).ToList();
+                break;
+            case "ReasonOfStop":
+                filteredCustomerList = customersList.Where(cus => cus.ReasonOfStop.ToString().ToLower().Contains(searchText)).ToList();
+                break;
+            default:
+                Console.WriteLine("Default case");
+                break;
+        }
+    }
+
+    private async Task EditClick(int id)
+    {
+        await EditComponent.Open(id);
+    }
+
+    private async Task ReloadCatalogItems()
+    {
+        IsGridViewFiltered = true;
+        await LoadCustomers();
+    }
+
+    private async Task DeleteClick(int id)
+    {
+        await DeleteComponent.Open(id);
+    }
+
+    private async Task CreateClick(int UserLoginId)
+    {
+        await CreateComponent.Open(UserLoginId);
+    }}

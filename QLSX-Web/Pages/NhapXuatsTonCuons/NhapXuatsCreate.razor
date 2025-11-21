@@ -1,0 +1,289 @@
+﻿@page "/nhapxuattoncuons/create/{loaiNX}"
+@using System.Text.Json
+@using Newtonsoft.Json
+@using Blazored.LocalStorage
+@using Microsoft.Extensions.Configuration;
+@using QLSX.Shared.Models
+
+@inject NavigationManager navigationManager
+@inject ILogger<NhapXuatsCreate> Logger
+@inject IJSRuntime JSRuntime
+@inject INhapXuatTonCuonsService<NhapXuatTonCuonModel> nhapxuatService
+@inject IDMHangHoaTonCuonService<DanhMucHangHoaTonCuonModel> dmhanghoaService
+@inject IEmloyeeService<UserModel> dmUserService
+@inject IDMHinhThucTTService<DanhMucHinhThucTTModel> dmHinhThucTTService
+@inject IDMTinhTrangService<QLSX.Shared.Models.DMTinhTrangModel> dmTinhTrangService
+@inject IDMKhoHangService<DanhMucKhoHangModel> dmkhohangService
+@inject IDMLoaiTienService<DanhMucLoaiTienModel> dmLoaiTienService
+@inject IDMSoCTService<QLSX.Shared.Models.DanhMucSoChungTuModel> dmSoCTService
+@inject IPhanQuyenSuDungService< QLSX.Shared.Models.QuyenSuDungModel> permisstionService
+@inject IToastService toastService
+@inject ISettingService<QLSX.Shared.Models.SettingModel> itemService
+@inject ISnackbar Snackbar
+@inject IConfiguration configuration
+
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject ILocalStorageService localStorageService
+
+@namespace QLSX.Web.Pages.NhapXuatTonCuonPage
+
+
+<MudBreadcrumbs Items="_items" Style="padding:0px !important"></MudBreadcrumbs>
+
+<NhapXuatsForm nhapxuat="nhapxuat"
+               lstUser="lstUser"
+               lstHinhThucTT="lstHinhThucTT"
+               lstTinhTrang="lstTinhTrang"
+               lstKhoHang="lstKhoHang"
+               lstLoaiTien="lstLoaiTien"
+               isLoading="@isLoading"
+               quyenSuDung="quyenSuDung"
+               OnValidSubmit="OnValidSubmit"
+               IsCreateOrEdit="true" />
+
+<LoadingProgress IsLoading="isLoading" />
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    [Parameter] public string loaiNX { get; set; }
+    private NhapXuatTonCuonModel nhapxuat = new NhapXuatTonCuonModel();
+    public bool isLoading = true;
+    public string glbSCT;
+    public List<UserModel> lstUser { get; set; }
+    public List<DanhMucHinhThucTTModel> lstHinhThucTT { get; set; }
+    public List<QLSX.Shared.Models.DMTinhTrangModel> lstTinhTrang { get; set; }
+    public List<DanhMucKhoHangModel> lstKhoHang { get; set; }
+    public List<DanhMucLoaiTienModel> lstLoaiTien { get; set; }
+    public QLSX.Shared.Models.QuyenSuDungModel quyenSuDung { get; set; } = new QLSX.Shared.Models.QuyenSuDungModel();
+    public QLSX.Shared.Models.SettingModel itemSetting { get; set; } = new QLSX.Shared.Models.SettingModel { LoaiNhapXuat = 1 };
+    public bool isNhapTheoM2 { get; set; }
+    public string hostReport { get; set; }
+
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Home", href: "/"),
+        new BreadcrumbItem("Tra cứu nhập xuất tôn cuộn", href: "/nhapxuattoncuons"),
+        new BreadcrumbItem("Tạo mới", href: null, disabled: true)
+    };
+    protected async override Task OnInitializedAsync()
+    {
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender || glbSCT != loaiNX)
+        {
+            isLoading = true;
+            glbSCT = loaiNX;
+            var userLogin = (await authenticationStateTask).User;
+            var DMDonViId = userLogin.FindFirst(c => c.Type == "TenantId")?.Value;
+            DMDonViId = !string.IsNullOrEmpty(DMDonViId) ? DMDonViId : "0";
+            var UserId = userLogin.FindFirst(c => c.Type == "UserId")?.Value;
+            UserId = string.IsNullOrEmpty(UserId) ? "0" : UserId;
+            itemSetting = await itemService.GetByIdAsync(int.Parse(UserId));
+            if (itemSetting.LoaiNhapXuat == 1)
+            {
+                isNhapTheoM2 = false;
+            }
+            else if (itemSetting.LoaiNhapXuat == 2)
+            {
+                isNhapTheoM2 = true;
+            }
+            else if (itemSetting.LoaiNhapXuat == 3)
+            {
+                isNhapTheoM2 = itemSetting.isNhapTheoM2;
+            }
+            QLSX.Shared.Models.GetSoChungTuRequest dmSoChungTu = new QLSX.Shared.Models.GetSoChungTuRequest();
+            dmSoChungTu.Loai = loaiNX;
+            dmSoChungTu.DMDonViSuDungId = int.Parse(DMDonViId);
+
+            nhapxuat.Loai = loaiNX;
+            nhapxuat.NgayCT = DateTime.Now;
+            nhapxuat.NgayGiao = DateTime.Now;
+            nhapxuat.NgayHenThanhToan = DateTime.Now;
+            nhapxuat.NgayHT = DateTime.Now;
+            nhapxuat.SoChungTu = await dmSoCTService.GetSoChungTuAsync(dmSoChungTu);
+            nhapxuat.NoiDungNhapXuatTonCuons.Add(new NoiDungNhapXuatTonCuonModel());
+            if (loaiNX == "nhapton")
+            {
+                _items = new List<BreadcrumbItem>
+                {
+                    new BreadcrumbItem("Home", href: "/"),
+                    new BreadcrumbItem("Tra cứu nhập xuất", href: "/nhapxuattoncuons"),
+                    new BreadcrumbItem("Tạo mới phiếu nhập", href: null, disabled: true)
+                };
+                nhapxuat.DienGiai = "Nhập tôn cuộn " + nhapxuat.SoChungTu;
+            }
+            else if (loaiNX == "xuat")
+            {
+                nhapxuat.DienGiai = "Xuất tôn cuộn " + nhapxuat.SoChungTu;
+                _items = new List<BreadcrumbItem>
+                {
+                    new BreadcrumbItem("Home", href: "/"),
+                    new BreadcrumbItem("Tra cứu nhập xuất", href: "/nhapxuattoncuons"),
+                    new BreadcrumbItem("Tạo mới tộn cuộn", href: null, disabled: true)
+                };
+            }
+            else if (loaiNX == "nhaptontra")
+            {
+                nhapxuat.DienGiai = "Nhập trả hàng hóa " + nhapxuat.SoChungTu;
+                _items = new List<BreadcrumbItem>
+                {
+                    new BreadcrumbItem("Home", href: "/"),
+                    new BreadcrumbItem("Tra cứu nhập xuất", href: "/nhapxuattoncuons"),
+                    new BreadcrumbItem("Tạo mới phiếu nhập trả", href: null, disabled: true)
+                };
+            }
+            else if (loaiNX == "xuattontra")
+            {
+                nhapxuat.DienGiai = "Xuất trả hàng hóa " + nhapxuat.SoChungTu;
+                _items = new List<BreadcrumbItem>
+                {
+                    new BreadcrumbItem("Home", href: "/"),
+                    new BreadcrumbItem("Tra cứu nhập xuất", href: "/nhapxuattoncuons"),
+                    new BreadcrumbItem("Tạo mới phiếu xuất trả", href: null, disabled: true)
+                };
+            }
+
+            nhapxuat.DMDonViSuDungId = int.Parse(DMDonViId);
+            //nhapxuat.NoiDungNhapXuatTonCuons.Add(new NoiDungNhapXuatTonCuon());
+            lstUser = await dmUserService.GetAllAsync();
+            lstHinhThucTT = await dmHinhThucTTService.GetAllAsync();
+            lstTinhTrang = await dmTinhTrangService.GetAllAsync();
+            lstKhoHang = await dmkhohangService.GetAllAsync();
+            lstLoaiTien = await dmLoaiTienService.GetAllAsync();
+
+            if (lstKhoHang != null && lstKhoHang.Count > 0) nhapxuat.MaKho = lstKhoHang[0].MaKho;
+            if (lstTinhTrang != null && lstTinhTrang.Count > 0) nhapxuat.DMTinhTrangId = lstTinhTrang[0].Id;
+            if (lstHinhThucTT != null && lstHinhThucTT.Count > 0) nhapxuat.DMHinhThucTTId = lstHinhThucTT[0].Id;
+            if (lstLoaiTien != null && lstLoaiTien.Count > 0) nhapxuat.DMLoaiTienId = lstLoaiTien[0].Id;
+
+            quyenSuDung = await permisstionService.GetQuyenByUserIdAsync(int.Parse(UserId), loaiNX);
+
+            var nxnew = await localStorageService.GetItemAsync<NhapXuatTonCuonModel>("NHAPXUAT-CREATE");
+            if (nxnew != null)
+            {
+                Snackbar.Clear();
+                Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+                string msg = $"Bạn vừa tạo phiếu mới <a href='nhapxuattoncuons/" + nxnew.Loai + "/edit/" + nxnew.Id + "' style=\"color: red !important\"> " + nxnew.SoChungTu + " </a>";
+                Snackbar.Add(msg, Severity.Success);
+                await localStorageService.RemoveItemAsync("NHAPTON-CREATE");
+            }
+            hostReport = configuration.GetValue<string>("AppSettings:ReportUrl");
+            isLoading = false;
+            StateHasChanged();
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task OnValidSubmit(bool keepAdd)
+    {
+        isLoading = true;
+        foreach (var item in nhapxuat.NoiDungNhapXuatTonCuons)
+        {
+            if (item.MaHangHoa == null || item.MaHangHoa == "")
+            {
+                Snackbar.Add("Bạn phải nhập đầy đủ dữ liệu !", Severity.Error);
+                isLoading = false;
+                return;
+            }
+        }
+
+        var userLogin = (await authenticationStateTask).User;
+        var DMDonViId = userLogin.FindFirst(c => c.Type == "TenantId")?.Value;
+        DMDonViId = string.IsNullOrEmpty(DMDonViId) ? "0" : DMDonViId;
+        QLSX.Shared.Models.GetSoChungTuRequest dmSoChungTu = new QLSX.Shared.Models.GetSoChungTuRequest();
+        dmSoChungTu.Loai = loaiNX;
+        dmSoChungTu.DMDonViSuDungId = int.Parse(DMDonViId);
+        nhapxuat.SoChungTu = await dmSoCTService.GetSoChungTuAsync(dmSoChungTu);
+        if (loaiNX == "nhapton")
+        {
+            nhapxuat.DienGiai = "Nhập tôn cuộn " + nhapxuat.SoChungTu;
+        }
+        else if (loaiNX == "xuatton")
+        {
+            nhapxuat.DienGiai = "Xuất tôn cuộn " + nhapxuat.SoChungTu;
+        }
+        else if (loaiNX == "nhaptontra")
+        {
+            nhapxuat.DienGiai = "Nhập trả tôn cuộn " + nhapxuat.SoChungTu;
+        }
+        else if (loaiNX == "xuattontra")
+        {
+            nhapxuat.DienGiai = "Xuất trả tôn cuộn" + nhapxuat.SoChungTu;
+        }
+
+        var result = await nhapxuatService.CreateAsync(nhapxuat);
+        isLoading = false;
+        if (result?.Id > 0)
+        {
+            nhapxuat.Id = result.Id;
+            await localStorageService.SetItemAsync("NHAPTON-CREATE", nhapxuat);
+
+            if (itemSetting.InPhieuSauThemMoi)
+            {
+                await PrintAfterCreate(nhapxuat.Loai, isNhapTheoM2, result.Id);
+            }
+
+            if (keepAdd)
+            {
+                navigationManager.NavigateTo("nhapxuattoncuons/create/" + nhapxuat.Loai + "?rid=" + Guid.NewGuid(), true);
+            }
+            else
+            {
+                navigationManager.NavigateTo($"nhapxuattoncuons/{nhapxuat.Loai}/edit/{nhapxuat.Id}?rid=" + Guid.NewGuid(), true);
+            }
+
+        }
+        else
+        {
+            Snackbar.Add("Có lỗi khi cập nhật dữ liệu, hãy kiểm tra lại.", Severity.Error);
+        }
+    }
+    private async Task PrintAfterCreate(string loai, bool ism2, int id)
+    {
+        if (loai == "nhapton")
+        {
+
+            string strURL = hostReport + "/Reports/Viewer?ReportFileName=rptPhieuNhapTonCuon&id=" + id;
+            await JSRuntime.InvokeVoidAsync("open", strURL, "_blank");
+
+
+        }
+        if (loai == "xuatton")
+        {
+
+            string strURL = hostReport + "/Reports/Viewer?ReportFileName=rptPhieuXuatTonCuon&id=" + id;
+            await JSRuntime.InvokeVoidAsync("open", strURL, "_blank");
+
+
+        }
+        if (loai == "nhaptontra")
+        {
+
+            string strURL = hostReport + "/Reports/Viewer?ReportFileName=rptPhieuNhapTraTon&id=" + id;
+            await JSRuntime.InvokeVoidAsync("open", strURL, "_blank");
+        }
+        if (loai == "xuattontra")
+        {
+
+            string strURL = hostReport + "/Reports/Viewer?ReportFileName=rptPhieuXuatTraTon&id=" + id;
+            await JSRuntime.InvokeVoidAsync("open", strURL, "_blank");
+
+
+        }
+    }
+
+    // [JSInvokable]
+    public static Task<string> HelpMessage()
+    {
+        var nx = new NhapXuatTonCuonModel()
+            {
+                NgayCT = DateTime.Now,
+            };
+        var json = JsonConvert.SerializeObject(nx);
+        return Task.FromResult(json);
+    }
+}

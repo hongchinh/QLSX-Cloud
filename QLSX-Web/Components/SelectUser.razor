@@ -1,0 +1,48 @@
+﻿@using Microsoft.JSInterop
+@using QLSX.Shared.Models
+@inject IJSRuntime JSRuntime;
+@namespace QLSX.Web.Components
+@inject IEmloyeeService<UserModel> userService
+<select class="form-control col-12" @onchange="OnChangeEvent">
+    @if (@items != null)
+    {
+<option value="">Chọn trạng thái</option>
+                @foreach (var item in @items)
+                {
+                    @if (IdSelected == item.Id)
+                    {
+                    <option value="@item.Id " selected>@item.FirstName </option>
+                    }
+                    else
+                    {
+                    <option value="@item.Id">@item.FirstName </option>
+                    }
+
+}}
+</select>
+
+@code { [Parameter]
+    public EventCallback<ChangeEventArgs> OnChangeEvent { get; set; }
+
+    [Parameter]
+    public int IdSelected { get; set; }
+
+    public List<UserModel> items { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && @items == null)
+        {
+            try
+            {
+                items = await userService.GetAllAsync();
+                StateHasChanged();
+            }
+            catch (Exception)
+            {
+
+                //throw;
+            }
+
+        }
+    } }

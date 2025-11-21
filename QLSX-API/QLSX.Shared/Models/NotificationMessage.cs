@@ -1,0 +1,25 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace QLSX.Shared.Models
+{
+    public class NotificationMessage
+    {
+        public int Id { get; set; } = 0;
+        public int CustomerId { get; set; } = 0;
+        public string CustomerName { get; set; } = "";
+        public string Tel { get; set; } = "";
+        public string RegionName { get; set; } = "";
+        public string CustomerTypeName { get; set; } = "";
+        public string StatusName { get; set; } = "";
+        public int UserId { get; set; } = 0;
+        public string UserName { get; set; } = "";
+        public string ContentsNext { get; set; } = "";
+        public int IsRead { get; set; } 
+        public DateTime DateNext { get; set; } = DateTime .Now ;
+        public string DateNextSt => this.DateNext.ToString("dd-MMM-yyyy HH:mm:ss");
+        public string IsReadSt => this.IsRead==1 ? "YES" : "NO";
+    }
+}

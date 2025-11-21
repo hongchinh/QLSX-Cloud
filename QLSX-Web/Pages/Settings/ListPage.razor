@@ -1,0 +1,482 @@
+﻿@page "/Settings"
+@using QLSX.Web.Data
+@using QLSX.Web.Services
+@using Blazored.LocalStorage
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Hosting
+
+@inject ISettingService<QLSX.Shared.Models.SettingModel> itemService
+
+@inject IUserService userService
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService localStorageService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+@attribute [Authorize]
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject NavigationManager NavigationManager
+@inject IWebHostEnvironment Environment
+
+@namespace QLSX.Web.Pages.SettingsPage
+
+<AuthorizeView Roles="Admin">
+    <Authorized>
+        <MudGrid>
+            <MudItem xs="12">
+                <EditForm Model="item" OnValidSubmit="SaveClick" Context="ctx">
+                    <DataAnnotationsValidator />
+                    <MudTabs Elevation="2" Rounded="true">
+                        <MudTabPanel Text="Thông tin in báo cáo">
+                            <MudPaper Elevation="25" Class="pa-12">
+                                <MudGrid Spacing="0" >
+                                    <ValidationSummary></ValidationSummary>
+                                    <MudItem xs="12" sm="2" Style="margin-top:20px">
+                                        Mã đơn vị
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudTextField @bind-Value="@item.MaDonVi" Variant="Variant.Outlined" />
+                                        <ValidationMessage For="(() => item.MaDonVi)" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="6">
+
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2" Style="margin-top:20px">
+                                        Tên đơn vị
+                                    </MudItem>
+                                    <MudItem xs="12" sm="10">
+                                        <MudTextField @bind-Value="@item.TenDonVi" Variant="Variant.Outlined" />
+                                        <ValidationMessage For="(() => item.TenDonVi)" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2" Style="margin-top:20px">
+                                        Địa chỉ
+                                    </MudItem>
+                                    <MudItem xs="12" sm="10">
+                                        <MudTextField @bind-Value="@item.DiaChi" Variant="Variant.Outlined" />
+                                        <ValidationMessage For="(() => item.DiaChi)" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2" Style="margin-top:20px">
+                                        Điện thoại
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudTextField @bind-Value="@item.DienThoai" Variant="Variant.Outlined" />
+                                        <ValidationMessage For="(() => item.DienThoai)" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2" Style="text-align:center;margin-top:20px">
+                                        Mã số thuế
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudTextField @bind-Value="@item.MASOTHUE" Variant="Variant.Outlined" />
+                                        <ValidationMessage For="(() => item.MASOTHUE)" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2" Style="margin-top:20px">
+                                        Email
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudTextField @bind-Value="@item.Email" Variant="Variant.Outlined" />
+                                        <ValidationMessage For="(() => item.Email)" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2" Style="text-align:center;margin-top:20px">
+                                        Website
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudTextField @bind-Value="@item.WEBSITE" Variant="Variant.Outlined" />
+                                        <ValidationMessage For="(() => item.WEBSITE)" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2" Style="margin-top:20px">
+                                        Chức danh thủ trưởng
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudTextField @bind-Value="@item.CHUCDANHTHUTRUONG" Variant="Variant.Outlined" />
+                                        <ValidationMessage For="(() => item.CHUCDANHTHUTRUONG)" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2" Style="text-align:center;margin-top:20px">
+                                        Họ tên thủ trưởng
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudTextField @bind-Value="@item.HOTENTHUTRUONG" Variant="Variant.Outlined" />
+                                        <ValidationMessage For="(() => item.HOTENTHUTRUONG)" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2" Style="margin-top:20px">
+                                        Chức danh kế toán
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudTextField @bind-Value="@item.CHUCDANHKETOAN" Variant="Variant.Outlined" />
+                                        <ValidationMessage For="(() => item.CHUCDANHKETOAN)" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2" Style="text-align:center;margin-top:20px">
+                                        Họ tên kế toán
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudTextField @bind-Value="@item.HOTENKETOAN" Variant="Variant.Outlined" />
+                                        <ValidationMessage For="(() => item.HOTENTHUTRUONG)" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2" Style="margin-top:20px">
+                                        Chức danh thủ kho
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudTextField @bind-Value="@item.CHUCDANHTHUKHO" Variant="Variant.Outlined" />
+                                        <ValidationMessage For="(() => item.CHUCDANHTHUKHO)" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2" Style="text-align:center;margin-top:20px">
+                                        Họ tên thủ kho
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudTextField @bind-Value="@item.HOTENTHUKHO" Variant="Variant.Outlined" />
+                                        <ValidationMessage For="(() => item.HOTENTHUKHO)" />
+                                    </MudItem>
+
+                                    <MudItem xs="12" sm="2" Style="margin-top:20px">
+                                        Chức danh người lập
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudTextField @bind-Value="@item.CHUCDANHLAPBIEU" Variant="Variant.Outlined" />
+                                        <ValidationMessage For="(() => item.CHUCDANHLAPBIEU)" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2" Style="text-align:center;margin-top:20px">
+                                        Họ tên người lập
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudTextField @bind-Value="@item.HOTENNGUOILAPBIEU" Variant="Variant.Outlined" />
+                                        <ValidationMessage For="(() => item.HOTENNGUOILAPBIEU)" />
+                                    </MudItem>
+
+                                    <MudItem xs="12" sm="2" Style="margin-top:20px">
+                                        Ngày tháng
+                                    </MudItem>
+                                    <MudItem xs="12" sm="10">
+                                        <MudTextField @bind-Value="@item.NGAYTHANGLB" Variant="Variant.Outlined" />
+                                        <ValidationMessage For="(() => item.NGAYTHANGLB)" />
+                                    </MudItem>
+
+                                </MudGrid>
+                            </MudPaper>
+                        </MudTabPanel>
+                        <MudTabPanel Text="Thiết lập Tự động">
+                            <MudPaper Elevation="25" Class="pa-12">
+
+                                <MudGrid Spacing="0">
+                                    <ValidationSummary></ValidationSummary>
+
+                                    <MudItem xs="12" sm="4" Style="margin-top:20px">
+                                        Tự động số chứng từ Thu Chi
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2">
+                                        <MudCheckBox @bind-Checked="@item.TuDongThuChi" />
+                                        <ValidationMessage For="(() => item.TuDongThuChi)" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4" Style="margin-top:20px">
+                                        Tự động số chứng từ Nhập xuất
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2">
+                                        <MudCheckBox @bind-Checked="@item.TuDongNhapXuat" />
+                                        <ValidationMessage For="(() => item.TuDongNhapXuat)" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4" Style="margin-top:20px">
+                                        Tự động số chứng từ Đơn đặt hàng
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2">
+                                        <MudCheckBox @bind-Checked="@item.TuDongDonDatHang" />
+                                        <ValidationMessage For="(() => item.TuDongNhapXuat)" />
+                                    </MudItem>
+
+                                    <MudItem xs="12" sm="4" Style="margin-top:20px">
+                                        Tự động tăng mã hàng hóa
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2">
+                                        <MudCheckBox @bind-Checked="@item.TuDongMaHangHoa" />
+                                        <ValidationMessage For="(() => item.TuDongMaHangHoa)" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4" Style="margin-top:20px">
+                                        Tự động Mã đơn vị
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2">
+                                        <MudCheckBox @bind-Checked="@item.TuDongMaDonVi" />
+                                        <ValidationMessage For="(() => item.TuDongMaDonVi)" />
+                                    </MudItem>
+
+                                </MudGrid>
+                            </MudPaper>
+                        </MudTabPanel>
+                        <MudTabPanel Text="Hình thức nhập số liệu">
+                            <MudPaper Elevation="25" Class="pa-12">
+
+                                <MudGrid Spacing="0">
+
+                                    <MudItem xs="12" sm="2" Style="margin-top:20px">
+                                        Loại phiếu NX
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudSelect T="int" Label="Loại phiếu nhập xuất" AnchorOrigin="Origin.BottomCenter" @bind-Value="@item.LoaiNhapXuat" Variant="Variant.Outlined">
+                                            <MudSelectItem Value="@(1)">Nhập xuất thông thường</MudSelectItem>
+                                            <MudSelectItem Value="@(2)">Nhập xuất theo m2/md</MudSelectItem>
+                                            <MudSelectItem Value="@(3)">Cả 2</MudSelectItem>
+                                        </MudSelect>
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2" Style="text-align:center;margin-top:20px">
+                                        Sản phẩm theo m2
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudCheckBox @bind-Checked="@item.isNhapTheoM2" Disabled="@(item.LoaiNhapXuat != 3)" Color="Color.Info" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2" Style=" margin-top:20px">
+                                        In sau thêm mới
+                                    </MudItem>
+
+                                    <MudItem xs="12" sm="10">
+                                        <MudCheckBox @bind-Checked="@item.InPhieuSauThemMoi" Color="Color.Info" />
+                                    </MudItem>
+
+                                </MudGrid>
+                            </MudPaper>
+                        </MudTabPanel>
+                        <MudTabPanel Text="Ảnh đại diện">
+                            <MudPaper Elevation="25" Class="pa-12">
+                                <MudGrid Spacing="0">
+
+                                    <MudItem xs="12" sm="2" Style="margin-top:20px">
+                                        Ảnh đại diện
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudFab Size="Size.Small" HtmlTag="label"
+                                                Color="Color.Secondary"
+                                                Icon="@Icons.Material.Filled.Image"
+                                                Label="Thay đổi ảnh"
+                                                for="fileInput" />
+                                        <MudImage Src="@image_url" ObjectFit="ObjectFit.Fill" Height="100" Width="100" Class="rounded-lg" />
+                                        <InputFile id="fileInput" OnChange="UploadFiles" hidden multiple />
+                                    </MudItem>
+
+                                    <MudItem xs="12" sm="2" Style="text-align:center;margin-top:20px">
+                                        Ảnh logo
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudFab HtmlTag="label"
+                                                Color="Color.Secondary"
+                                                Icon="@Icons.Material.Filled.Image"
+                                                Label="Thay đổi logo"
+                                                for="fileInput1" />
+                                        <MudImage Src="@image_url_logo" ObjectFit="ObjectFit.Fill" Height="100" Width="100" Class="rounded-lg" />
+                                        <InputFile id="fileInput1" OnChange="UploadFile1s" hidden multiple />
+                                    </MudItem>
+
+
+
+                                </MudGrid>
+                            </MudPaper>
+                        </MudTabPanel>
+                        <MudTabPanel Text="Thông tin thanh toán">
+                            <MudPaper Elevation="25" Class="pa-12">
+
+                                <MudGrid Spacing="0">
+
+                                    <MudItem xs="12" sm="2" Style="text-align:center;margin-top:20px">
+                                       Ngân hàng
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudSelect T="string" Label="Ngân hàng" AnchorOrigin="Origin.BottomCenter" @bind-Value="@item.BankQR" Variant="Variant.Outlined">
+                                            @foreach (var item in lstNganHang)
+                                            {
+                                                <MudSelectItem Value="@(item.code)">@item.short_name</MudSelectItem>
+                                            }
+                                        </MudSelect>
+                                    </MudItem>
+                                      <MudItem xs="12" sm="6">
+                                    </MudItem>
+
+                                    <MudItem xs="12" sm="2" Style="text-align:center;margin-top:20px">
+                                        Số tài khoản
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudTextField @bind-Value="@item.SOTAIKHOAN" Variant="Variant.Outlined" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="6">
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2" Style="text-align:center;margin-top:20px">
+                                        Mẫu QR
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudSelect T="string" Label="Mẫu QR" AnchorOrigin="Origin.BottomCenter" @bind-Value="@item.TemplateQR" Variant="Variant.Outlined">
+                                            <MudSelectItem Value="@("compact2")">compact2</MudSelectItem>
+                                            <MudSelectItem Value="@("compact")">qr_only</MudSelectItem>
+                                            <MudSelectItem Value="@("qr_only")">qr_only</MudSelectItem>
+                                            <MudSelectItem Value="@("print")">print</MudSelectItem>
+                                        </MudSelect>
+                                    </MudItem>
+                                    <MudItem xs="12" sm="6">
+                                    </MudItem>
+                                    <MudItem xs="12" sm="2" Style="text-align:center;margin-top:20px">
+                                        Link server
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4">
+                                        <MudTextField @bind-Value="@item.URLQR" Variant="Variant.Outlined" />
+                                    </MudItem>
+                                    <MudItem xs="12" sm="6">
+                                    </MudItem>
+                                </MudGrid>
+                            </MudPaper>
+                        </MudTabPanel>
+
+                    </MudTabs>
+
+
+                    <MudToolBar>
+                        <MudButton Variant="Variant.Filled" ButtonType="ButtonType.Submit" StartIcon="@Icons.Material.Filled.Save" Size="Size.Small" Color="Color.Info">Cất</MudButton>
+                    </MudToolBar>
+
+                </EditForm>
+            </MudItem>
+        </MudGrid>
+    </Authorized>
+    <NotAuthorized>
+        <NotPermission></NotPermission>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    ClaimsPrincipal userAuth;
+    string image_url { get; set; } = "img/noimage.png";
+    string image_url_logo { get; set; } = "Files/mathome.png";
+    long maxFileSize = 10 * 1024 * 1024;
+    IBrowserFile files { get; set; }
+    IBrowserFile file1s { get; set; }
+
+    private async Task UploadFiles(InputFileChangeEventArgs e)
+    {
+        foreach (var file in e.GetMultipleFiles())
+        {
+
+            using var stream = file.OpenReadStream(maxFileSize);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            image_url = $"data:{file.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}";
+            files = file;
+
+
+        }
+        StateHasChanged();
+        //TODO upload the files to the server
+    }
+    private async Task UploadFile1s(InputFileChangeEventArgs e)
+    {
+        foreach (var file in e.GetMultipleFiles())
+        {
+
+            using var stream = file.OpenReadStream(maxFileSize);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            image_url_logo = $"data:{file.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}";
+            file1s = file;
+        }
+        StateHasChanged();
+        //TODO upload the files to the server
+    }
+    public QLSX.Shared.Models.SettingModel item { get; set; } = new QLSX.Shared.Models.SettingModel();
+    public List<NganHangDetail> lstNganHang = new List<NganHangDetail>();
+
+    protected override void OnInitialized()
+    {
+        Console.WriteLine("Setting - OnInitialized");
+        base.OnInitialized();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+    }
+
+    protected override bool ShouldRender()
+    {
+        base.ShouldRender();
+        return true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var userLogin = (await authenticationStateTask).User;
+            var UserId = userLogin.FindFirst(c => c.Type == "UserId")?.Value;
+            UserId = string.IsNullOrEmpty(UserId) ? "0" : UserId;
+            item = await itemService.GetByIdAsync(int.Parse(UserId));
+            image_url = item.PathImage ?? "img/noimage.png";
+            image_url_logo = item.PathLogoImage ?? "Files/mathome.png";
+
+            // var data = await itemService.GetListNganHang();
+
+            lstNganHang = new List<NganHangDetail>
+            {
+                new NganHangDetail { code = "TCB", short_name = "Techcombank" },
+                new NganHangDetail { code = "ACB", short_name = "ACB" },
+                new NganHangDetail { code = "VIB", short_name = "VIB" },
+                new NganHangDetail { code = "STB", short_name = "Sacombank" },
+                new NganHangDetail { code = "MB", short_name = "MBBank" },
+                new NganHangDetail { code = "VCB", short_name = "Vietcombank" },
+                new NganHangDetail { code = "BIDV", short_name = "BIDV" },
+            };
+
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public void Dispose()
+    {
+    }
+    private async Task SaveClick()
+    {
+        try
+        {
+            var userLogin = (await authenticationStateTask).User;
+            var UserId = userLogin.FindFirst(c => c.Type == "UserId")?.Value;
+            UserId = string.IsNullOrEmpty(UserId) ? "0" : UserId;
+            var trustedFileNameForFileStorage = UserId.ToString() + "_user.png";
+            var path = Path.Combine(Environment.WebRootPath,
+                    "img", trustedFileNameForFileStorage);
+
+            if (files != null)
+            {
+                await using FileStream fs = new(path, FileMode.Create);
+                await files.OpenReadStream(maxFileSize).CopyToAsync(fs);
+            }
+
+            var trustedFileNameForFileStorage1 = UserId.ToString() + "_logo.png";
+            var path1 = Path.Combine(Environment.WebRootPath,
+                "img", trustedFileNameForFileStorage1);
+            if (file1s != null)
+            {
+                await using FileStream fs = new(path1, FileMode.Create);
+                await file1s.OpenReadStream(maxFileSize).CopyToAsync(fs);
+            }
+            item.PathLogoImage = Path.Combine("img", trustedFileNameForFileStorage1);
+            item.PathImage = Path.Combine("img", trustedFileNameForFileStorage);
+
+            await itemService.UpdateAsync(item.Id, item);
+        }
+        catch (Exception)
+        {
+
+            throw;
+        }
+
+
+    }
+
+}

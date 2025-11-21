@@ -1,0 +1,42 @@
+﻿@page "/File-Manager"
+@using Microsoft.AspNetCore.Http
+@using System.Security.Claims
+@using Microsoft.AspNetCore.WebUtilities
+@using QLSX.Shared.Models
+
+@inject IJSRuntime jsRuntime
+@inject NavigationManager NavigationHelper
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IEmloyeeService<UserModel> employeeService
+
+@attribute [Authorize]
+<div id="elfinder"></div>
+
+
+@code{ [Parameter]
+    public string token { get; set; }
+
+    ClaimsPrincipal claimsPrincipal;
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    ElementReference myElementReference;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var uri = NavigationHelper.ToAbsoluteUri(NavigationHelper.Uri);
+
+        claimsPrincipal = (await authenticationStateTask).User;
+        var userEmail = claimsPrincipal.Claims.Where(c => c.Type == ClaimTypes.Name).FirstOrDefault().Value;
+
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("t", out var value))
+        {
+            token = value.First();
+        }
+
+        if (firstRender)
+        {
+            await jsRuntime.InvokeAsync<object>("LoadFileManager.initFileManager", token);
+        }
+
+    } }

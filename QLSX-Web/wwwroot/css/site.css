@@ -1,0 +1,180 @@
+@import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
+html, body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+    font-size: 12px !important;
+}
+.mud-table-body a {
+    color: #007bff !important;
+}
+.Custom-Hearder-Grid {
+    background: linear-gradient(rgba(7, 59, 150), rgba(89, 135, 214), rgba(7, 59, 150)) !important;
+    color: white !important;
+}
+.mud-table-head {
+    /*background-color: #08400c;*/
+}
+.mud-table-head th span {
+    /*color: white;*/
+}
+div#tracuunhapxuat .mud-grid-item{
+    padding-bottom: 0px !important
+}
+table, td, th {
+    border: 1px solid #ddd;
+}
+.mud-dialog-title {
+    background-color: steelblue;
+    color: white;
+}
+
+.NhapXuatTableCustom table thead tr th {
+    white-space: nowrap !important;
+}
+
+.NhapXuatTableCustom table tbody tr {
+    height: 40px;
+}
+
+.NhapXuatTableCustom table tbody tr td {
+    height: 40px;
+    padding: 1px 1px 1px 1px;
+}
+
+.NhapXuatTableCustom table tbody tr td div:not(.td-data) {
+    /* width: 100% !important; */
+    margin-left: 0px;
+}
+
+.NhapXuatTableCustom table tbody tr td div div div {
+    margin-top: -10px !important;
+}
+
+.NhapXuatTableCustom table tbody tr td div div div button {
+    margin-bottom: -10px !important;
+}
+
+.NhapXuatTableCustom table tbody tr td div div div input {
+    font-size: 14px !important;
+}
+.NhapXuatTableCustom input{
+    padding-left: 5px !important;
+    padding-right: 5px !important
+}
+.NhapXuatTableCustom .cell-data {
+    padding: 5px !important;
+}
+
+.NhapXuatTableCustom .mud-table-body .mud-table-row .mud-table-cell {
+    padding-inline-start: 0px !important;
+    padding-inline-end: 0px !important;
+}
+.NhapXuatTableCustom .mud-table-cell {
+    /*padding: 0px !important;*/
+}
+.NhapXuatTableCustom thead th{
+    text-align: center;
+}
+.cssReadOnly {
+    background-color: #ededed;
+}
+
+
+.validation-message{
+    color: red !important;
+}
+.pd-left-0{
+    padding-left: 0px !important
+}
+.pd-right-0 {
+    padding-right: 0px !important
+}
+
+.pd-top-1 {
+    padding-top: 1px !important
+}
+.pd-bottom-1 {
+    padding-bottom: 1px !important
+}
+.pd-nx {
+    padding-top: 0px !important;
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+    padding-bottom: 6px !important;
+}
+.w2000 {
+    width: 2000px !important;
+    min-width: 2000px !important;
+}
+.login-bg {
+    background-image: url('../img/bg2.jpg');
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    position: relative;
+    z-index: 1
+}
+.color-icon{
+    color:white !important
+}
+
+.mud-button-label, .mud-fab-label {
+    text-transform: none
+}
+.mud-table-root .mud-table-head .mud-table-cell{
+    line-height:0.5rem
+}
+table tr:first-child th {
+    background-color: #ededed !important;
+}
+
+.mud-toolbar{
+    height:40px !important
+}
+@media screen and (max-width : 1366px) {
+    input {
+        font-size: 12px !important
+    }
+
+    .mud-mud-select-input {
+        font-size: 12px !important
+    }
+
+    .mud-select-input {
+        font-size: 12px !important
+    }
+
+    .mud-input-label-inputcontrol {
+        font-weight: bold !important;
+        font-size: 12px !important
+    }
+    mud-input-label-inputcontrol
+    .mud-breadcrumb-item {
+        font-size: 12px !important
+    }
+
+    .mud-typography-body1 {
+        font-size: 12px !important
+    }
+
+    .mud-tabs-toolbar-content {
+        font-size: 11px !important
+    }
+
+    table tr:first-child th {
+        font-size: 11px !important
+    }
+
+    table tr td {
+        font-size: 11px !important
+    }
+
+    .mud-chip.mud-chip-size-medium{
+        font-size: 12px !important
+    }
+}

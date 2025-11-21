@@ -1,0 +1,85 @@
+﻿@inject ILogger<Edit> Logger
+@inject IJSRuntime JSRuntime
+@inject IDMKhoanChiService<DanhMucKhoanChiModel> itemService
+@inherits QLSX.Web.Helpers.BlazorComponent
+@namespace QLSX.Web.Pages.DMKhoanChiPage
+@inject ISnackbar Snackbar
+
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Edit" Class="mr-3 mb-n1" />
+            Tạo mới
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="formData" @bind-IsValid="@success" @bind-Errors="@errors">
+            <EditForm Model="server">
+                <DataAnnotationsValidator />
+                <MudPaper Elevation="25" Class="py-8 px-8" Style="padding-top:2px !important">
+                    <ValidationSummary></ValidationSummary>
+                    <MudGrid Spacing="0">
+                        <MudItem xs="4" sm="2" Style="padding-top:10px">
+                            <MudText> Mã khoản chi </MudText>
+                        </MudItem>
+                        <MudItem xs="4" sm="6">
+                            <MudTextField Margin="Margin.Dense" @bind-Value="@server.MaKhoanChi" Label="Mã khoản chi" Variant="Variant.Outlined" Required="true" RequiredError="Trường này bắt buộc nhập!" />
+                        </MudItem>
+                        <MudItem xs="4" sm="4">
+                        </MudItem>
+                        <MudItem xs="6" sm="2" Style="padding-top:10px">
+                            <MudText> Tên khoản chi </MudText>
+                        </MudItem>
+                        <MudItem xs="6" sm="10">
+                            <MudTextField Margin="Margin.Dense" @bind-Value="@server.TenKhoanChi" Label="Tên khoản chi" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="6" sm="2" Style="padding-top:10px">
+                            <MudText> Ghi chú </MudText>
+                        </MudItem>
+                        <MudItem xs="6" sm="10">
+                            <MudTextField Margin="Margin.Dense" @bind-Value="@server.GhiChu" Label="Ghi chú" Variant="Variant.Outlined" />
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+            </EditForm>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel" Variant="Variant.Filled" Color="Color.Error">Bỏ qua</MudButton>
+        <MudButton Class="me-3" StartIcon="@Icons.Material.Filled.Save" Color="Color.Primary" Variant="Variant.Filled" OnClick="@(() => SaveClick())">Lưu</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public DanhMucKhoanChiModel server { get; set; } = new DanhMucKhoanChiModel();
+
+    MudForm formData;
+    bool success;
+    string[] errors = { };
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private async Task SaveClick()
+    {
+        await formData.Validate();
+        if (errors.Count() == 0)
+        {
+            var itemByCode = await itemService.GetByCodeAsync(server.MaKhoanChi);
+            if (itemByCode.Id > 0 && itemByCode.Id != server.Id)
+            {
+                Snackbar.Add("Mã khoản chi đã tồn tại, chọn loại khác.", Severity.Error);
+            }
+            else
+            {
+                var itemEdit = await itemService.UpdateAsync(server.Id, server);
+                MudDialog.Close(DialogResult.Ok(itemEdit.Id > 0));
+            }
+        }
+    }
+}
+

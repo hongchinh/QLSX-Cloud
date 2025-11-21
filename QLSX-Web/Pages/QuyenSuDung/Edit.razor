@@ -1,0 +1,182 @@
+﻿@inject ILogger<Edit> Logger
+@inject IJSRuntime JSRuntime
+@inject IEmloyeeService<UserModel> usersServices
+
+@inject IPermissionRegionsService<PermissionRegion> permissionRegionsService
+@inject IPermissionDepartmentsService<PermissionDepartment> permissionDepartmentsService
+
+@inherits QLSX.Web.Helpers.BlazorComponent
+
+@namespace QLSX.Web.Pages.DMDonViSuDungUser
+@using QLSX.Shared.Models
+
+<div class="modal @_modalClass" tabindex="-1" role="dialog" style="display:@_modalDisplay">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <EditForm Model="_item" OnValidSubmit="@SaveClick">
+                <DataAnnotationsValidator />
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Thêm User</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+
+                    @if (_item == null)
+                    {
+                        <SpinnerData></SpinnerData>
+                    }
+                    else
+                    {
+                        <div class="">
+                            <div class="row">
+
+                                <div class="col-12">
+                                    <div class="form-group">
+                                        <label class="control-label col-12">@lbltext</label>
+                                        <div class="col-md-12">
+                                            <div class="col-md-4">
+                                                <InputSelect @bind-Value="_item.Id" class="form-control">
+                                                    <option value="">Khu vực</option>
+                                                    @if (lstPers != null)
+                                                    {
+                                                        @foreach (var item in lstPers)
+                                                        {
+                                                            <option value="@item.Id">@item.PerName  </option>
+                                                        }                   }
+
+                                                </InputSelect>
+                                                <ValidationMessage For="(() => _item.Id)" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="control-label col-12">Người sử dụng</label>
+                                        <div class="col-12">
+                                            <InputSelect @bind-Value="_item.UserId" class="form-control">
+                                                <option value="">Chọn User</option>
+                                                @if (lstUsers != null)
+                                                {
+                                                    @foreach (var item in lstUsers)
+                                                    {
+                                                        @if (_item.UserId == item.Id)
+                                                        {
+                                                            <option value="@item.Id" selected>@item.FirstName</option>
+                                                        }
+                                                        else
+                                                        {
+                                                            <option value="@item.Id">@item.FirstName </option>
+                                                        }                       }                  }
+                                            </InputSelect>
+                                            <ValidationMessage For="(() => _item.UserId )" />
+                                        </div>
+                                    </div>
+
+
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="Close">Bỏ qua</button>
+
+                    <button type="submit" class="btn btn-primary">
+                        Lưu
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@if (_showEditModal)
+{
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    [Parameter]
+    public EventCallback<string> OnSaveClick { get; set; }
+
+    [Parameter]
+    public IEnumerable<PermissionRequest> lstPers { get; set; } = new List<PermissionRequest>();
+    [Parameter]
+    public IEnumerable<UserModel> lstUsers { get; set; } = new List<UserModel>();
+    [Parameter]
+    public String pbtype { get; set; } = "";
+
+    private string lbltext = "";
+    private string _badFileMessage = string.Empty;
+    private string _modalDisplay = "none;";
+    private string _modalClass = "";
+    private bool _showEditModal = false;
+    private PermissionRequest _item = new PermissionRequest();
+    private int _id = 0;
+
+
+    private async Task SaveClick()
+    {
+        if (pbtype == "D")
+        {
+            var item = new PermissionDepartment();
+            item.DepartmentId = _item.Id;
+            item.UserId = _item.UserId;
+            await permissionDepartmentsService.UpdateAsync(_item.Id, item);
+            await OnSaveClick.InvokeAsync(null);
+            await Close();
+        }
+        if (pbtype == "R")
+        {
+            var item = new PermissionRegion();
+            item.RegionId = _item.Id;
+            item.UserId = _item.UserId;
+            await permissionRegionsService.UpdateAsync(_item.Id, item);
+            await OnSaveClick.InvokeAsync(null);
+            await Close();
+        }
+    }
+
+    public async Task Open(int id)
+    {
+        Logger.LogInformation("Now loading... /Users/Edit/{Id}", id);
+
+        await new Css(JSRuntime).HideBodyOverflow();
+
+        if (pbtype == "D")
+        {
+            var item = await permissionDepartmentsService.GetByIdAsync(id);
+            _item.Id = item.DepartmentId;
+            _item.UserId = item.UserId;
+            await OnSaveClick.InvokeAsync(null);
+            await Close();
+        }
+        if (pbtype == "R")
+        {
+            var item = await permissionRegionsService.GetByIdAsync(id);
+            _item.Id = item.RegionId;
+            _item.UserId = item.UserId;
+            await OnSaveClick.InvokeAsync(null);
+            await Close();
+        }
+
+
+
+        _modalDisplay = "block;";
+        _modalClass = "Show";
+        _showEditModal = true;
+
+        StateHasChanged();
+    }
+
+    private async Task Close()
+    {
+        await new Css(JSRuntime).ShowBodyOverflow();
+
+        _modalDisplay = "none";
+        _modalClass = "";
+        _showEditModal = false;
+    }
+}

@@ -1,0 +1,627 @@
+﻿@page "/thuchis"
+@* @using IgniteUI.Blazor.Controls *@
+@using QLSX.Shared.Models
+@using QLSX.Web.Data
+@using QLSX.Web.Services
+@using Blazored.LocalStorage
+@using OfficeOpenXml
+@using OfficeOpenXml.Style
+@using Microsoft.Extensions.Configuration;
+@using System.Collections.ObjectModel
+
+@inject IThuChiService<ThuChiModel> listService
+@inject IDMKhoanThuService<DanhMucKhoanThuModel> DanhMucKhoanThuModelService
+@inject IDMKhoanChiService<DanhMucKhoanChiModel> dmKhoanChiService
+@inject IDMLoaiTienService<DanhMucLoaiTienModel> dmLoaiTienService
+@inject IPhanQuyenSuDungService< QLSX.Shared.Models.QuyenSuDungModel> permisstionService
+
+@inject IUserService userService
+@inject NavigationManager navigationManager
+@inject ILocalStorageService localStorageService
+@inject IJSRuntime JSRuntime
+@inject AppService AppService
+@implements IDisposable
+@attribute [Authorize]
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject IToastService toastService
+@inject IDialogService DialogService
+@inject IConfiguration configuration
+
+@namespace QLSX.Web.Pages.ThuChiPage
+<div class="form-group">
+    <MudBreadcrumbs Items="_items" Style="padding:0px !important"></MudBreadcrumbs>
+    <EditForm Model="@itemRequest" OnValidSubmit="@SearchClick" id="idSearch">
+        <MudPaper Elevation="25" Class="py-8 px-8" Style="padding-top:12px !important">
+            <MudGrid id="tracuuThuChi">
+                <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                    <MudDatePicker Margin="Margin.Dense" Label="Từ ngày" @bind-Date="@itemRequest.NgayLap_From" Editable="true" DateFormat="dd/MM/yyyy" Variant="Variant.Outlined"></MudDatePicker>
+                </MudItem>
+                <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                    <MudDatePicker Margin="Margin.Dense" Label="Đến ngày" @bind-Date="@itemRequest.NgayLap_To" Editable="true" DateFormat="dd/MM/yyyy" Variant="Variant.Outlined"></MudDatePicker>
+                </MudItem>
+                <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                    <MudTextField Margin="Margin.Dense" @bind-Value="itemRequest.SoPhieu" Label="Số phiếu" Variant="Variant.Outlined"></MudTextField>
+                </MudItem>
+                <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                    <MudTextField Margin="Margin.Dense" @bind-Value="itemRequest.MaDonHang" Label="Mã đơn hàng" Variant="Variant.Outlined"></MudTextField>
+                </MudItem>
+
+                <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                    <MudSelect Margin="Margin.Dense" T="string" Label="Loại" AnchorOrigin="Origin.BottomCenter" @bind-Value="itemRequest.Loai" Variant="Variant.Outlined">
+                        <MudSelectItem T="string" Value="@("")"> Tất cả</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("thutm")">Phiếu thu </MudSelectItem>
+                        <MudSelectItem T="string" Value="@("chitm")">Phiếu chi</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="0" sm="0" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                </MudItem>
+                <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                    <MudNumericField Margin="Margin.Dense" Label="Số tiền từ" @bind-Value="@itemRequest.SoTien_From" Variant="Variant.Outlined"></MudNumericField>
+                </MudItem>
+                <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                    <MudNumericField Margin="Margin.Dense" Label="Đến số tiền" @bind-Value="@itemRequest.SoTien_To" Variant="Variant.Outlined"></MudNumericField>
+                </MudItem>
+                <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                    <MudSelect Margin="Margin.Dense" T="string" Label="Khoản thu" AnchorOrigin="Origin.BottomCenter" @bind-Value="itemRequest.MaKhoanThu" Variant="Variant.Outlined">
+                        <MudSelectItem T="string" Value="@("")"> Tất cả</MudSelectItem>
+                        @if (lstKhoanThu != null)
+                        {
+                            @foreach (var cnt in lstKhoanThu)
+                            {
+                                <MudSelectItem T="string" Value="@cnt.MaKhoanThu">@cnt.TenKhoanThu</MudSelectItem>
+                            }
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                    <MudSelect Margin="Margin.Dense" T="string" Label="Khoản chi" AnchorOrigin="Origin.BottomCenter" @bind-Value="itemRequest.MaKhoanChi" Variant="Variant.Outlined">
+                        <MudSelectItem T="string" Value="@("")"> Tất cả</MudSelectItem>
+                        @if (lstKhoanChi != null)
+                        {
+                            @foreach (var cnt in lstKhoanChi)
+                            {
+                                <MudSelectItem T="string" Value="@cnt.MaKhoanChi">@cnt.TenKhoanChi</MudSelectItem>
+                            }
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+
+                </MudItem>
+                <MudItem xs="12" sm="3" lg="2" Class="pd-left-1 pd-right-1 pd-top-1 pd-bottom-1">
+                    <MudButton Class="mt-3" ButtonType="ButtonType.Submit" Size="MudBlazor.Size.Large" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Search" Color="MudBlazor.Color.Primary">Tìm kiếm</MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </EditForm>
+    <MudToolBar id="idTool">
+        <MudMenu Label="Tạo phiếu" Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" IconColor="MudBlazor.Color.Secondary">
+            <MudMenuItem OnClick="@(async () => await CreateClickThu())" Disabled="@(!quyenSuDungThu.Them)">Phiếu thu</MudMenuItem>
+            <MudMenuItem OnClick="@(async () => await CreateClickChi())" Disabled="@(!quyenSuDungChi.Them)">Phiếu chi</MudMenuItem>
+        </MudMenu>
+        <MudButton Disabled="@(!quyenSuDungChi.XemIn)" Class="ml-1" Variant="Variant.Filled" @onclick="@(async() => await ExportExcel())" StartIcon="@Icons.Material.Filled.ImportExport" Color="MudBlazor.Color.Secondary">Excel</MudButton>
+    </MudToolBar>
+
+</div>
+<div id="cleanupDiv"></div>
+<div class="form-group">
+    <MudDataGrid @ref="table"
+                 ServerData="@(new Func<GridState<ThuChiModel>, Task<GridData<ThuChiModel>>>(ServerReload))"
+                 Dense="true"
+                 T="ThuChiModel"
+                 Loading="@isLoading"
+                 ColumnResizeMode="ResizeMode.Container"
+                 SortMode="MudBlazor.SortMode.Single"
+                 HorizontalScrollbar="true"
+                 FixedHeader="true"
+                 FixedFooter="true"
+                 Height="@(HeightGrid ==0 ? "": HeightGrid.ToString () + "px" )"
+                 FilterCaseSensitivity="DataGridFilterCaseSensitivity.Default">
+        <Columns>
+            <PropertyColumn Property="x => x.Loai" Title="Loại">
+                <CellTemplate>
+                    @if (context.Item.Loai.ToLower() == "thutm")
+                    {
+                        <MudText>Phiếu thu</MudText>
+                    }
+                    else @if (context.Item.Loai.ToLower() == "chitm")
+                    {
+                        <MudText>Phiếu chi</MudText>
+                    }
+
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.NgayCT" Title="Ngày CT">
+                <CellTemplate>
+                    <MudText>@context.Item.NgayCT?.ToString("dd/MM/yyyy")</MudText>
+                    </CellTemplate>
+                </PropertyColumn>
+                <PropertyColumn Property="x => x.SoPhieu" Title="Số CT">
+                    <CellTemplate>
+                        @if (context.Item.Loai.ToLower() == "thutm")
+                    {
+                        <MudButton Disabled="@(!quyenSuDungThu.Sua)" Color=MudBlazor.Color.Primary Size="MudBlazor.Size.Small" OnClick="@(async ()=> await SuaClick(context.Item .Loai, context.Item .Id))">@context.Item.SoPhieu</MudButton>
+                    }
+                    else if (context.Item.Loai.ToLower() == "chitm")
+                    {
+                        <MudButton Disabled="@(!quyenSuDungChi.Sua)" Color=MudBlazor.Color.Primary Size="MudBlazor.Size.Small" OnClick="@(async ()=> await SuaClick(context.Item .Loai, context.Item .Id))">@context.Item.SoPhieu</MudButton>
+                    }
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.MaDoiTuong" Title="Mã đơn vị" />
+            <PropertyColumn Property="x => x.TenDoiTuong" Title="Tên đơn vị" />
+            <PropertyColumn Property="x => x.DiaChi" Title="Địa chỉ" />
+            <PropertyColumn Property="x => x.SoTien" Title="Tổng tiền" CellStyleFunc="@_cellNumberStyleFunc">
+                <CellTemplate>
+                    <MudText>@context.Item.SoTien?.ToString("###,###")</MudText>
+                    </CellTemplate>
+                    <FooterTemplate>
+                        <MudText Style="font-weight: bold;text-align: end;"> @SumSoTien.ToString("###,###") </MudText>
+                    </FooterTemplate>
+                </PropertyColumn>
+                <PropertyColumn Property="x => x.LoaiTien" Title="Loại tiền" Filterable="false" />
+                     
+                <TemplateColumn StickyRight="true" Filterable="false">
+                    <CellTemplate>
+                        @if (context.Item.Loai.ToLower() == "thutm")
+                    {
+                        @if (quyenSuDungThu.XemIn)
+                        {
+                            <MudIconButton Style="min-width:30px;width:30px"
+                                           Target="_blank"
+                                           Variant="Variant.Text"
+                                           aria-label="In"
+                                           Color="MudBlazor.Color.Success"
+                                           OnClick="@(async ()=> await PrintClick(@context.Item.Id, context.Item.Loai))"
+                                           Icon="@Icons.Material.Filled.Print" Size="MudBlazor.Size.Small">
+                            </MudIconButton>
+                        }
+                        @if (quyenSuDungChi.Xoa)
+                        {
+                            <MudIconButton OnClick="@(async ()=> await DeleteClick(@context.Item))"
+                                           Style="min-width:30px;width:30px;text-transform:none"
+                                           Variant="Variant.Text"
+                                           aria-label="Xóa"
+                                           Color="MudBlazor.Color.Error"
+                                           Icon="@Icons.Material.Filled.Delete" Size="MudBlazor.Size.Small">
+                            </MudIconButton>
+                        }
+                    }
+                    @if (context.Item.Loai.ToLower() == "chitm")
+                    {
+                        @if (quyenSuDungChi.XemIn)
+                        {
+                            <MudIconButton Style="min-width:30px;width:30px"
+                                           Target="_blank"
+                                           Variant="Variant.Text"
+                                           aria-label="In"
+                                           Color="MudBlazor.Color.Success"
+                                           OnClick="@(async ()=> await PrintClick(@context.Item.Id, context.Item.Loai))"
+                                           Icon="@Icons.Material.Filled.Print" Size="MudBlazor.Size.Small">
+                            </MudIconButton>
+                        }
+                        @if (quyenSuDungChi.Xoa)
+                        {
+                            <MudIconButton OnClick="@(async ()=> await DeleteClick(@context.Item))"
+                                           Style="min-width:30px;width:30px;text-transform:none"
+                                           Variant="Variant.Text"
+                                           aria-label="Xóa"
+                                           Color="MudBlazor.Color.Error"
+                                           Icon="@Icons.Material.Filled.Delete" Size="MudBlazor.Size.Small">
+                            </MudIconButton>
+                        }
+                    }
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+        <PagerContent>
+            <MudDataGridPager T="ThuChiModel" RowsPerPageString="Số dòng mỗi trang" />
+        </PagerContent>
+    </MudDataGrid>
+</div>
+
+<LoadingProgress IsLoading="isLoading" />
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    private QLSX.Shared.Models.QuyenSuDungModel quyenSuDung { get; set; } =
+        new QLSX.Shared.Models.QuyenSuDungModel() { Sua = false, Them = false, Xoa = false, XemIn = false, Selectted = false, IsLoaded =false};
+
+    private QLSX.Shared.Models.QuyenSuDungModel quyenSuDungThu { get; set; } =
+        new QLSX.Shared.Models.QuyenSuDungModel() { Sua = false, Them = false, Xoa = false, XemIn = false, Selectted = false, IsLoaded = false };
+    private QLSX.Shared.Models.QuyenSuDungModel quyenSuDungChi { get; set; } =
+        new QLSX.Shared.Models.QuyenSuDungModel() { Sua = false, Them = false, Xoa = false, XemIn = false, Selectted = false, IsLoaded =false};
+
+    private IJSObjectReference? module;
+    int currentPage = 0;
+    int pageSize = 10;
+    int totalCount = 0;
+
+    public ThuChiModel item { get; set; }
+    public List<ThuChiModel> itemsList { get; set; }
+    public List<ThuChiModel> filteredList { get; set; }
+
+    public List<DanhMucLoaiTienModel> lstLoaiTien { get; set; }
+    public List<DanhMucKhoanThuModel> lstKhoanThu { get; set; }
+    public List<DanhMucKhoanChiModel> lstKhoanChi { get; set; }
+
+    private IEnumerable<ThuChiModel> pagedData;
+    private MudDataGrid<ThuChiModel> table;
+    private int totalItems;
+
+    public GetAllResponsePaged<ThuChiModel> lsResponses { get; set; }
+    public ThuChiSearchRequest itemRequest { get; set; }
+    public bool IsVisible { get; set; }
+    bool isLoading = true;
+    int Stt = 1;
+    public string hostReport { get; set; }
+    public double SumSoTien { get; set; }
+    public double SumSoTienTT { get; set; }
+    public int HeightGrid { get; set; } = 0;
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Home", href: "/"),
+        new BreadcrumbItem("Tra cứu thu chi",href: null, disabled: true)
+    };
+
+    protected override async void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        itemRequest = new ThuChiSearchRequest()
+            {
+                DMDonViSuDungId = AppService.DMDonViSuDungId,
+                PageSize = 10,
+                Page = 0,
+                TotalPages = 0
+            };
+        lsResponses = new GetAllResponsePaged<ThuChiModel>();
+
+        await base.OnInitializedAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+    }
+
+    protected override bool ShouldRender()
+    {
+        base.ShouldRender();
+        return true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+        if (firstRender)
+        {
+
+            isLoading = true;
+            lstLoaiTien = await dmLoaiTienService.GetAllAsync();
+            lstKhoanThu = await DanhMucKhoanThuModelService.GetAllAsync();
+            lstKhoanChi = await dmKhoanChiService.GetAllAsync();
+            hostReport = configuration.GetValue<string>("AppSettings:ReportUrl");
+            var hgrid = await JSRuntime.InvokeAsync<WindowDimensions>("getGridSize", "idSearch", "idTool");
+            HeightGrid = hgrid.Height - 150;
+
+
+
+            isLoading = false;
+            StateHasChanged();
+
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+    public void Dispose() { }
+
+    private async Task PrintClick(int id, string loai)
+    {
+        @if (loai == "thutm")
+        {
+            string strURL = hostReport + "/Reports/Viewer?ReportFileName=rptPhieuThu&id=" + id + "&mdvsd=" + AppService.DMDonViSuDungId;
+            await JSRuntime.InvokeVoidAsync("open", strURL, "_blank");
+        }
+        else if (loai == "chitm")
+        {
+            string strURL = hostReport + "/Reports/Viewer?ReportFileName=rptPhieuChi&id=" + id + "&mdvsd=" + AppService.DMDonViSuDungId;
+            await JSRuntime.InvokeVoidAsync("open", strURL, "_blank");
+        }
+
+    }
+
+    private async Task EditClick(int id, string loai)
+    {
+        await localStorageService.SetItemAsync("thuchi-" + loai + AppService.UserId.ToString(), id);
+        navigationManager.NavigateTo("/thuchis/" + loai + "/edit/" + id);
+    }
+    private async Task DeleteClick(ThuChiModel item)
+    {
+        var parameters = new DialogParameters { ["server"] = item };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<Delete>("Xóa", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var deletedServer = (bool)result.Data;
+            if (deletedServer)
+            {
+
+                await table.ReloadServerData();
+                toastService.ShowToast(ToastLevel.Success, "Xóa thành công", "Thông báo");
+            }
+            else
+            {
+                toastService.ShowToast(ToastLevel.Error, "Xảy ra lỗi khi xóa", "Thông báo");
+            }
+        }
+    }
+    private async Task SearchClick()
+    {
+        await table.ReloadServerData();
+    }
+
+    private async Task CreateClickThu()
+    {
+        await CreateClick("thutm");
+    }
+    private async Task CreateClickChi()
+    {
+        await CreateClick("chitm");
+    }
+
+
+
+    /// <summary>
+    /// Here we simulate getting the paged, filtered and ordered data from the server
+    /// </summary>
+    private async Task<GridData<ThuChiModel>> ServerReload(GridState<ThuChiModel> state)
+    {
+        isLoading = true;
+        var sort = state.SortDefinitions.ToList();
+        itemRequest.Page = state.Page;
+        //itemRequest.Filter = state.FilterDefinitions;
+        if (sort.Count > 0)
+        {
+            for (int i = 0; i < sort.Count; i++)
+            {
+                itemRequest.SortLable = sort[i].SortBy;
+                itemRequest.SortDirection = sort[i].Descending ? QLSX.Shared.Enums.SortDirection.Descending : QLSX.Shared.Enums.SortDirection.Ascending;
+            }
+        }
+        itemRequest.Page = state.Page;
+        itemRequest.PageSize = state.PageSize;
+
+        var user = (await authenticationStateTask).User;
+        var UserId = user.FindFirst(c => c.Type == "UserId")?.Value;
+        UserId = string.IsNullOrEmpty(UserId) ? "0" : UserId;
+        if (quyenSuDung.IsLoaded == false) {
+            quyenSuDung = await permisstionService.GetQuyenByUserIdAsync(int.Parse(UserId), "tracuuthuchi");
+            quyenSuDung.IsLoaded = true;
+        }
+        if (quyenSuDungThu.IsLoaded == false)
+        {
+            quyenSuDungThu = await permisstionService.GetQuyenByUserIdAsync(int.Parse(UserId), "thutm"); 
+            quyenSuDungThu.IsLoaded = true;
+        }
+        if (quyenSuDungChi.IsLoaded == false)
+        {
+            quyenSuDungChi = await permisstionService.GetQuyenByUserIdAsync(int.Parse(UserId), "chitm"); 
+            quyenSuDungChi.IsLoaded = true;
+        }
+
+
+        lsResponses = new GetAllResponsePaged<ThuChiModel>();
+
+
+        if (quyenSuDung.Selectted)
+        {
+            lsResponses = await listService.GetAllPagedAsync(itemRequest);
+        }
+
+        IEnumerable<ThuChiModel> data = lsResponses.Items;
+        SumSoTien = lsResponses.SumSoTien1;
+        SumSoTienTT = lsResponses.SumSoTien2;
+        totalItems = lsResponses.TotalRecords;
+
+        if (data == null)
+        {
+            data = new List<ThuChiModel>();
+        }
+        pagedData = data;
+        isLoading = false;
+        StateHasChanged();
+        return new GridData<ThuChiModel>() { TotalItems = totalItems, Items = pagedData };
+    }
+    // style the cells according to the element's physical classification and the molar mass.
+    private Func<ThuChiModel, string> _cellNumberStyleFunc => x =>
+    {
+        string style = "";
+        style = "text-align: end";
+        return style;
+    };
+
+    private async Task CreateClick(string loai)
+    {
+        string title = "Thêm";
+        if (loai == "thutm")
+        {
+            title = "Thêm Phiếu thu";
+        }
+        else if (loai == "chitm")
+        {
+            title = "Thêm Phiếu chi";
+
+        }
+        var parameters = new DialogParameters { ["loaiThuChi"] = loai, ["Title"] = title };
+        //var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.ExtraExtraLarge, FullScreen = true, FullWidth = true };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Large, FullWidth = true, DisableBackdropClick = true };
+        var result = await DialogService.Show<ThuChiCreate>("Thêm", parameters, options).Result;
+        if (!result.Canceled)
+        {
+            var itemSelected = (ThuChiModel)(result.Data ?? null);
+            if (itemSelected != null)
+            {
+                await table.ReloadServerData();
+            }
+        }
+    }
+    private async Task SuaClick(string loai, int id)
+    {
+        string title = "Sửa";
+        if (loai == "thutm")
+        {
+            title = "Sửa Phiếu thu";
+        }
+        else if (loai == "chitm")
+        {
+            title = "Sửa Phiếu chi";
+
+        }
+        var parameters = new DialogParameters { ["ThuChiId"] = id, ["loaiThuChi"] = loai, ["Title"] = title };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Large, FullWidth = true, DisableBackdropClick = true };
+        var result = await DialogService.Show<ThuChiEdit>("Sửa", parameters, options).Result;
+        if (!result.Canceled)
+        {
+            var itemSelected = (ThuChiModel)(result.Data ?? null);
+            if (itemSelected != null)
+            {
+                await table.ReloadServerData();
+            }
+        }
+    }
+
+    private async Task ExportExcel()
+    {
+        byte[] fileContents;
+        MemoryStream stream = new();
+        var listData = await listService.ExportToExcelAsync(itemRequest);
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        if (listData != null)
+        {
+            using (var package = new ExcelPackage())
+            {
+                var workSheet = package.Workbook.Worksheets.Add("Data");
+
+                // Set default width cho tất cả column
+                workSheet.DefaultColWidth = 20;
+                // Tự động xuống hàng khi text quá dài
+                workSheet.Cells.Style.WrapText = true;
+
+                #region Header excel
+                workSheet.Cells[1, 1].Value = "Loại";
+                workSheet.Cells[1, 1].Style.Font.Size = 12;
+                workSheet.Cells[1, 1].Style.Font.Bold = true;
+                workSheet.Cells[1, 1].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 2].Value = "Ngày lập";
+                workSheet.Cells[1, 2].Style.Font.Size = 12;
+                workSheet.Cells[1, 2].Style.Font.Bold = true;
+                workSheet.Cells[1, 2].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 3].Value = "Số phiếu";
+                workSheet.Cells[1, 3].Style.Font.Size = 12;
+                workSheet.Cells[1, 3].Style.Font.Bold = true;
+                workSheet.Cells[1, 3].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 4].Value = "Mã đơn vị";
+                workSheet.Cells[1, 4].Style.Font.Size = 12;
+                workSheet.Cells[1, 4].Style.Font.Bold = true;
+                workSheet.Cells[1, 4].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 5].Value = "Tên đơn vị";
+                workSheet.Cells[1, 5].Style.Font.Size = 12;
+                workSheet.Cells[1, 5].Style.Font.Bold = true;
+                workSheet.Cells[1, 5].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 6].Value = "Địa chỉ";
+                workSheet.Cells[1, 6].Style.Font.Size = 12;
+                workSheet.Cells[1, 6].Style.Font.Bold = true;
+                workSheet.Cells[1, 6].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 7].Value = "Số tiền";
+                workSheet.Cells[1, 7].Style.Font.Size = 12;
+                workSheet.Cells[1, 7].Style.Font.Bold = true;
+                workSheet.Cells[1, 7].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 8].Value = "Loại tiền";
+                workSheet.Cells[1, 8].Style.Font.Size = 12;
+                workSheet.Cells[1, 8].Style.Font.Bold = true;
+                workSheet.Cells[1, 8].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+                #endregion
+
+                #region Body excel
+                int rowIndex = 2;
+                foreach (var item in listData.Items)
+                {
+                    DateTime ngayLapPhieu = (DateTime)item.NgayCT;
+                    workSheet.Cells[rowIndex, 1].Value = item.Loai;
+                    workSheet.Cells[rowIndex, 1].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 1].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 1].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 2].Value = ngayLapPhieu.Day + "/" + ngayLapPhieu.Month + "/" + ngayLapPhieu.Year;
+                    workSheet.Cells[rowIndex, 2].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 2].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 2].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 3].Value = item.SoPhieu;
+                    workSheet.Cells[rowIndex, 3].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 3].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 3].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 4].Value = item.MaDoiTuong;
+                    workSheet.Cells[rowIndex, 4].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 4].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 4].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 5].Value = item.TenDoiTuong;
+                    workSheet.Cells[rowIndex, 5].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 5].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 5].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 6].Value = item.DiaChi;
+                    workSheet.Cells[rowIndex, 6].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 6].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 6].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 7].Value = item.SoTien;
+                    workSheet.Cells[rowIndex, 7].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 7].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 7].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 8].Value = item.DMLoaiTiens.LoaiTien;
+                    workSheet.Cells[rowIndex, 8].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 8].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 8].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    rowIndex++;
+                }
+                #endregion
+
+                fileContents = await package.GetAsByteArrayAsync();
+            };
+
+            await JSRuntime.InvokeAsync<ThuChiModel>(
+                "saveAsFile",
+                $"ThuChi_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.xlsx",
+                Convert.ToBase64String(fileContents)
+            );
+        }
+    }
+}

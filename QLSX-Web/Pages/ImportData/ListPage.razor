@@ -1,0 +1,266 @@
+﻿@page "/import/{TableName}"
+@using QLSX.Shared.Models
+@using QLSX.Web.Data
+@using QLSX.Web.Services
+@using Blazored.LocalStorage
+@using OfficeOpenXml
+@using OfficeOpenXml.Style
+@using System.Data
+@using System.IO
+@using Microsoft.AspNetCore.Hosting
+
+@inject IWebHostEnvironment env
+@inject IImportDataService<InformationClumns> listService
+@inject IUserService userService
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService localStorageService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+@attribute [Authorize]
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject NavigationManager NavigationManager
+@inject IToastService toastService
+@inject IDialogService DialogService
+@inject IPhanQuyenSuDungService< QLSX.Shared.Models.QuyenSuDungModel> permisstionService
+
+@namespace QLSX.Web.Pages.ImportData
+
+<div class="col-12">
+    <MudBreadcrumbs Items="_items" Style="padding:0px !important"></MudBreadcrumbs>
+    <MudToolBar>
+        <MudButton Variant="Variant.Filled" @onclick="@(() => CreateTemplateClick())" StartIcon="@Icons.Material.Filled.Create" Color="Color.Primary">Lấy mẫu excel</MudButton>
+    </MudToolBar>
+
+    <div class="row">
+        <div class="col-12 pr-45">
+            <div class="area-search py-3 px-3">
+                <form @onsubmit="OnSubmit">
+                    <InputFile OnChange="OnInputFileChange" multiple />
+                    <div> @Message </div>
+                    <br /><br />
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Upload" Color="Color.Primary">Import data</MudButton>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="form-group">
+        <MudSimpleTable Style="overflow-x: auto;">
+            <thead>
+                <tr>
+                    @foreach (var h in lstColumns)
+                    {
+                        <th>@h.COLUMN_NAME</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (DataRow row in lstData.Rows)
+                {
+                    <tr>
+                        @foreach (DataColumn cl in lstData.Columns)
+                        {
+                            <td>@row[cl]</td>
+                        }
+                    </tr>
+                }
+
+            </tbody>
+        </MudSimpleTable>
+
+    </div>
+
+</div>
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    [Parameter]
+    public string TableName { get; set; }
+
+    private System.Data.DataTable table;
+
+    public List<QLSX.Shared.Models.InformationClumns> lstColumns { get; set; }
+    public QLSX.Shared.Models.BaseSearchRequest itemRequest { get; set; }
+    bool isLoading = true;
+    public DataTable lstData { get; set; }
+
+
+    string Message = "No file(s) selected";
+    IReadOnlyList<IBrowserFile> selectedFiles;
+
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Home", href: "/"),
+        new BreadcrumbItem("Import data",href: null, disabled: true)
+    };
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        selectedFiles = e.GetMultipleFiles();
+        Message = $"{selectedFiles.Count} file(s) selected";
+        var file = selectedFiles[0];
+        if (file != null)
+        {
+            Stream stream = file.OpenReadStream();
+            MemoryStream ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            stream.Close();
+
+            UploadedFile uploadedFile = new UploadedFile();
+            uploadedFile.FileName = file.Name;
+            uploadedFile.FileContent = ms.ToArray();
+            ms.Close();
+
+            lstData = await listService.UpLoadFile(uploadedFile, TableName);
+            lstData.TableName = TableName;
+            if (lstData.Rows.Count == 0)
+            {
+                for (int i = 0; i < 20; i++)
+                {
+                    lstData.Rows.Add();
+                }
+            }
+            await GetDataColumn(TableName);
+
+            Message = $"{selectedFiles.Count} file(s) uploaded on server";
+        }
+
+
+        this.StateHasChanged();
+    }
+    private async Task OnSubmit()
+    {
+        //string filename = "";
+        //foreach (var file in selectedFiles)
+        //{
+        //    Stream stream = file.OpenReadStream();
+        //    filename = string.Format("{0:yyyyMMdd_HHmmssfff}", DateTime.Now) + file.Name;
+        //    var path = $"{env.WebRootPath}\\{filename}";
+        //    FileStream fs = File.Create(path);
+        //    await stream.CopyToAsync(fs);
+        //    stream.Close();
+        //    fs.Close();
+        //}
+        //Message = $"{selectedFiles.Count} file(s) uploaded on server";
+        //var TableName = "DMHangHoas";
+        //var lstaData = await listService.GetFileToDataTable(TableName, filename);
+        Message = await listService.InsertData(lstData);
+
+        this.StateHasChanged();
+    }
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        itemRequest = new QLSX.Shared.Models.BaseSearchRequest()
+            {
+                PageSize = 10,
+                Page = 0,
+                TotalPages = 0
+            };
+        lstColumns = new List<QLSX.Shared.Models.InformationClumns>();
+        lstData = new DataTable(TableName);
+        await base.OnInitializedAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+    }
+
+    protected override bool ShouldRender()
+    {
+        base.ShouldRender();
+        return true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public void Dispose()
+    {
+    }
+
+    /// <summary>
+    /// Here we simulate getting the paged, filtered and ordered data from the server
+    /// </summary>
+    private async Task<List<QLSX.Shared.Models.InformationClumns>> GetDataColumn(string tableName)
+    {
+        isLoading = true;
+
+        lstColumns = await listService.GetColumnsAsync(tableName);
+
+        isLoading = false;
+        StateHasChanged();
+        return lstColumns;
+    }
+
+    private async Task CreateTemplateClick()
+    {
+        await GetDataColumn(TableName);
+        await ExportTemplateExcel(TableName);
+    }
+
+    private async Task ExportTemplateExcel(string tableName)
+    {
+        byte[] fileContents;
+        MemoryStream stream = new();
+
+        if (lstColumns.Count == 0) return;
+        table = new();
+
+        foreach (var item in lstColumns)
+        {
+            table.Columns.Add(item.COLUMN_NAME);
+        }
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        if (lstColumns != null)
+        {
+            using (var package = new ExcelPackage())
+            {
+                var workSheet = package.Workbook.Worksheets.Add(tableName);
+
+                // Set default width cho tất cả column
+                workSheet.DefaultColWidth = 20;
+                // Tự động xuống hàng khi text quá dài
+                workSheet.Cells.Style.WrapText = true;
+
+                workSheet.Cells["A1"].LoadFromDataTable(table, true);
+
+                using (ExcelRange rng = workSheet.Cells["A1:Z1"])
+                {
+                    rng.Style.Font.Bold = true;
+                }
+                fileContents = await package.GetAsByteArrayAsync();
+            };
+
+            await JSRuntime.InvokeAsync<ThuChiModel>(
+                "saveAsFile",
+                $"{table}.xlsx",
+                Convert.ToBase64String(fileContents)
+            );
+        }
+    }
+}

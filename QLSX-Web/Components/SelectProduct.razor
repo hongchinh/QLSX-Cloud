@@ -1,0 +1,48 @@
+﻿@using Microsoft.JSInterop
+@using QLSX.Shared.Models
+@inject IJSRuntime JSRuntime;
+@namespace QLSX.Web.Components
+@inject IProductService<Product> productService
+<select class="form-control col-12" @onchange="OnChangeEvent">
+    @if (@items != null)
+    {
+<option value="">Chọn sản phẩm</option>
+                @foreach (var item in @items)
+                {
+                    @if (IdSelected == item.ProductId)
+                    {
+                        <option value="@item.ProductId" selected>@item.ProductName - @item.ProductName </option>
+                    }
+                    else
+                    {
+                        <option value="@item.ProductId">@item.ProductName - @item.ProductName</option>
+                    }
+
+}}
+</select>
+
+@code { [Parameter]
+    public EventCallback<ChangeEventArgs> OnChangeEvent { get; set; }
+
+    [Parameter]
+    public int IdSelected { get; set; }
+
+    public List<Product> items { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && @items == null)
+        {
+            try
+            {
+                items = await productService.GetAllAsync();
+                StateHasChanged();
+            }
+            catch (Exception)
+            {
+
+                //throw;
+            }
+
+        }
+    } }

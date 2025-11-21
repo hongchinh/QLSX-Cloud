@@ -1,0 +1,165 @@
+﻿@using QLSX.Web.Components
+@using Blazored.LocalStorage
+
+@inject IJSRuntime JSRuntime
+@inject ICustomerCareService<CustomerCare> customerCareItemService
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject ILocalStorageService localStorageService
+ 
+
+<div id="dlgEdit" class="modal @_modalClass1" tabindex="-1" role="dialog" style="display:@_modalDisplay1">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <EditForm Model="_item1" OnValidSubmit="@SaveClick1">
+                <DataAnnotationsValidator />
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Edit</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="Close1">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+
+                    @if (_item1 == null)
+                    {
+    <SpinnerData></SpinnerData> }
+else
+{
+<div class="container">
+    <div class="row">
+
+        <div class="col-12">
+
+            <div class="form-group">
+                <label class="control-label col-6">Ngày chăm sóc</label>
+                <div class="col-md-12">
+                    <InputDate class="form-control" @bind-Value="_item1.DateCreated" />
+                    <ValidationMessage For="(() => _item1.DateCreated)" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-12">Sản phẩm</label>
+                <div class="col-12">
+                    <SelectProduct OnChangeEvent="OnSelectStatusChange1" IdSelected="@_item1.ProductId"></SelectProduct>
+                    <ValidationMessage For="(() => _item1.ProductId )" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="control-label col-12">Nội dung</label>
+                <div class="col-md-12">
+                    <InputText class="form-control" @bind-Value="_item1.Contents" />
+                    <ValidationMessage For="(() => _item1.Contents)" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="control-label col-12">Ngày CS tiếp theo</label>
+                <div class="col-md-12">
+                    <InputDate class="form-control" @bind-Value="_item1.DateNext" />
+                    <ValidationMessage For="(() => _item1.DateNext)" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-12">Nội dung</label>
+                <div class="col-md-12">
+                    <InputText class="form-control" @bind-Value="_item1.ContentsNext" />
+                    <ValidationMessage For="(() => _item1.ContentsNext)" />
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="Close1">Cancel</button>
+
+                    <button @onclick="SaveClick1" class="btn btn-primary">
+                        Save
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+
+
+@if (_showEditModal1)
+{
+<div class="modal-backdrop fade show"></div>}
+
+@code { [Parameter]
+    public EventCallback<string> OnSaveClick1 { get; set; }
+
+    private string _badFileMessage1 = string.Empty;
+    private string _modalDisplay1 = "none;";
+    private string _modalClass1 = "";
+    private bool _showEditModal1 = false;
+    private CustomerCare _item1 = new CustomerCare();
+    private int _id1 = 0;
+     
+    private async Task SaveClick1()
+    {
+        await customerCareItemService.UpdateAsync(_item1.Id, _item1);
+        await OnSaveClick1.InvokeAsync(null);
+        await Close1();
+
+    }
+
+    public async Task Open1(int id)
+    {
+        // Logger.LogInformation("Now loading... /Catalog/Edit/{Id}", id);
+
+        await new Css(JSRuntime).HideBodyOverflow();
+        _id1 = id;
+        _item1 = await customerCareItemService.GetByIdAsync(id);
+
+        _modalDisplay1 = "block;";
+        _modalClass1 = "Show";
+        _showEditModal1 = true;
+
+        StateHasChanged();
+    }
+
+    private async Task Close1()
+    {
+        await new Css(JSRuntime).HideEditCustomers();
+        _modalDisplay1 = "none";
+        _modalClass1 = "";
+        _showEditModal1 = false;
+    }
+    private void OnSelectStatusChange1(ChangeEventArgs changeEventArgs)
+    {
+        // SelectedStatus = (int)changeEventArgs.Value;
+    }
+
+    protected override void OnParametersSet()
+    {
+        Console.WriteLine("Care - OnParametersSet");
+        base.OnParametersSet();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Console.WriteLine("Care - OnParametersSetAsync");
+        await base.OnParametersSetAsync();
+    }
+
+    protected override bool ShouldRender()
+    {
+        base.ShouldRender();
+        Console.WriteLine("Care - ShouldRender");
+
+        return true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Console.WriteLine("Care - OnAfterRender - firstRender = " + firstRender);
+        base.OnAfterRender(firstRender);
+    }
+
+
+    }

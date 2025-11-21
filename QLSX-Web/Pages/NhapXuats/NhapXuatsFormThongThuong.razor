@@ -1,0 +1,751 @@
+﻿@using Dialogs
+@using Newtonsoft.Json
+@using Microsoft.AspNetCore.Mvc;
+@using QLSX.Shared.Models
+@using AutoMapper
+@using Microsoft.Extensions.Configuration;
+@using System.Globalization
+@using Blazored.LocalStorage
+
+@inject IDMHangHoaService<DanhMucHangHoaModel> dmhanghoaService
+@inject IDMKhachHangService<DanhMucKhachHangModel> dmkhachhangService
+@inject INhapXuatsService<NhapXuatModel> nhapxuatService
+@inject AppService AppService
+@inject IReportService reportService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager navigationManager
+@inject IToastService toastService
+@inject IDialogService DialogService
+@inject IMapper mapper;
+@inject IConfiguration configuration
+@inject ILocalStorageService localStorageService
+@inject ISnackbar Snackbar
+
+@namespace QLSX.Web.Pages.NhapXuatPage
+
+<EditForm Model="nhapxuat">
+    <ObjectGraphDataAnnotationsValidator />
+    <div class="card">
+        <div class="card-body pa-0">
+            <div class="container-lg">
+                <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pd-nx">
+                    <MudTabPanel Text="Thông tin đơn hàng">
+                        <div id="home">
+                            <div class="row mt-3">
+                                <div class="col-xs-12 col-sm-6 col-md-3 col-xl-2 mt-2 pd-left-0 pd-right-0">
+                                    <div class="required">
+                                        <ValidationMessage For="(() => nhapxuat.SoChungTu)" />
+                                        <MudTextField Margin="Margin.Dense" Label="Số phiếu" @bind-Value="@nhapxuat.SoChungTu" style="width:100%" Variant="Variant.Outlined" />
+                                    </div>
+                                </div>
+                                <div class="col-xs-12 col-sm-6 col-md-3 col-xl-2 mt-2 pd-left-0 pd-right-0">
+                                    <div class="required">
+                                        <ValidationMessage For="(() => nhapxuat.NgayCT)" />
+                                        <div><MudDatePicker Margin="Margin.Dense" Label="Ngày lập" @bind-Date="nhapxuat.NgayCT" Culture="@CultureInfo.GetCultureInfo("vi-VN")" TitleDateFormat="dd/MM/yyyy" Editable="true" Variant="Variant.Outlined"></MudDatePicker></div>
+                                    </div>
+                                </div>
+                                <div class="col-xs-12 col-sm-6 col-md-3 col-xl-2 mt-2 pd-left-0 pd-right-0">
+                                    <div class="required">
+                                        <ValidationMessage For="(() => nhapxuat.NgayHT)" />
+                                        <MudDatePicker Margin="Margin.Dense" Label="Ngày hoàn thành" @bind-Date="nhapxuat.NgayHT" Culture="@CultureInfo.GetCultureInfo("vi-VN")" TitleDateFormat="dd/MM/yyyy" Editable="true" Variant="Variant.Outlined"></MudDatePicker>
+                                    </div>
+                                </div>
+                                <div class="col-xs-12 col-sm-6 col-md-3 col-xl-2 mt-2 pd-left-0 pd-right-0">
+                                    <div class="required">
+
+                                        <MudSelect T="int" Margin="Margin.Dense" Label="Kho hàng" AnchorOrigin="Origin.BottomCenter" @bind-Value="@nhapxuat.DMKhoHangId" Variant="Variant.Outlined">
+                                            <MudSelectItem Value="@(0)">Chọn kho hàng</MudSelectItem>
+                                            @if (lstKhoHang != null)
+                                            {
+                                                @foreach (var cnt in lstKhoHang)
+                                                {
+                                                    <MudSelectItem Value="@cnt.Id">@cnt.TenKho</MudSelectItem>
+                                                }
+                                            }
+                                        </MudSelect>
+                                    </div>
+                                </div>
+                                @*Kho hàng*@
+                                <div class="col-xs-12 col-sm-6 col-md-3 col-xl-3 mt-2 pd-left-0 pd-right-0">
+                                    <div class="required">
+                                    </div>
+                                </div>
+                                @*đơn vị*@
+                                <div class="col-xs-12 col-sm-6 col-md-3 col-xl-2 mt-2 pd-left-0 pd-right-0">
+                                    <div class="required">
+                                        <ValidationMessage For="(() => nhapxuat.MaDonVi)" />
+                                        <MudTextField Margin="Margin.Dense" Label="Mã đơn vị" @bind-Value="@nhapxuat.MaDonVi"
+                                                      TextChanged="@( (input) => MaDonViTextChanged(input))"
+                                                      Adornment="Adornment.End"
+                                                      AdornmentIcon="@Icons.Material.Filled.Search"
+                                                      OnAdornmentClick="@(() => OpenDialogKhachHang())"
+                                                      Immediate="true"
+                                                      Variant="Variant.Outlined" />
+                                    </div>
+                                </div>
+                                <div class="col-xs-12 col-sm-6 col-md-5 col-xl-5 mt-2 pd-left-0 pd-right-0">
+                                    <MudTextField Margin="Margin.Dense" Label="Tên đơn vị" @bind-Value="@nhapxuat.TenDonVi" Variant="Variant.Outlined" />
+                                </div>
+                                <div class="col-xs-12 col-sm-6 col-md-3 col-xl-3 mt-2 pd-left-0 pd-right-0">
+                                    <MudTextField Margin="Margin.Dense" Label="Địa chỉ" @bind-Value="@nhapxuat.DiaChi" Variant="Variant.Outlined" />
+                                </div>
+                                <div class="col-xs-12 col-sm-6 col-md-2 col-xl-2 mt-2 pd-left-0 pd-right-0">
+                                    <MudTextField Margin="Margin.Dense" Label="Điện thoại" @bind-Value="@nhapxuat.DienThoai" Variant="Variant.Outlined" />
+                                </div>
+
+                                @* <div class="col-xs-0 col-md-0 col-md-0 col-xl-0 m-0 p-0"></div> *@
+                                @*ghi chú*@
+                                <div class="col-xs-12 col-sm-6 col-md-6 col-xl-12 mt-2 pd-left-0 pd-right-0">
+                                    <MudTextField Margin="Margin.Dense" Label="Ghi chú" @bind-Value="@nhapxuat.DienGiai" Variant="Variant.Outlined" />
+                                </div>
+                            </div>
+                        </div>
+                    </MudTabPanel>
+                    <MudTabPanel Text="Thông tin giao hàng ">
+                        <div id="menu1">
+                            @*Ngày giao*@
+                            <div class="row">
+                                <div class="col-xs-12 col-sm-6 col-md-3 mt-2 pd-left-0 pd-right-0">
+                                    <div class="required">
+                                        <MudDatePicker Margin="Margin.Dense" Label="Ngày giao hàng" @bind-Date="nhapxuat.NgayGiao" Culture="@CultureInfo.GetCultureInfo("vi-VN")" TitleDateFormat="dd/MM/yyyy" Variant="Variant.Outlined"></MudDatePicker>
+                                    </div>
+                                </div>
+                                <div class="col-xs-12 col-sm-6 col-md-3 mt-2 pd-left-0 pd-right-0">
+                                    <MudTextField Margin="Margin.Dense" Label="Phương tiện" @bind-Value="@nhapxuat.PhuongTien" Variant="Variant.Outlined" />
+                                </div>
+                                <div class="col-xs-12 col-sm-12 col-md-6 mt-2 pd-left-0 pd-right-0">
+                                    <MudTextField Margin="Margin.Dense" Label="Nơi giao" @bind-Value="@nhapxuat.NoiGiao" Variant="Variant.Outlined" />
+                                </div>
+                            </div>
+                        </div>
+                    </MudTabPanel>
+                    <MudTabPanel Text="Thông tin thanh toán">
+                        <div id="menu2">
+                            @* Thanh toán*@
+                            <div class="row">
+                                <div class="col-xs-12 col-sm-6 col-md-3 col-xl-3 mt-2 pd-left-0 pd-right-0">
+                                    <div class="required">
+                                        <MudSelect Margin="Margin.Dense" Label="Hình thức thanh toán" AnchorOrigin="Origin.BottomCenter" @bind-Value="@DMHinhThucTTId" Variant="Variant.Outlined">
+                                            <MudSelectItem Value="@(0)">Chọn hình thức thanh toán</MudSelectItem>
+                                            @if (lstHinhThucTT != null)
+                                            {
+                                                @foreach (var cnt in lstHinhThucTT)
+                                                {
+                                                    <MudSelectItem Value="@cnt.Id">@cnt.TenHinhThuc</MudSelectItem>
+                                                }
+                                            }
+                                        </MudSelect>
+                                    </div>
+                                </div>
+                                <div class="col-xs-12 col-sm-6 col-md-3 col-xl-2 mt-2 pd-left-0 pd-right-0">
+                                    <MudDatePicker Margin="Margin.Dense" Label="Ngày thanh toán" @bind-Date="nhapxuat.NgayHenThanhToan" Culture="@CultureInfo.GetCultureInfo("vi-VN")" TitleDateFormat="dd/MM/yyyy" Variant="Variant.Outlined"></MudDatePicker>
+                                </div>
+                                <div class="col-xs-12 col-sm-6 col-md-3 col-xl-2 mt-2 pd-left-0 pd-right-0">
+                                    <MudSelect Margin="Margin.Dense" Label="Loại tiền" AnchorOrigin="Origin.BottomCenter" @bind-Value="@DMLoaiTienId" Variant="Variant.Outlined">
+                                        <MudSelectItem Value="@(0)">Chọn loại tiền</MudSelectItem>
+                                        @if (lstLoaiTien != null)
+                                        {
+                                            @foreach (var cnt in lstLoaiTien)
+                                            {
+                                                <MudSelectItem Value="@cnt.Id">@cnt.LoaiTien</MudSelectItem>
+                                            }
+                                        }
+                                    </MudSelect>
+                                </div>
+                                <div class="col-xs-12 col-sm-6 col-md-3 col-xl-2 mt-2 pd-left-0 pd-right-0">
+                                    <MudTextField Margin="Margin.Dense" Label="Số tiền" @bind-Value="@nhapxuat.SoTienTT" Variant="Variant.Outlined" />
+                                </div>
+                                <div class="col-xs-0 col-md-6 col-md-0 col-xl-3 m-0 p-0"></div>
+
+                            </div>
+                            @*Nhan viên*@
+                            <div class="row">
+                                <div class="col-xs-12 col-sm-6 col-md-3 mt-2 pd-left-0 pd-right-0">
+                                    <div class="required">
+                                        <MudSelect T="int" Margin="Margin.Dense" Label="Nhân viên kinh doanh" AnchorOrigin="Origin.BottomCenter" @bind-Value="@MaNhanVienId" Variant="Variant.Outlined">
+                                            @if (lstUser != null)
+                                            {
+                                                <MudSelectItem Value="@(0)">Chọn nhân viên</MudSelectItem>
+                                                @foreach (var cnt in lstUser)
+                                                {
+                                                    <MudSelectItem Value="@cnt.UserId">@cnt.FirstName</MudSelectItem>
+                                                }
+                                            }
+                                        </MudSelect>
+                                    </div>
+                                </div>
+                                @*nv kỹ thuật*@
+                                <div class="col-xs-12 col-sm-6 col-md-3 mt-2 pd-left-0 pd-right-0">
+                                    <div class="required">
+                                        <MudSelect T="int" Margin="Margin.Dense" Label="Nhân viên kỹ thuật" AnchorOrigin="Origin.BottomCenter" @bind-Value="@NVKyThuatId" Variant="Variant.Outlined">
+                                            @if (lstUser != null)
+                                            {
+                                                @foreach (var cnt in lstUser)
+                                                {
+                                                    <MudSelectItem Value="@(0)">Chọn nhân viên</MudSelectItem>
+                                                    <MudSelectItem Value="@cnt.UserId">@cnt.FirstName</MudSelectItem>
+                                                }
+                                            }
+                                        </MudSelect>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </MudTabPanel>
+                </MudTabs>
+            </div>
+        </div>
+    </div>
+    <MudToolBar>
+        @if (quyenSuDung.Them || quyenSuDung.Sua)
+        {
+            <MudButton Variant="Variant.Filled" ButtonType="ButtonType.Submit" StartIcon="@Icons.Material.Filled.Save" Size="Size.Small" Color="Color.Info">Cất</MudButton>
+            @if (IsCreateOrEdit)
+            {
+                <MudCheckBox @bind-Checked="@saveAndCreate" Label="Lưu và tạo mới tiếp" Color="Color.Primary"></MudCheckBox>
+            }
+        }
+
+        @if (!IsCreateOrEdit)
+        {
+            if (quyenSuDung.Them)
+            {
+                <MudButton Class="ml-1" Variant="Variant.Filled" @onclick="@(() => CreateClick(nhapxuat.Loai))" StartIcon="@Icons.Material.Filled.CreateNewFolder" Size="Size.Small" Color="Color.Primary">Thêm</MudButton>
+            }
+            if (nhapxuat.Loai == "nhap")
+            {
+                @if (quyenSuDung.XemIn)
+                {
+                    <a class="ml-1" href="@hostReport/Reports/Viewer?ReportFileName=rptPhieuNhap&id=@nhapxuat.Id" target="_blank">
+                        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Print" Size="Size.Small" Color="Color.Primary">In</MudButton>
+                    </a>
+                }
+            }
+            else if (nhapxuat.Loai == "xuat")
+            {
+                @if (quyenSuDung.XemIn)
+                {
+                    <a class="ml-1" href="@hostReport/Reports/Viewer?ReportFileName=rptPhieuXuat&id=@nhapxuat.Id" target="_blank">
+                        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Print" Size="Size.Small" Color="Color.Primary">In</MudButton>
+                    </a>
+                }
+
+            }
+            else if (nhapxuat.Loai == "nhaptra")
+            {
+                @if (quyenSuDung.XemIn)
+                {
+                    <a class="ml-1" href="@hostReport/Reports/Viewer?ReportFileName=rptPhieuNhapTra&id=@nhapxuat.Id" target="_blank">
+                        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Print" Size="Size.Small" Color="Color.Primary">In</MudButton>
+                    </a>
+                }
+
+            }
+            else if (nhapxuat.Loai == "xuattra")
+            {
+                @if (quyenSuDung.XemIn)
+                {
+                    <a class="ml-1" href="@hostReport/Reports/Viewer?ReportFileName=rptPhieuXuatTra&id=@nhapxuat.Id" target="_blank">
+                        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Print" Size="Size.Small" Color="Color.Primary">In</MudButton>
+                    </a>
+                }
+
+            }
+            if (quyenSuDung.Xoa)
+            {
+                <MudButton Class="ml-1" Variant="Variant.Filled" @onclick="@(() => DeleteClick())" StartIcon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error">Xóa</MudButton>
+            }
+            if (quyenSuDung.Them)
+            {
+                <MudButton Class="ml-1" Variant="Variant.Filled" @onclick="@(() => CreateClick(nhapxuat.Loai))" StartIcon="@Icons.Material.Filled.CreateNewFolder" Size="Size.Small" Color="Color.Primary">Thêm</MudButton>
+            }
+
+
+            <a id="reportid" target="_blank" href="@UrlReport" style="display:none"></a>
+        }
+        <MudButton Class="ml-1" Variant="Variant.Filled" @onclick="@(() => OpenDialogTimNhanh())" StartIcon="@Icons.Material.Filled.Search" Size="Size.Small" Color="Color.Info">Tìm nhanh</MudButton>
+
+    </MudToolBar>
+
+    <div class="form-group">
+
+        <MudTable Items="@nhapxuat.NoiDungNhapXuats" Hover="true" ReadOnly="false" CanCancelEdit="true"
+                  @bind-SelectedItem="selectedItem1" SortLabel="Sort By" CommitEditTooltip="Commit Edit" @ref="table"
+                  RowEditPreview="BackupItem" RowEditCancel="ResetItemToOriginalValues"
+                  RowEditCommit="ItemHasBeenCommitted" IsEditRowSwitchingBlocked="true"
+                  FixedHeader="true" FixedFooter="true"
+                  RowClassFunc="@SelectedRowClassFunc"
+                  Class="NhapXuatTableCustom">
+
+            <ColGroup>
+                <col width="150px" />
+                <col width="250px" />
+                <col />
+                <col />
+                <col />
+                <col />
+                <col />
+
+            </ColGroup>
+            <HeaderContent>
+                <MudTh>Mã hàng hóa</MudTh>
+                <MudTh>Tên hàng hóa</MudTh>
+                <MudTh>Đơn vị tính</MudTh>
+                <MudTh>Số lượng</MudTh>
+                <MudTh>Đơn giá</MudTh>
+                <MudTh>Số tiền</MudTh>
+                <MudTh>Ghi chú</MudTh>
+
+            </HeaderContent>
+            <RowTemplate Context="ctx">
+                <MudTd DataLabel="MaHangHoa"><div class="cell-data">@ctx.MaHangHoa</div></MudTd>
+                <MudTd DataLabel="TenHangHoa"><div class="cell-data">@ctx.TenHangHoa</div></MudTd>
+                <MudTd DataLabel="DonViTinh"><div class="cell-data">@ctx.DonViTinh</div></MudTd>
+                <MudTd DataLabel="SoLuong"><div class="cell-data" Style="text-align:right">@ctx.SoLuong.ToString("###,###.##")</div></MudTd>
+                <MudTd DataLabel="DonGia"><div class="cell-data" Style="text-align:right">@ctx.DonGia.ToString("###,###")</div></MudTd>
+                <MudTd DataLabel="SoTien"><div class="cell-data" Style="text-align:right">@ctx.SoTien.ToString("###,###")</div></MudTd>
+                <MudTd DataLabel="GhiChu"><div class="cell-data">@ctx.GhiChu</div></MudTd>
+            </RowTemplate>
+            <RowEditingTemplate Context="ctx1">
+                <MudTd DataLabel="MaHangHoa">
+                    <MudTextField @bind-Value="@ctx1.MaHangHoa" Immediate="true" TextChanged="MaHangHoaTextChanged"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  OnAdornmentClick="@(() => OpenDialogHangHoa())" />
+                </MudTd>
+                <MudTd DataLabel="TenHangHoa">
+                    <MudTextField @bind-Value="@ctx1.TenHangHoa" Immediate="true" />
+                </MudTd>
+                <MudTd DataLabel="DonViTinh">
+                    <MudTextField @bind-Value="@ctx1.DonViTinh" Immediate="true" />
+                </MudTd>
+                <MudTd DataLabel="SoLuong" Style="text-align:right">
+                    <MudNumericField @bind-Value="@ctx1.SoLuong" Format="N2" InvertMouseWheel="true" Culture="@_vi" HideSpinButtons="true" TextChanged="@(async (value) => await ChangeValueRow(value,"SoLuong"))" Immediate="true" />
+                </MudTd>
+                <MudTd DataLabel="DonGia" Style="text-align:right">
+                    <MudNumericField @bind-Value="@ctx1.DonGia" InvertMouseWheel="true" Culture="@_vi" HideSpinButtons="true" TextChanged="@( async (value) => await ChangeValueRow(value,"DonGia"))" />
+                </MudTd>
+                <MudTd DataLabel="SoTien" Style="text-align:right;">
+                    <MudNumericField @bind-Value="@ctx1.SoTien" InvertMouseWheel="true" Culture="@_vi" Immediate="true" HideSpinButtons="true" />
+                </MudTd>
+                <MudTd DataLabel="GhiChu">
+                    <MudTextField @bind-Value="@ctx1.GhiChu" Immediate="true" />
+                </MudTd>
+            </RowEditingTemplate>
+            <FooterContent>
+                <MudTd Class="mud-table-cell-custom-group mud-table-cell-custom-group-footer" colspan="3">
+                    <MudIconButton Icon="@Icons.Material.Filled.AddCircle" @onclick="@(e => AddRow())" Color="Color.Inherit" Title="Thêm dòng" />
+                    Tổng cộng
+                </MudTd>
+                <MudTd Class="mud-table-cell-custom-group mud-table-cell-custom-group-footer">@nhapxuat.NoiDungNhapXuats.Sum(x => x.SoLuong).ToString("###,###")</MudTd>
+                <MudTd></MudTd>
+                <MudTd Class="mud-table-cell-custom-group mud-table-cell-custom-group-footer">@nhapxuat.NoiDungNhapXuats.Sum(x => x.SoTien).ToString("###,###")</MudTd>
+                <MudTd></MudTd>
+            </FooterContent>
+        </MudTable>
+    </div>
+</EditForm>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    [Parameter]
+    public NhapXuatModel nhapxuat { get; set; }
+
+    [Parameter]
+    public List<DMHinhThucTT> lstHinhThucTT { get; set; }
+    [Parameter]
+    public List<UserModel> lstUser { get; set; }
+
+    [Parameter]
+    public List<DMTinhTrang> lstTinhTrang { get; set; }
+    [Parameter]
+    public List<DanhMucKhoHangModel> lstKhoHang { get; set; }
+    [Parameter]
+    public List<DanhMucLoaiTienModel> lstLoaiTien { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnValidSubmit { get; set; }
+
+    [Parameter]
+    public EventCallback ValueChangedText { get; set; }
+
+    [Parameter]
+    public bool isLoading { get; set; }
+
+    [Parameter]
+    public QLSX.Shared.Models.PhanQuyenSuDung quyenSuDung { get; set; }
+
+    [Parameter]
+    public bool IsCreateOrEdit { get; set; }
+
+    public bool saveAndCreate { get; set; } = false;
+
+    public CultureInfo _vi = CultureInfo.GetCultureInfo("vi-VN");
+
+
+
+    public string hostReport { get; set; }
+    public int index = -1;
+
+    private int _dMKhoHangId;
+    public int DMKhoHangId
+    {
+        get
+        {
+            return _dMKhoHangId;
+        }
+        set
+        {
+            this._dMKhoHangId = value;
+            nhapxuat.DMKhoHangId = value;
+        }
+    }
+
+    private int _dMTinhTrangId;
+    public int DMTinhTrangId
+    {
+        get
+        {
+            return _dMTinhTrangId;
+        }
+        set
+        {
+            this._dMTinhTrangId = value;
+            nhapxuat.DMTinhTrangId = value;
+        }
+    }
+
+    private int _dMHinhThucTTId;
+    public int DMHinhThucTTId
+    {
+        get
+        {
+            return _dMHinhThucTTId;
+        }
+        set
+        {
+            this._dMHinhThucTTId = value;
+            nhapxuat.DMHinhThucTTId = value;
+        }
+    }
+
+    private int _dMLoaiTienId;
+    public int DMLoaiTienId
+    {
+        get
+        {
+            return _dMLoaiTienId;
+        }
+        set
+        {
+            this._dMLoaiTienId = value;
+            nhapxuat.DMLoaiTienId = value;
+        }
+    }
+
+    private int _maNhanVienId;
+    public int MaNhanVienId
+    {
+        get
+        {
+            return _maNhanVienId;
+        }
+        set
+        {
+            this._maNhanVienId = value;
+            nhapxuat.MaNhanVienId = value;
+        }
+    }
+
+    private int _nVKyThuatId;
+    public int NVKyThuatId
+    {
+        get
+        {
+            return _nVKyThuatId;
+        }
+        set
+        {
+            this._nVKyThuatId = value;
+            nhapxuat.NVKyThuatId = value;
+        }
+    }
+
+    private NoiDungNhapXuatModel selectedItem1 { get; set; }
+    private NoiDungNhapXuatModel elementBeforeEdit { get; set; }
+    private MudTable<NoiDungNhapXuatModel> table;
+
+    public HangHoaSearchRequest itemRequest { get; set; } =
+    new HangHoaSearchRequest
+        {
+            MaHangHoa = "",
+            TenHangHoa = "",
+            DonViTinh = "",
+            Page = 0,
+            PageSize = 10,
+            TotalPages = 0
+        };
+
+    public KhachHangSearchRequest itemKHRequest { get; set; } =
+    new KhachHangSearchRequest
+        {
+            MaDonVi = "",
+            TenDonVi = "",
+            DiaChi = "",
+            DienThoai = "",
+            Page = 0,
+            PageSize = 20,
+            TotalPages = 0
+        };
+
+
+
+
+    public string UrlReport { get; set; }
+
+
+    private readonly Random _random = new Random();
+
+    protected override async Task OnInitializedAsync()
+    {
+
+    }
+
+
+    public async Task MaHangHoaTextChanged(string mahh)
+    {
+
+        DanhMucHangHoaModel dmhanghoa = await dmhanghoaService.GetByCodeAsync(mahh);
+        if (dmhanghoa != null)
+        {
+            selectedItem1.TenHangHoa = dmhanghoa.TenHangHoa;
+            selectedItem1.DonViTinh = dmhanghoa.DonViTinh;
+            selectedItem1.DonGia = dmhanghoa.GiaXuat;
+            selectedItem1.KhoRongTon = dmhanghoa.KhoRongTon;
+            selectedItem1.ChieuDai = dmhanghoa.ChieuDai;
+            selectedItem1.DMHangHoaId = dmhanghoa.Id;
+            selectedItem1.DMDonViSuDungId = nhapxuat.DMDonViSuDungId;
+            selectedItem1.DMKhoHangId = nhapxuat?.DMKhoHangId ?? 0;
+            selectedItem1.SoTien = selectedItem1.SoLuong * selectedItem1.DonGia;
+        }
+    }
+
+    public async Task MaDonViTextChanged(string madv)
+    {
+        DanhMucKhachHangModel dmKH = await dmkhachhangService.GetByCodeAsync(madv);
+        if (dmKH != null)
+        {
+            nhapxuat.DMKhachHangId = dmKH.Id;
+            nhapxuat.MaDonVi = dmKH.MaDonVi;
+            nhapxuat.TenDonVi = dmKH.TenDonVi;
+            nhapxuat.DiaChi = dmKH.DiaChi;
+            nhapxuat.DienThoai = dmKH.DienThoai;
+        }
+    }
+
+    private async Task ChangeValueRow(string value, string key)
+    {
+
+        double valueItem = 0;
+        double.TryParse(value, out valueItem);
+
+        if (key == "SoLuong")
+        {
+            await CaculateRow(selectedItem1, valueItem, selectedItem1.ChieuDai, selectedItem1.KhoRongTon, selectedItem1.DonGia);
+        }
+        if (key == "DonGia")
+        {
+            await CaculateRow(selectedItem1, selectedItem1.SoLuong, selectedItem1.ChieuDai, selectedItem1.KhoRongTon, valueItem);
+        }
+
+    }
+    private async Task CaculateRow(NoiDungNhapXuatModel item, double soluong, double chieudai, double chieurong, double dongia)
+    {
+        selectedItem1.SoTien = Math.Round(soluong * dongia, 0);
+
+    }
+    private void AddRow()
+    {
+        var item = new NoiDungNhapXuatModel();
+        if (nhapxuat.NoiDungNhapXuats.Count == 0) nhapxuat.NoiDungNhapXuats.Add(item);
+    }
+
+    private async Task DeleteClick()
+    {
+        var parameters = new DialogParameters { ["server"] = nhapxuat };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<Delete>("Xóa", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            int.TryParse(result.Data.ToString(), out int deletedServer);
+            await nhapxuatService.DeleteAsync(nhapxuat.Id);
+            Snackbar.Add("Bạn phải xóa dữ liệu thành công", Severity.Info);
+
+
+            NhapXuatSearchRequest request = new NhapXuatSearchRequest();
+            request.Loai = nhapxuat.Loai;
+            request.DMDonViSuDungId = AppService.DMDonViSuDungId;
+            // get list IDs from nhap xuat
+            var lstIDs = await nhapxuatService.GetAllNhapXuatIDs(request);
+
+            if (lstIDs.Count == 0)
+            {
+                navigationManager.NavigateTo("nhapxuats/" + nhapxuat.Loai + "/edit/0", true);
+            }
+            else
+            {
+                int id = lstIDs[lstIDs.Count - 1];
+                navigationManager.NavigateTo("nhapxuats/" + nhapxuat.Loai + "/edit/" + id, true);
+            }
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            DMKhoHangId = nhapxuat.DMKhoHangId;
+            hostReport = configuration.GetValue<string>("AppSettings:ReportUrl");
+            saveAndCreate = await localStorageService.GetItemAsync<bool>($"{nhapxuat.Loai}-SaveStatus");
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task CreateClick(string loai)
+    {
+        navigationManager.NavigateTo("nhapxuats/create/" + loai + "?rid=" + Guid.NewGuid());
+    }
+    private void BackupItem(object element)
+    {
+        elementBeforeEdit = new NoiDungNhapXuatModel()
+            {
+                DMHangHoaId = ((NoiDungNhapXuatModel)element).DMHangHoaId,
+                MaHangHoa = ((NoiDungNhapXuatModel)element).MaHangHoa,
+                TenHangHoa = ((NoiDungNhapXuatModel)element).TenHangHoa,
+                DonViTinh = ((NoiDungNhapXuatModel)element).DonViTinh,
+                SoLuong = ((NoiDungNhapXuatModel)element).SoLuong,
+                ChieuDai = ((NoiDungNhapXuatModel)element).ChieuDai,
+                KhoRongTon = ((NoiDungNhapXuatModel)element).KhoRongTon,
+                TongChieuDai = ((NoiDungNhapXuatModel)element).TongChieuDai,
+                TongDienTich = ((NoiDungNhapXuatModel)element).TongDienTich,
+                DonGia = ((NoiDungNhapXuatModel)element).DonGia,
+                SoTien = ((NoiDungNhapXuatModel)element).SoTien,
+                GhiChu = ((NoiDungNhapXuatModel)element).GhiChu
+
+            };
+    }
+
+    private void ItemHasBeenCommitted(object element)
+    {
+    }
+
+    private void ResetItemToOriginalValues(object element)
+    {
+        selectedItem1.DMHangHoaId = elementBeforeEdit.DMHangHoaId;
+        selectedItem1.MaHangHoa = elementBeforeEdit.MaHangHoa;
+        selectedItem1.TenHangHoa = elementBeforeEdit.TenHangHoa;
+        selectedItem1.DonViTinh = elementBeforeEdit.DonViTinh;
+        selectedItem1.SoLuong = elementBeforeEdit.SoLuong;
+        selectedItem1.ChieuDai = elementBeforeEdit.ChieuDai;
+        selectedItem1.KhoRongTon = elementBeforeEdit.KhoRongTon;
+        selectedItem1.TongChieuDai = elementBeforeEdit.TongChieuDai;
+        selectedItem1.TongDienTich = elementBeforeEdit.TongDienTich;
+        selectedItem1.DonGia = elementBeforeEdit.DonGia;
+        selectedItem1.SoTien = elementBeforeEdit.SoTien;
+        selectedItem1.GhiChu = elementBeforeEdit.GhiChu;
+        StateHasChanged();
+    }
+    private async Task SaveData()
+    {
+        await SaveStatus();
+        await OnValidSubmit.InvokeAsync(saveAndCreate);
+
+    }
+    private async Task SaveStatus()
+    {
+        await localStorageService.SetItemAsync($"{nhapxuat.Loai}-SaveStatus", saveAndCreate);
+    }
+    private int selectedRowNumber = -1;
+    private string SelectedRowClassFunc(NoiDungNhapXuatModel element, int rowNumber)
+    {
+        if (selectedRowNumber == rowNumber)
+        {
+            selectedRowNumber = -1;
+            return string.Empty;
+        }
+        else if (table.SelectedItem != null && table.SelectedItem.Equals(element))
+        {
+            selectedRowNumber = rowNumber;
+            return "selected";
+        }
+        else
+        {
+            return string.Empty;
+        }
+    }
+
+    async Task OpenDialogHangHoa()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var result = await DialogService.Show<DialogHangHoa>("Danh sách hàng hóa", options).Result;
+
+        if (!result.Canceled)
+        {
+            var itemSelected = (DanhMucHangHoaModel)(result.Data ?? null);
+            if (itemSelected != null)
+            {
+                selectedItem1.DMDonViSuDungId = nhapxuat.DMDonViSuDungId;
+                selectedItem1.DMKhoHangId = nhapxuat?.DMKhoHangId ?? 0;
+                selectedItem1.DMHangHoaId = itemSelected.Id;
+                selectedItem1.MaHangHoa = itemSelected.MaHangHoa;
+                selectedItem1.TenHangHoa = itemSelected.TenHangHoa;
+                selectedItem1.DonViTinh = itemSelected.DonViTinh;
+
+            }
+
+        }
+    }
+    async Task OpenDialogKhachHang()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var result = await DialogService.Show<DialogKhachHang>("Danh sách Khách hàng", options).Result;
+
+        if (!result.Canceled)
+        {
+            var itemSelected = (DanhMucKhachHangModel)(result.Data ?? null);
+            if (itemSelected != null)
+            {
+                nhapxuat.DMKhachHangId = itemSelected.Id;
+                nhapxuat.MaDonVi = itemSelected.MaDonVi;
+                nhapxuat.TenDonVi = itemSelected.TenDonVi;
+                nhapxuat.DiaChi = itemSelected.DiaChi;
+                nhapxuat.DienThoai = itemSelected.DienThoai;
+
+            }
+
+        }
+    }
+    private void OpenDialogTimNhanh()
+    {
+        var parameters = new DialogParameters { ["TimNhanhCalback"] = EventCallback.Factory.Create<int>(this, TimNhanhCalback), ["Loai"] = nhapxuat.Loai };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<DialogTimKiemNhanhNhapXuat>("Tìm kiếm nhanh", parameters, options);
+    }
+
+    private async Task TimNhanhCalback(int id)
+    {
+        var item = await nhapxuatService.GetByIdAsync(id);
+        if (item.Id == 0)
+        {
+            return;
+        }
+        nhapxuat = mapper.Map<NhapXuatModel>(item);
+        StateHasChanged();
+    }
+}

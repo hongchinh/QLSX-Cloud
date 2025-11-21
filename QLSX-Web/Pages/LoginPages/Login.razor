@@ -1,0 +1,222 @@
+﻿@page "/Login"
+@using QLSX.Web.Data
+@using Microsoft.AspNetCore.WebUtilities
+@using Microsoft.Extensions.Primitives
+@using Newtonsoft.Json
+@using QLSX.Web.Services
+@using System.Security.Claims
+@using QLSX.Shared.Models
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+@inject Blazored.LocalStorage.ILocalStorageService localStorageService
+@inject IUserService userService
+@inject IJSRuntime jsRunTime
+
+<div class="login-bg">
+    <MudGrid>
+        <MudItem xs="12" sm="4">
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <div class="py-4 px-6 mx-4 rounded">
+                <EditForm Model="@user" OnValidSubmit="@ValidateUser">
+                    <MudCard>
+                        <MudCardContent>
+                            <div class="d-flex">
+                                <MudIcon Icon="@Icons.Material.Filled.Favorite" Color="Color.Success" Title="Favorite" />
+                                CAMI-TECHOLOGY
+                            </div>
+                            <div>
+                                <MudText Color="Color.Error" Style="font-size: 24px;font-weight: bold;">QUẢN LÝ BÁN HÀNG</MudText>
+                            </div>
+
+                            <div>
+                                <br />
+                            </div>
+                            <MudItem xs="12">
+                                <MudTextField @bind-Value="user.EmailAddress" Label="Email" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentIcon="@UserInputIcon" />
+                            </MudItem>
+                            <br />
+                            <MudItem xs="12">
+                                <MudTextField @bind-Value="user.MatKhau" Label="Mật khẩu" Variant="Variant.Outlined" InputType="@PasswordInput" Adornment="Adornment.Start" AdornmentIcon="@PasswordInputIcon" OnAdornmentClick="ButtonTestclick" AdornmentAriaLabel="Hiển thị mật khẩu" />
+                            </MudItem>
+                            <br />
+                            <MudItem xs="12">
+                                <MudButton Variant="Variant.Filled" ButtonType="ButtonType.Submit" Color="Color.Primary" Class="ml-auto">Đăng nhập</MudButton>
+                            </MudItem>
+                            <MudOverlay @bind-Visible="isLoading" DarkBackground="true" Absolute="false">
+                                <MudProgressCircular Color="Color.Secondary" Indeterminate="true" />
+                            </MudOverlay>
+
+                            <br />
+                            <div class="col-12 row" style="text-align:left;">
+                                <span class="col-12">@LoginMesssage</span>
+                            </div>
+                        </MudCardContent>
+                    </MudCard>
+                </EditForm>
+            </div>
+        </MudItem>
+        <MudItem xs="12" sm="4">
+
+        </MudItem>
+        <MudItem xs="12" sm="3">
+
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudCarousel Class="mud-width-full" Style="height:200px;" ShowArrows="true" ShowBullets="true" EnableSwipeGesture="true" AutoCycle="true" TData="object">
+                <MudCarouselItem Transition="Transition.Slide">
+                    <div class="d-flex" style="height:100%">
+                        <MudItem xs="12">
+                            <MudIcon Icon="@Icons.Material.Filled.Home" Size="Size.Large" Class="color-icon" Title="Home" />
+                            <MudText Style="color:lavender;font-size:30px">ĐƠN GIẢN & DỄ SỬ DỤNG</MudText>
+                            <MudText Style="color:lavender;" Typo="Typo.body2">Giao diện đơn giản, thân thiện và thông minh.</MudText>
+                            <MudText Style="color:lavender;" Typo="Typo.body2">Hỗ trợ người dùng nhập số liệu nhanh nhất.</MudText>
+                            <MudText Style="color:lavender;" Typo="Typo.body2">Giúp người dùng trải nghiệp tốt nhất.</MudText>
+                        </MudItem>
+                    </div>
+                </MudCarouselItem>
+                <MudCarouselItem Transition="Transition.Slide">
+                    <div class="d-flex" style="height:100%">
+                        <MudItem xs="12">
+                            <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Size="Size.Large" Class="color-icon" Title="Money" />
+                            <MudText Style="color:lavender;font-size:30px">TIẾT KIỆM CHI PHÍ</MudText>
+                            <MudText Style="color:lavender;" Typo="Typo.body2">Miễn phí cài đặt, triển khai, nâng cấp và hỗ trợ.</MudText>
+                            <MudText Style="color:lavender;" Typo="Typo.body2">Hỗ trợ người dùng 24/7.</MudText>
+                        </MudItem>
+                    </div>
+                </MudCarouselItem>
+                <MudCarouselItem Transition="Transition.Slide">
+                    <div class="d-flex" style="height:100%">
+                        <MudItem xs="12">
+                            <MudIcon Icon="@Icons.Material.Filled.CloudSync" Size="Size.Large" Class="color-icon" Title="Money" />
+                            <MudText Style="color:lavender;font-size:30px">TÍCH HỢP NHIỀU CÔNG NGHỆ MỚI NHẤT</MudText>
+                            <MudText Style="color:lavender;" Typo="Typo.body2">Tích hợp nhiều công nghệ mới, giúp trải nghiệm tốt nhất cho người dùng.</MudText>
+                        </MudItem>
+                    </div>
+                </MudCarouselItem>
+            </MudCarousel>
+        </MudItem>
+
+        <MudItem xs="12" sm="3">
+
+        </MudItem>
+    </MudGrid>
+
+</div>
+
+@code {
+    public double? Amount { get; set; }
+    public int? Weight { get; set; }
+    public string Password { get; set; } = "superstrong123";
+    private UserModel user { get; set; } = new UserModel();
+    bool isLoading = false;
+    public string LoginMesssage { get; set; }
+    ClaimsPrincipal claimsPrincipal;
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    protected async override Task OnInitializedAsync()
+    {
+        var authen = await authenticationStateTask;
+        claimsPrincipal = authen.User;
+        var userLogin = (await authenticationStateTask).User;
+        var Email = userLogin.Identity.Name;
+        user.EmailAddress = Email;
+        if (claimsPrincipal.Identity.IsAuthenticated)
+        {
+            StringValues pathRedirect = "";
+            var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+            if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("returnUrl", out pathRedirect))
+            {
+                if (string.IsNullOrEmpty(pathRedirect.ToString()))
+                {
+                    NavigationManager.NavigateTo("/");
+                }
+                else
+                {
+                    NavigationManager.NavigateTo(pathRedirect.ToString());
+                }
+            }
+            else
+            {
+                NavigationManager.NavigateTo("/");
+            }
+        }
+
+    }
+
+    private async Task<bool> ValidateUser()
+    {
+        isLoading = true;
+        var loginrequest = new QLSX.Shared.Models.LoginRequest
+            {
+                EmailAddress = user.EmailAddress,
+                Password = user.MatKhau
+            };
+        try
+        {
+            var returnedUser = await userService.LoginAsync(loginrequest);
+            if (returnedUser.EmailAddress != null)
+            {
+                await ((CustomAuthenticationStateProvider)AuthenticationStateProvider).MarkUserAsAuthenticated(returnedUser);
+                StringValues pathRedirect = "";
+                var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+                claimsPrincipal = (await authenticationStateTask).User;
+
+                await localStorageService.SetItemAsync("hoTen", returnedUser.HoTen);
+                if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("returnUrl", out pathRedirect))
+                {
+                    isLoading = false;
+                    if (string.IsNullOrEmpty(pathRedirect.ToString()))
+                    {
+                        NavigationManager.NavigateTo("/");
+                    }
+                    else
+                    {
+                        NavigationManager.NavigateTo(pathRedirect.ToString());
+                    }
+                }
+                else
+                {
+                    isLoading = false;
+                    NavigationManager.NavigateTo("/");
+                }
+            }
+            else
+            {
+                LoginMesssage = "Thông tin đăng đăng nhập không hợp lệ. Hãy kiểm tra lại.";
+            }
+            isLoading = false;
+            StateHasChanged();
+            return await Task.FromResult(true);
+        }
+        catch (Exception ex)
+        {
+            isLoading = false;
+            StateHasChanged();
+            return await Task.FromResult(false);
+        }
+
+    }
+
+    bool isShow;
+    InputType PasswordInput = InputType.Password;
+    string UserInputIcon = Icons.Material.Filled.SupervisedUserCircle;
+    string PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+    void ButtonTestclick()
+    {
+        @if (isShow)
+        {
+            isShow = false;
+            PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+            PasswordInput = InputType.Password;
+        }
+        else
+        {
+            isShow = true;
+            PasswordInputIcon = Icons.Material.Filled.Visibility;
+            PasswordInput = InputType.Text;
+        }
+    }
+}

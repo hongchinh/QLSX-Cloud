@@ -1,0 +1,194 @@
+﻿@using System.Text.Json
+@using Newtonsoft.Json
+@using Blazored.LocalStorage
+@using QLSX.Shared.DTOs
+@using AutoMapper
+@using QLSX.Shared.Models
+@inject NavigationManager navigationManager
+@inject ILogger<NhapXuatEdit> Logger
+@inject IJSRuntime JSRuntime
+@inject INhapXuatsService<NhapXuatModel> nhapxuatService
+@inject IDMHangHoaService<DanhMucHangHoaModel> dmhanghoaService
+@inject IEmloyeeService<UserModel> dmUserService
+@inject IDMHinhThucTTService<DanhMucHinhThucTTModel> dmHinhThucTTService
+@inject IDMTinhTrangService<QLSX.Shared.Models.DMTinhTrangModel> dmTinhTrangService
+@inject IDMKhoHangService<DanhMucKhoHangModel> dmkhohangService
+@inject IDMLoaiTienService<DanhMucLoaiTienModel> dmLoaiTienService
+@inject ILocalStorageService localStorageService
+@inject AppService AppService
+@inject IMapper mapper;
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject IToastService toastService
+@inject IPhanQuyenSuDungService< QLSX.Shared.Models.QuyenSuDungModel> permisstionService
+@inject ISettingService<QLSX.Shared.Models.SettingModel> itemService
+@inject ISnackbar Snackbar
+
+@namespace QLSX.Web.Pages.NhapXuatPage
+<MudDialog DisableSidePadding="true" Style="height:100vh" Class="clsFormNX">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Edit" Class="mr-3 mb-n1" />
+            @Title
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudContainer Style="overflow-y: scroll" MaxWidth="MaxWidth.ExtraExtraLarge">
+            <NhapXuatsForm nhapxuat="nhapxuat"
+                           lstUser="lstUser"
+                           lstHinhThucTT="lstHinhThucTT"
+                           lstTinhTrang="lstTinhTrang"
+                           lstKhoHang="lstKhoHang"
+                           lstLoaiTien="lstLoaiTien"
+                           isLoading="@isLoading"
+                           quyenSuDung="quyenSuDung"
+                           OnValidSubmit="OnValidSubmit"
+                           SanPhamTheoM2="@isNhapTheoM2"
+                           IsCreateOrEdit="false"
+                           CancelClickCallBack="CancelClick"
+                           IsReadOnly="true" />
+            <LoadingProgress IsLoading="isLoading" />
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] private Task<AuthenticationState> authenticationStateTask { get; set; }
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public int NhapXuatId { get; set; }
+
+    [Parameter] public string loaiNX { get; set; }
+    [Parameter] public int HeightGrid { get; set; }
+    [Parameter] public string Title { get; set; } = "Sửa";
+    [Parameter] public EventCallback LoadData { get; set; }
+
+    public NhapXuatModel nhapxuat { get; set; } = new NhapXuatModel();
+
+    public bool isNhapTheoM2 { get; set; }
+
+    public List<int> lstIDs { get; set; }
+
+    public int nhapxuatId { get; set; }
+
+
+    public bool isLoading = true;
+    private string glLoai { get; set; }
+
+    public int CurentIndex { get; set; } = 0;
+    public int TotalIndex { get; set; } = 0;
+    public List<NhapXuatModel> nhapxuatAll { get; set; }
+
+    public List<UserModel> lstUser { get; set; }
+    public List<DanhMucHinhThucTTModel> lstHinhThucTT { get; set; }
+    public List<QLSX.Shared.Models.DMTinhTrangModel> lstTinhTrang { get; set; }
+    public List<DanhMucKhoHangModel> lstKhoHang { get; set; }
+    public List<DanhMucLoaiTienModel> lstLoaiTien { get; set; }
+    public QLSX.Shared.Models.QuyenSuDungModel quyenSuDung { get; set; } = new QLSX.Shared.Models.QuyenSuDungModel();
+    public QLSX.Shared.Models.SettingModel itemSetting { get; set; } = new QLSX.Shared.Models.SettingModel { LoaiNhapXuat = 1 };
+
+    public bool IsFirst { get; set; } = true;
+    public bool IsLast { get; set; } = true;
+
+    protected async override Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isLoading = true;
+            await Task.Delay(500);
+            var user = (await authenticationStateTask).User;
+            var UserId = user.FindFirst(c => c.Type == "UserId")?.Value;
+            UserId = string.IsNullOrEmpty(UserId) ? "0" : UserId;
+            itemSetting = await itemService.GetByIdAsync(int.Parse(UserId));
+            quyenSuDung = await permisstionService.GetQuyenByUserIdAsync(int.Parse(UserId), loaiNX);
+            // set undex
+            SetIndexForNoiDung();
+
+
+            if (itemSetting.LoaiNhapXuat == 3 || itemSetting.LoaiNhapXuat == 2)
+            {
+                isNhapTheoM2 = true;
+            }
+            else
+            {
+                isNhapTheoM2 = false;
+            }
+            lstUser = await dmUserService.GetAllAsync();
+            lstHinhThucTT = await dmHinhThucTTService.GetAllAsync();
+            lstTinhTrang = await dmTinhTrangService.GetAllAsync();
+            lstKhoHang = await dmkhohangService.GetAllAsync();
+            lstLoaiTien = await dmLoaiTienService.GetAllAsync();
+
+            NhapXuatSearchRequest request = new NhapXuatSearchRequest();
+            request.Loai = loaiNX;
+            request.Id = NhapXuatId;
+            request.DMDonViSuDungId = AppService.DMDonViSuDungId;
+            var nhapxuatnew = await nhapxuatService.GetNhapXuatByIDAsync(request);
+            nhapxuat = mapper.Map<NhapXuatModel>(nhapxuatnew);
+            isLoading = false;
+            StateHasChanged();
+
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task CancelClick()
+    {
+        MudDialog.Cancel();
+    }
+
+    private async Task OnValidSubmit(bool keepAdd)
+    {
+        isLoading = true;
+        bool isValid = true;
+        if (nhapxuat.SoChungTu == "")
+        {
+            Snackbar.Add("Bạn phải nhập vào số chứng từ", Severity.Error);
+            isValid = false;
+        }
+
+        var request = new NhapXuatSearchRequest();
+        request.SoPhieu = nhapxuat.SoChungTu;
+
+        var checkExist = await nhapxuatService.GetBySoChungTuAsync(request);
+        if (checkExist.Id > 0 && checkExist.Id != nhapxuat.Id)
+        {
+            Snackbar.Add("Số chứng từ này đã có rồi, hãy kiểm tra lại", Severity.Error);
+            isValid = false;
+        }
+
+        if (!isValid)
+        {
+            isLoading = false;
+            return;
+        }
+
+        var nxnew = await nhapxuatService.UpdateAsync(nhapxuat.Id, nhapxuat);
+        if (nxnew.Id > 0)
+        {
+            MudDialog.Close(DialogResult.Ok<NhapXuatModel>(nhapxuat));
+            Snackbar.Add("Cập nhật thành công", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("Lỗi trong quá trình cập nhật. Liên hệ với người quản trị chương trình.", Severity.Error);
+        }
+        isLoading = false;
+
+    }
+
+    private void SetIndexForNoiDung()
+    {
+        int i = 0;
+        foreach (var item in nhapxuat.NoiDungNhapXuats)
+        {
+            // item.Index = i++;
+        }
+    }
+
+}

@@ -1,0 +1,208 @@
+﻿@using QLSX.Shared.Models
+@using QLSX.Web.Helpers
+@inject ILogger<DlgKhachHang> Logger
+@inject IJSRuntime jsRuntime
+@inject AppService appService
+@inject IDMKhachHangService<DanhMucKhachHangModel> itemServicece
+@inherits QLSX.Web.Helpers.BlazorComponent
+ 
+@namespace Dialogs
+
+<div class="modal @_modalClass" tabindex="-1" role="dialog" style="display:@_modalDisplay; overflow-y:auto" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+    <div class="modal-dialog" role="document" style="max-width:750px !important; width:auto !important">
+        <div class="modal-content">
+            <EditForm Model="@itemRequest" OnValidSubmit="@SearchClick">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Tìm kiếm hàng hóa</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="container" style="width:auto !important">
+                        <div class="row" style="margin-bottom: 10px">
+                            <label class="control-label" style="width:50px">Mã HH</label>
+                            <InputText @bind-Value="itemRequest.MaDonVi" style="width:100px" />
+                            <label class="control-label" style="width:60px">Tên HH</label>
+                            <InputText @bind-Value="itemRequest.TenDonVi" style="width:100px" />
+                            <label class="control-label col-md-2" style="width:45px">Điện thoại</label>
+                            <InputText @bind-Value="itemRequest.DiaChi" style="width:45px" />
+                        </div>
+                        <div class="row" style="margin-bottom: 10px">
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary">
+                                    Tìm
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <SpinLoader IsLoading="isLoading">
+                                <LoadingTemplate>
+                                   <MudProgressCircular Color="Color.Tertiary" Size="Size.Large" Indeterminate="true"/>
+                                </LoadingTemplate>
+                                <ContentTemplate>
+                                    @if (filteredList != null)
+                    {
+                                    <GridViewPaginate CurrentPage="@lsResponses.PageIndex"
+                                                      PageSize="@lsResponses.PageSize"
+                                                      TotalPages="@lsResponses.TotalPages"
+                                                      TotalRecords="@lsResponses.TotalRecords"
+                                                      Items="filteredList" ReloadList="IsGridViewFiltered"
+                                                      Movepage="NextClick">
+                                        <GridColumns>
+                                            <GridColumn ColumnTitle="Mã KH" IsSearch="false"></GridColumn>
+                                            <GridColumn ColumnTitle="Tên KH" IsSearch="false"></GridColumn>
+                                            <GridColumn ColumnTitle="Địa chỉ" IsSearch="false"></GridColumn>
+                                            <GridColumn ColumnTitle="Điện thoại" IsSearch="false"></GridColumn>
+                                        </GridColumns>
+                                        <GridRow Context="custom">
+                                            <td width="20%">
+                                                <div style="width:80%; float: left"> @custom.MaDonVi</div>
+                                                <button type="button" class="btn btn-primary"
+                                                        style="width:10%; float: right;font-size:2px; padding:10px"
+                                                        @onclick="@(() => RowClick(custom))" @onclick:stopPropagation="true">
+                                                    <span class="oi oi-magnifying-glass"></span>
+                                                </button>
+                                            </td>
+                                            <td width="40%">
+                                                @custom.TenDonVi
+                                            </td>
+                                            <td width="10%">
+                                                @custom.DiaChi
+                                            </td>
+                                            <td width="15%">
+                                                @custom.DienThoai
+                                            </td>
+                                            
+                                        </GridRow>
+                                    </GridViewPaginate>
+                                    }
+                                </ContentTemplate>
+                            </SpinLoader>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="Close">Bỏ qua</button>
+                </div>
+            </EditForm>
+        </div>
+
+    </div>
+</div>
+
+
+
+@if (_showCreateModal)
+{
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    [Parameter]
+    public EventCallback<DanhMucKhachHangModel > OnRowClick { get; set; }
+
+    public QLSX.Shared.Models.KhachHangSearchRequest itemRequest { get; set; } = 
+     new QLSX.Shared.Models.KhachHangSearchRequest()
+        {
+           
+            MaDonVi = "",
+            TenDonVi = "",
+            DiaChi = "",
+            DienThoai = "",
+            Page = 0,
+            PageSize = 10,
+            TotalPages = 0
+        };
+
+    public DanhMucKhachHangModel product { get; set; }
+    public List<DanhMucKhachHangModel> productsList { get; set; }
+    public List<DanhMucKhachHangModel> filteredList { get; set; }
+    public GetAllResponsePaged<DanhMucKhachHangModel> lsResponses { get; set; }
+     
+    string status;
+    public int index = -1;
+    public int CurentPage = 0;
+
+    private DanhMucKhachHangModel _item = new DanhMucKhachHangModel();
+
+    private string _modalDisplay = "none;";
+    private string _modalClass = "";
+    private bool _showCreateModal = false;
+
+    bool isLoading = true;
+    public bool IsGridViewFiltered { get; set; }
+
+    private async Task RowClick(DanhMucKhachHangModel pro)
+    {
+        await OnRowClick.InvokeAsync(pro);
+        await Close();
+    }
+
+    public async Task Open()
+    {
+        Logger.LogInformation("Open KhachHang List");
+        isLoading = true;
+        _modalDisplay = "block;";
+        _modalClass = "Show";
+        await new Css(jsRuntime).HideBodyOverflow();
+
+        itemRequest =
+        new QLSX.Shared.Models.KhachHangSearchRequest()
+        {
+            DMDonViSuDungId = appService.DMDonViSuDungId,
+            MaDonVi = "",
+            TenDonVi = "",
+            DiaChi = "",
+            DienThoai = "",
+            Page = 0,
+            PageSize = 10,
+            TotalPages = 0
+        };
+
+        IsGridViewFiltered = true;
+        await LoadData();
+
+        _showCreateModal = true;
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task Close()
+    {
+        await new Css(jsRuntime).ShowBodyOverflow();
+        _modalDisplay = "none";
+        _modalClass = "";
+        _showCreateModal = false;
+    }
+
+    private async Task SearchClick()
+    {
+        isLoading = true;
+        IsGridViewFiltered = true;
+        itemRequest.Page = 0;
+        await LoadData();
+        isLoading = false;
+    }
+    private async Task NextClick(string page)
+    {
+        isLoading = true;
+        IsGridViewFiltered = true;
+        int pageint = 0;
+        int.TryParse(page, out pageint);
+        itemRequest.Page = pageint;
+        CurentPage = pageint;
+        await LoadData();
+        isLoading = false;
+    }
+
+    private async Task LoadData()
+    {
+        await Task.Delay(500);
+        lsResponses = new GetAllResponsePaged<DanhMucKhachHangModel>();
+        itemRequest.Page = CurentPage;
+        lsResponses = await itemServicece.GetAllPagedAsync(itemRequest);
+        productsList = filteredList = lsResponses.Items;
+        StateHasChanged();
+    }
+}

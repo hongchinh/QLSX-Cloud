@@ -1,0 +1,193 @@
+﻿@using System.Text.Json
+@using Newtonsoft.Json
+@using Blazored.LocalStorage
+@using Microsoft.Extensions.Configuration;
+@using QLSX.Shared.Models
+
+@inject NavigationManager navigationManager
+@inject ILogger<ThuChiCreate> Logger
+@inject IJSRuntime jsRuntime
+@inject IThuChiService<ThuChiModel> thuchitService
+@inject IEmloyeeService<UserModel> dmUserService
+@inject IDMKhoanThuService<DanhMucKhoanThuModel> DanhMucKhoanThuModelService
+@inject IDMKhoanChiService<QLSX.Shared.Models.DanhMucKhoanChiModel> dmKhoanChiService
+@inject IDMLoaiTienService<DanhMucLoaiTienModel> dmLoaiTienService
+@inject IDMSoCTService<QLSX.Shared.Models.DanhMucSoChungTuModel> dmSoCTService
+@inject ILocalStorageService localStorageService
+@inject IPhanQuyenSuDungService< QLSX.Shared.Models.QuyenSuDungModel> permisstionService
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject ISnackbar Snackbar
+@inject ISettingService<QLSX.Shared.Models.SettingModel> itemSettingService
+@inject IConfiguration configuration
+@inject IDialogService DialogService
+
+@namespace QLSX.Web.Pages.ThuChiPage
+
+<MudDialog DisableSidePadding="true">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Add" Class="mr-3 mb-n1" />
+            @Title
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (thuchi != null)
+        {
+            <ThuChiForm thuchi="thuchi"
+                        lstUser="lstUser"
+                        lstKhoanThu="lstKhoanThu"
+                        lstKhoanChi="lstKhoanChi"
+                        lstLoaiTien="lstLoaiTien"
+                        loaiThuChi="@thuchi.Loai"
+                        quyenSuDung="quyenSuDung"
+                        OnValidSubmit="OnValidSubmit"
+                        IsCreateOrEdit="true"
+                        CancelClickCallBack="CancelClick"
+                        IsReadOnly="false" />
+        }
+    </DialogContent>
+    <DialogActions>
+    </DialogActions>
+</MudDialog>
+<LoadingProgress IsLoading="isLoading" />
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> authenticationStateTask { get; set; }
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public string Title { get; set; }
+    [Parameter] public string loaiThuChi { get; set; }
+    public ThuChiModel thuchi { get; set; }
+    public bool isLoading = true;
+    public QLSX.Shared.Models.QuyenSuDungModel quyenSuDung { get; set; } = new QLSX.Shared.Models.QuyenSuDungModel();
+
+    private string glLoai { get; set; }
+    public List<UserModel> lstUser { get; set; }
+    public List<DanhMucLoaiTienModel> lstLoaiTien { get; set; }
+    public List<DanhMucKhoanThuModel> lstKhoanThu { get; set; }
+    public List<QLSX.Shared.Models.DanhMucKhoanChiModel> lstKhoanChi { get; set; }
+    public string hostReport { get; set; }
+    public QLSX.Shared.Models.SettingModel itemSetting { get; set; } = new QLSX.Shared.Models.SettingModel { LoaiNhapXuat = 1 };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isLoading = true;
+            await Task.Delay(500);
+            var userLogin = (await authenticationStateTask).User;
+            var DMDonViId = userLogin.FindFirst(c => c.Type == "TenantId")?.Value;
+            DMDonViId = string.IsNullOrEmpty(DMDonViId) ? "0" : DMDonViId;
+            var UserId = userLogin.FindFirst(c => c.Type == "UserId")?.Value;
+            UserId = string.IsNullOrEmpty(UserId) ? "0" : UserId;
+            quyenSuDung = await permisstionService.GetQuyenByUserIdAsync(int.Parse(UserId), loaiThuChi);
+            itemSetting = await itemSettingService.GetByIdAsync(int.Parse(UserId));
+
+            QLSX.Shared.Models.GetSoChungTuRequest dmsoct = new QLSX.Shared.Models.GetSoChungTuRequest();
+            dmsoct.Loai = loaiThuChi;
+            dmsoct.DMDonViSuDungId = int.Parse(DMDonViId);
+            thuchi.Loai = loaiThuChi;
+            thuchi.NgayCT = DateTime.Now;
+            thuchi.NgayHoanThanh = DateTime.Now;
+            if (itemSetting.TuDongThuChi)
+            {
+                thuchi.SoPhieu = await dmSoCTService.GetSoChungTuAsync(dmsoct);
+            }
+            thuchi.DMDonViSuDungId = int.Parse(DMDonViId);
+            lstLoaiTien = await dmLoaiTienService.GetAllAsync();
+            lstKhoanThu = await DanhMucKhoanThuModelService.GetAllAsync();
+            lstKhoanChi = await dmKhoanChiService.GetAllAsync();
+
+            if (loaiThuChi == "thutm")
+            {
+                thuchi.DienGiai = "Thu tiền số phiếu: " + thuchi.SoPhieu;
+                thuchi.MaKhoanThu = lstKhoanThu.Any() ? lstKhoanThu[0]?.MaKhoanThu ?? "" : "";
+                thuchi.LoaiTien = lstLoaiTien.Any() ? lstLoaiTien[0]?.LoaiTien ?? "" : "";
+            }
+            if (loaiThuChi == "chitm")
+            {
+                thuchi.DienGiai = "Chi tiền số phiếu: " + thuchi.SoPhieu;
+                thuchi.MaKhoanChi = lstKhoanChi.Any() ? lstKhoanChi[0]?.MaKhoanChi ?? "" : "";
+                thuchi.LoaiTien = lstLoaiTien.Any() ? lstLoaiTien[0]?.LoaiTien ?? "" : "";
+            }
+
+            hostReport = configuration.GetValue<string>("AppSettings:ReportUrl");
+            isLoading = false;
+            StateHasChanged();
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        thuchi = new ThuChiModel();
+        glLoai = loaiThuChi;
+        thuchi.Loai = loaiThuChi;
+        await base.OnInitializedAsync();
+    }
+    private async Task CancelClick()
+    {
+        MudDialog.Cancel();
+    }
+    private async Task OnValidSubmit(bool keepAdd)
+    {
+        isLoading = true;
+        bool isValid = true;
+
+        if (string.IsNullOrEmpty(thuchi.LoaiTien))
+        {
+            Snackbar.Add("Bạn phải chọn loại tiền", Severity.Error);
+            isValid = false;
+        }
+        if (string.IsNullOrEmpty(thuchi.DienGiai))
+        {
+            Snackbar.Add("Bạn phải nhập diễn giải", Severity.Error);
+            isValid = false;
+        }
+        if (string.IsNullOrEmpty(thuchi.MaDoiTuong))
+        {
+            Snackbar.Add("Bạn phải chọn đơn vị", Severity.Error);
+            isValid = false;
+        }
+        if (thuchi.SoTien == 0)
+        {
+            Snackbar.Add("Bạn phải nhập số tiền", Severity.Error);
+            isValid = false;
+        }
+        if (!isValid)
+        {
+            isLoading = false;
+            return;
+        }
+
+        var response = await thuchitService.CreateAsync(thuchi);
+
+        Snackbar.Add("Tạo mới thành công", Severity.Success);
+        isLoading = false;
+        if (itemSetting.InPhieuSauThemMoi)
+        {
+            @if (thuchi.Loai == "thutm")
+            {
+                string strURL = hostReport + "/Reports/Viewer?ReportFileName=PhieuThuVND&id=" + response.Id;
+                await jsRuntime.InvokeVoidAsync("open", strURL, "_blank");
+            }
+            else if (thuchi.Loai == "chitm")
+            {
+                string strURL = hostReport + "/Reports/Viewer?ReportFileName=PhieuChiVND&id=" + response.Id;
+                await jsRuntime.InvokeVoidAsync("open", strURL, "_blank");
+            }
+        }
+
+        if (keepAdd)
+        {
+            navigationManager.NavigateTo("thuchis/create/" + thuchi.Loai + "?rid=" + Guid.NewGuid(), true);
+        }
+        else
+        {
+            // navigationManager.NavigateTo($"thuchis/{thuchi.Loai}/edit/{response.Id}?rid=" + Guid.NewGuid(), true);
+            navigationManager.NavigateTo($"thuchis?rid=" + Guid.NewGuid(), true);
+        }
+
+    }
+}
+

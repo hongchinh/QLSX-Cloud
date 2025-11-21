@@ -1,0 +1,101 @@
+﻿.button {
+    border-radius: 3px !important;
+    border: none;
+    outline: none !important;
+    text-align: center;
+    padding: 6px 15px 6px 15px;
+    font-size: 14px;
+    min-width: 80px !important;
+    height: 35px !important;
+}
+
+    .button:hover {
+        text-decoration: none;
+        opacity: 0.9;
+    }
+
+.button--yellow {
+    width: 142px;
+    background-color: #E5D563;
+    color: #333;
+}
+
+    .button--yellow:hover {
+        color: #333;
+    }
+
+.button--gray {
+    background-color: #C1C1C1;
+    color: #000;
+}
+
+    .button--gray:hover {
+        color: #000;
+    }
+
+.button-type-detail {
+    width: 142px;
+    background-color: #00BCD4;
+    color: #fff;
+}
+
+    .button-type-detail:hover {
+        color: #fff;
+    }
+
+.button-type-edit {
+    width: 100px;
+    background-color: #00BCD4;
+    color: #fff;
+}
+
+.button-type-edit:hover {
+    color: #fff;
+}
+.button-type-delete {
+    width: 100px;
+    background-color: #C1C1C1;
+    color: #000;
+}
+
+    .button-type-delete:hover {
+        color: #000;
+    }
+.button-type-submit {
+    width: 100px;
+    background-color: #E06194;
+    color: #fff;
+}
+
+    .button-type-submit:hover {
+        color: #fff;
+    }
+
+.button-type-accept {
+    min-width: 138px;
+    background-color: #00BCD4;
+    color: #fff;
+}
+
+    .button-type-accept:hover {
+        color: #fff;
+    }
+
+.button-type-cancel {
+    width: 108px;
+    background-color: #C1C1C1;
+    color: #000;
+}
+
+.button-type-cancel:hover {
+    color: #000;
+}
+
+.button-type-preview {
+    margin-left: 10px;
+    padding: 9px;
+}
+.button-type-search {
+    background-color: #4285F4;
+    color: #000;
+}

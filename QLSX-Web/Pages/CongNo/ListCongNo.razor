@@ -1,0 +1,179 @@
+﻿@page "/ListCongNo"
+
+@using QLSX.Shared.Models
+@using QLSX.Web.Data
+@using QLSX.Web.Services
+@using Blazored.LocalStorage
+@using QLSX.Web.Shared
+
+@inject IUserService userService
+@inject ICustomersService<TongHopCongNo> cusService
+@inject ILocalStorageService localStorageService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+@attribute [Authorize]
+@inherits QLSX.Web.Helpers.BlazorComponent
+
+@namespace QLSX.Web.Pages.CongNo
+<br />
+<div class="col-12">
+    <h3><b>Bảng công nợ khách hàng</b></h3>
+    <p class="esh-link-wrapper">
+    </p>
+    <SpinLoader IsLoading="isLoading">
+        <LoadingTemplate>
+           <MudProgressCircular Color="Color.Tertiary" Size="Size.Large" Indeterminate="true"/>
+        </LoadingTemplate>
+        <ContentTemplate>
+            @if (filteredUsersList != null)
+            {
+<GridView Items="filteredUsersList" ReloadList="IsGridViewFiltered">
+    <GridColumns>
+        <GridColumn ColumnTitle="Mã đơn vị" IsSearch="true"
+                    OnSearchTextChanged="@(e => OnCustomerSearchTextChanged(e, "MDonVi"))"></GridColumn>
+        <GridColumn ColumnTitle="Tên đơn vị" IsSearch="true"
+                    OnSearchTextChanged="@(e => OnCustomerSearchTextChanged(e, "TenDonVi"))"></GridColumn>
+        <GridColumn ColumnTitle="Số đầu kỳ" IsSearch="false"></GridColumn>
+        <GridColumn ColumnTitle="Số tiền mua" IsSearch="false"></GridColumn>
+        <GridColumn ColumnTitle="Số tiền trả" IsSearch="false"></GridColumn>
+        <GridColumn ColumnTitle="Số cuối kỳ" IsSearch="false"></GridColumn>
+
+    </GridColumns>
+    <GridRow Context="itemUser">
+        <td> <a href="/customercongno/@itemUser.MDonVi"> @itemUser.MDonVi</a>  </td>
+        <td>@itemUser.TenDonVi <b style="color:red">(@itemUser.MNhom)</b>   </td>
+        <td style="text-align:right !important">@itemUser.SoDauKy.ToString("###,##0.##")  </td>
+        <td style="text-align:right !important">@itemUser.SoTienMua.ToString("###,##0.##")  </td>
+        <td style="text-align:right !important">@itemUser.SoTienTra.ToString("###,##0.##")  </td>
+        <td style="text-align:right !important"> @( itemUser.SoCuoiKy.ToString("###,##0.##") )  </td>
+
+
+    </GridRow>
+</GridView>}
+        </ContentTemplate>
+
+    </SpinLoader>
+
+
+    <br />
+    <div class="col-12">
+        <div style="float:right">
+            <b style="color:red">  Tổng cộng : @itemsList.Sum(item => item.SoCuoiKy).ToString("###,##0.##")</b>
+        </div>
+    </div>
+</div>
+
+@code { [Parameter]
+    public int UserId { get; set; }
+
+
+    public List<TongHopCongNo> itemsList { get; set; }
+    public List<TongHopCongNo> filteredUsersList { get; set; }
+
+    public bool IsVisible { get; set; }
+    public bool Result { get; set; }
+    public string RecordName { get; set; }
+    public string[] Cities { get; set; }
+    public bool IsGridViewFiltered { get; set; }
+    bool isLoading = true;
+
+    //private Edit EditComponent { get; set; }
+
+
+    protected override void OnInitialized()
+    {
+        Console.WriteLine("Customer - OnInitialized");
+        base.OnInitialized();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine("Customer - OnInitializedAsync");
+
+        itemsList = new List<TongHopCongNo>();
+
+        await base.OnInitializedAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        Console.WriteLine("Customers - OnParametersSet");
+        base.OnParametersSet();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Console.WriteLine("Customers - OnParametersSetAsync");
+        await base.OnParametersSetAsync();
+    }
+
+    protected override bool ShouldRender()
+    {
+        base.ShouldRender();
+        Console.WriteLine("Customers - ShouldRender");
+
+        return true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Console.WriteLine("Customers - OnAfterRender - firstRender = " + firstRender);
+        base.OnAfterRender(firstRender);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        Console.WriteLine("Customers - OnAfterRenderAsync - firstRender = " + firstRender);
+
+        if (firstRender)
+        {
+            await LoadCustomers();
+            isLoading = false;
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public void Dispose()
+    {
+        Console.WriteLine("Customers - Dispose");
+    }
+
+    private async Task LoadCustomers()
+    {
+        await Task.Delay(500);
+        List<TongHopCongNo> item = new List<TongHopCongNo>();
+
+        item = await cusService.GetCongNoAsync();
+
+
+        itemsList = filteredUsersList = item.ToList();
+
+        StateHasChanged();
+
+    }
+    private void OnCustomerSearchTextChanged(ChangeEventArgs changeEventArgs, string columnTitle)
+    {
+        string searchText = changeEventArgs.Value.ToString();
+        IsGridViewFiltered = true;
+
+        switch (columnTitle)
+        {
+            case "MDonVi":
+                filteredUsersList = itemsList.Where(auth => auth.MDonVi.Contains(searchText.ToLower())).ToList();
+                break;
+            case "TenDonVi":
+                filteredUsersList = itemsList.Where(auth => auth.TenDonVi.ToLower().Contains(searchText.ToLower()) || auth.MNhom.ToLower().Contains(searchText.ToLower())).ToList();
+                break;
+            default:
+                Console.WriteLine("Default case");
+                break;
+        }
+    }
+    private async Task ReloadListItems()
+    {
+        IsGridViewFiltered = true;
+        await LoadCustomers();
+
+    } }

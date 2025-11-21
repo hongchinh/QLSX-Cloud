@@ -1,0 +1,50 @@
+﻿@inject ILogger<Delete> Logger
+@inject IJSRuntime JSRuntime
+@inject IDMSoCTService<QLSX.Shared.Models.DanhMucSoChungTuModel> itemService
+@inherits QLSX.Web.Helpers.BlazorComponent
+
+@namespace QLSX.Web.Pages.DMSoCTPage
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.DeleteForever" Class="mr-3 mb-n1" />
+            Xóa
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudGrid Spacing="0">
+             <MudItem xs="12" sm="12">
+                <MudTextField Margin="Margin.Dense" @bind-Value="@server.LoaiCT" Label="Loại CT" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="12">
+                <MudTextField Margin="Margin.Dense" @bind-Value="@server.KyHieu" Label="Ký hiệu" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+              <MudItem xs="12" sm="12">
+              <MudTextField Margin="Margin.Dense" @bind-Value="@server.DoDai" Label="Độ dài" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="12">
+                <MudTextField Margin="Margin.Dense" @bind-Value="@server.GhiChu" Label="Ghi chú" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel" Variant="Variant.Filled" Color="Color.Error" >Bỏ qua</MudButton>
+        <MudButton StartIcon="@Icons.Material.Filled.Delete" Color="Color.Primary" Variant="Variant.Filled" OnClick="@(() => DeleteClick(server.Id))" Class="me-3">Xóa</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public QLSX.Shared.Models.DanhMucSoChungTuModel server { get; set; } = new QLSX.Shared.Models.DanhMucSoChungTuModel();
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    private async Task DeleteClick(int id)
+    {
+        var isdelete = await itemService.DeleteAsync(id);
+        MudDialog.Close(DialogResult.Ok(isdelete));
+    }
+ }

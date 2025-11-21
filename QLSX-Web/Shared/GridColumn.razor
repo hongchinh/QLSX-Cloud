@@ -1,0 +1,17 @@
+﻿<th>
+     
+        @ColumnTitle
+        @if (IsSearch && (ColumnTitle != "Actions" && ColumnTitle != "" && ColumnTitle != "#" && ColumnTitle != "Giá"))
+        {
+            <input class="form-control" Placeholder="Tìm kiếm" @oninput="OnSearchTextChanged" />
+         }
+    
+</th>
+
+@code { [Parameter]
+    public string ColumnTitle { get; set; }
+    [Parameter]
+    public bool  IsSearch { get; set; }
+
+    [Parameter]
+    public EventCallback<ChangeEventArgs> OnSearchTextChanged { get; set; } }

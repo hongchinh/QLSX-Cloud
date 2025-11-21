@@ -1,0 +1,178 @@
+﻿@page "/customersales/{customerId:int}"
+@using CRMApp.Data
+@using CRMApp.Services
+@using CuriousDriveRazorLibrary
+@using Blazored.LocalStorage
+
+@inject ICustomersService<Customer> customerService
+@inject ICustomersService<DonHang> customerServiceSale
+
+@inject IUserService userService
+@inject IProductService<Product> productService
+
+@inject IEmloyeeService<User> employeeService
+@inject IRegionService<Region> regionService
+@inject IStatusService<CustomerStatus> statusService
+@inject ITypeService<CustomerType> typeService
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService localStorageService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+@attribute [Authorize]
+@inherits CRMApp.Helpers.BlazorComponent
+@inject NavigationManager NavigationManager
+
+@namespace CRMApp.Pages.DMHangHoa
+
+<div class="col-12">
+
+    <h3><b>Danh sách đơn hàng </b></h3>
+
+    Mã khách hàng : @customer.MaDoiTuong     <br />
+    Tên khách hàng : @customer.TenDoiTuong   <br />
+    Điện thoại : @customer.DienThoai  <br />
+
+    <SpinLoader IsLoading="isLoading">
+        <LoadingTemplate>
+            <div class="col-12" style="background-color: lightgray; height:400px; vertical-align:middle">
+                <br /><br />
+                <Chase Center="true" Color="#c21f13" Size="70px"></Chase>
+            </div>
+        </LoadingTemplate>
+        <ContentTemplate>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Ngày mua</th>
+                        <th>Số CT</th>
+                        <th>Mã hàng hóa</th>
+                        <th>Tên hàng hóa</th>
+                        <th>Số lượng</th>
+                        <th>Tổng chiều dài</th>
+                        <th>Tổng m2</th>
+                        <th>Số tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @*@foreach (var sale1 in lstSalesGroup.GroupBy(x => new { x.NgayCt, x.SoChungTu }).ToList())
+                    {*@
+                        @foreach (var sale in lstSales)
+                        {
+                            <tr>
+
+                                <td>@sale.NgayCt.ToString("dd/MM/yyyy")  </td>
+                                <td>@sale.SoChungTu</td>
+                                <td>@sale.MaHangHoa</td>
+                                <td>@sale.TenHangHoa</td>
+                                <td>@sale.SoLuong.ToString("###,###.##")</td>
+                                <td>@sale.TongChieuDai.ToString("###,###.##")  </td>
+                                <td>@sale.TongDienTich.ToString("###,###.##")  </td>
+                                <td>@sale.SoTien.ToString("###,###")    </td>
+                            </tr>
+                        }
+                @*<tr>
+                    <td> @sale1.Key.NgayCt  </td>
+                    <td><b>@sale1.Key.SoChungTu</b></td>
+                    <td> @sale1.Key.SoChungTu </td>
+                    <td> @lstSales.Where(d => d.SoChungTu == sale1.Key.SoChungTu && d.MaHangHoa in () ) </td>
+                    <td> </td>
+                    <td><b>@lstSales.Where(d => d.SoChungTu == sale1.Key.SoChungTu).Sum(x => x.SoLuong).ToString("###,###.##")</b></td>
+                    <td><b>@lstSales.Where(d => d.SoChungTu == sale1.Key.SoChungTu).Sum(x => x.TongChieuDai).ToString("###,###.##") </b></td>
+                    <td><b>@lstSales.Where(d => d.SoChungTu == sale1.Key.SoChungTu).Sum(x => x.TongChieuDai).ToString("###,###.##") </b> </td>
+                    <td>  </td>
+                    <td><b>@lstSales.Where(d => d.SoChungTu == sale1.Key.SoChungTu).Sum(x => x.SoTien).ToString("###,###") </b>  </td>
+                     
+                        
+                </tr>*@
+                    @*}*@
+
+</tbody>
+            </table>
+
+
+        </ContentTemplate>
+    </SpinLoader>
+</div>
+
+@code { [Parameter]
+    public int customerId { get; set; }
+
+    public List<DonHang> lstSales { get; set; }
+    public List<DonHang> lstSalesGroup { get; set; }
+    public DonHang customer { get; set; }
+
+
+    public bool IsVisible { get; set; }
+    public bool Result { get; set; }
+    public bool IsGridViewFiltered { get; set; }
+    bool isLoading = true;
+
+    protected override void OnInitialized()
+    {
+        Console.WriteLine("Customer - OnInitialized");
+        base.OnInitialized();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        customer = new DonHang();
+        Console.WriteLine("Customer - OnInitializedAsync");
+
+        await base.OnInitializedAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        Console.WriteLine("Customers - OnParametersSet");
+        base.OnParametersSet();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Console.WriteLine("Customers - OnParametersSetAsync");
+        await base.OnParametersSetAsync();
+    }
+
+    protected override bool ShouldRender()
+    {
+        base.ShouldRender();
+        Console.WriteLine("Customers - ShouldRender");
+        return true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Console.WriteLine("Customers - OnAfterRender - firstRender = " + firstRender);
+        base.OnAfterRender(firstRender);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        Console.WriteLine("Customers - OnAfterRenderAsync - firstRender = " + firstRender);
+
+        if (firstRender)
+        {
+            await LoadList();
+            isLoading = false;
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public void Dispose()
+    {
+        Console.WriteLine("Customers - Dispose");
+    }
+
+    private async Task LoadList()
+    {
+        await Task.Delay(500);
+        lstSales = lstSalesGroup = await customerServiceSale.GetSaleByCustomerIdAsync(customerId);
+        if (lstSales.Count > 0)
+        {
+            customer = lstSales[0];
+        }
+        StateHasChanged();
+
+    } }

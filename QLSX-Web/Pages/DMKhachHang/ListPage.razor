@@ -1,0 +1,481 @@
+﻿@page "/DMKhachHang"
+@using QLSX.Shared.Models
+@using QLSX.Web.Data
+@using QLSX.Web.Services
+@using Blazored.LocalStorage
+@using AspNetCore.Reporting
+@using System.Data
+@using System.Data.SqlClient
+@using Microsoft.AspNetCore.Mvc
+@using Microsoft.Extensions.Configuration;
+@using OfficeOpenXml
+@using OfficeOpenXml.Style
+
+@inject IDMKhachHangService<DanhMucKhachHangModel> khachhangService
+@inject IUserService userService
+@inject IEmloyeeService<UserModel> dmNhanVienService
+
+@inject IDMNhomKhachHangService<DanhMucNhomKhachHangModel> nhomkhachhangService
+@inject IDMTinhThanhService<QLSX.Shared.Models.DanhMucTinhThanhModel> tinhthanhService
+
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService localStorageService
+@inject IJSRuntime JSRuntime
+@inject AppService AppService
+
+@inject IConfiguration Configuration
+
+@implements IDisposable
+@attribute [Authorize]
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject NavigationManager NavigationManager
+@inject IToastService toastService
+@inject IDialogService DialogService
+@inject IPhanQuyenSuDungService< QLSX.Shared.Models.QuyenSuDungModel> permisstionService
+
+@namespace QLSX.Web.Pages.DMKhachHangPage
+
+<div class="col-12">
+    <MudBreadcrumbs Items="_items" Style="padding:0px !important"></MudBreadcrumbs>
+    <div class="row">
+        <div class="col-12 pr-45">
+            <div class="area-search py-3 px-3">
+                <EditForm Model="@itemRequest" OnValidSubmit="@SearchClick">
+                    <MudPaper Elevation="25" Class="py-8 px-8" Style="padding-top:2px !important">
+                        <MudGrid Spacing="1">
+                            <MudItem xs="12" sm="3" lg="2">
+                                <MudTextField @bind-Value="itemRequest.MaDonVi" Label="Mã đơn vị" Variant="Variant.Outlined"></MudTextField>
+                            </MudItem>
+                            <MudItem xs="12" sm="4" lg="3">
+                                <MudTextField @bind-Value="itemRequest.TenDonVi" Label="Tên đơn vị" Variant="Variant.Outlined"></MudTextField>
+                            </MudItem>
+
+                            <MudItem xs="12" sm="5" lg="4">
+                                <MudTextField @bind-Value="itemRequest.DiaChi" Label="Địa chỉ" Variant="Variant.Outlined"></MudTextField>
+                            </MudItem>
+                            <MudItem xs="12" sm="3" lg="2">
+                                <MudTextField @bind-Value="itemRequest.DienThoai" Label="Điện thoại" Variant="Variant.Outlined"></MudTextField>
+                            </MudItem>
+                            <MudItem xs="12" sm="3" lg="1">
+                                <MudMenu Icon="@Icons.Material.Filled.Settings" Color="Color.Primary">
+                                    <MudMenuItem Href="/import/dmkhachhangs">Import Data</MudMenuItem>
+                                </MudMenu>
+                            </MudItem>
+
+                            <MudItem xs="12" sm="3">
+                                <MudSelect T="string" Label="Nhóm đơn vị" AnchorOrigin="Origin.BottomCenter" @bind-Value="itemRequest.MaNhom" Variant="Variant.Outlined">
+                                    <MudSelectItem T="string" Value="@("")"> Tất cả</MudSelectItem>
+                                    @if (lstNhomKhachHang != null)
+                                    {
+                                        @foreach (var cnt in lstNhomKhachHang)
+                                        {
+                                            <MudSelectItem T="string" Value="@(cnt.MaNhom)"> @cnt.TenNhom </MudSelectItem>
+                                        }
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                            <MudItem xs="12" sm="3">
+                                <MudSelect T="string" Label="Tỉnh thành" AnchorOrigin="Origin.BottomCenter" @bind-Value="itemRequest.MaTinh" Variant="Variant.Outlined">
+                                    <MudSelectItem T="string" Value="@("")"> Tất cả</MudSelectItem>
+                                    @if (lstTinhThanh != null)
+                                    {
+                                        @foreach (var cnt in lstTinhThanh)
+                                        {
+                                            <MudSelectItem T="string" Value="@(cnt.MaTinh)"> @cnt.TenTinh </MudSelectItem>
+                                        }
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudButton Class="mt-3" ButtonType="ButtonType.Submit" Size="Size.Large" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Search" Color="Color.Primary">Tìm kiếm</MudButton>
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+
+    <MudToolBar>
+        <MudButton Variant="Variant.Filled" @onclick="@(() => CreateClick())" StartIcon="@Icons.Material.Filled.Create" Color="Color.Primary">Tạo mới</MudButton>
+        <MudButton Class="ml-1" Variant="Variant.Filled" @onclick="@(async() => await ExportExcel())" StartIcon="@Icons.Material.Filled.ImportExport" Color="Color.Secondary">Excel</MudButton>
+
+    </MudToolBar>
+    <MudTable ServerData="@(new Func<TableState, Task<TableData<DanhMucKhachHangModel>>>(ServerReload))"
+              T="DanhMucKhachHangModel"
+              Dense="true" Hover="true" Bordered="true" Striped="true" Loading="@isLoading"
+              @ref="table" HorizontalScrollbar="true">
+        <HeaderContent>
+            <MudTh><MudTableSortLabel SortLabel="MaKho" T="DanhMucKhachHangModel">Mã đơn vị</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortLabel="TenKho" T="DanhMucKhachHangModel">Tên đơn vị</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortLabel="DiaChi" T="DanhMucKhachHangModel">Địa chỉ</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortLabel="DienThoai" T="DanhMucKhachHangModel">Điện thoại</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortLabel="TenNhom" T="DanhMucKhachHangModel">Tên nhóm</MudTableSortLabel></MudTh>
+            <MudTh>#</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="MaKho">
+                <MudButton Color="Color.Primary" Size="Size.Small" OnClick="@(async ()=> await EditClick(context))">@context.MaDonVi</MudButton>
+            </MudTd>
+            <MudTd DataLabel="TenKho">@context.TenDonVi</MudTd>
+            <MudTd DataLabel="DiaChi">@context.DiaChi</MudTd>
+            <MudTd DataLabel="DiaChi">@context.DienThoai</MudTd>
+            <MudTd DataLabel="DiaChi">@context.TenNhom</MudTd>
+            <MudTd>
+                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Variant="Variant.Text" aria-label="Xóa" @onclick="@(()=> DeleteClick(@context))"></MudIconButton>
+                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Variant="Variant.Text" aria-label="Sửa" @onclick="@(()=> EditClick(@context))">EditClick</MudIconButton>
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText>Không có bản ghi nào tìm thấy</MudText>
+        </NoRecordsContent>
+        <LoadingContent>
+            <MudText>Đang tải dữ liệu...</MudText>
+        </LoadingContent>
+        <PagerContent>
+            <MudTablePager RowsPerPageString="Số dòng mỗi trang" />
+        </PagerContent>
+
+    </MudTable>
+</div>
+<LoadingProgress IsLoading="isLoading" />
+@code
+{
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    private QLSX.Shared.Models.QuyenSuDungModel quyenSuDung { get; set; } =
+    new QLSX.Shared.Models.QuyenSuDungModel() { Sua = false, Them = false, Xoa = false, XemIn = false, Selectted = false };
+
+    public List<QLSX.Shared.Models.DanhMucTinhThanhModel> lstTinhThanh { get; set; }
+    public List<DanhMucNhomKhachHangModel> lstNhomKhachHang { get; set; }
+
+
+    public DanhMucKhachHangModel khachhang { get; set; }
+    public List<DanhMucKhachHangModel> khachhangList { get; set; }
+    public List<DanhMucKhachHangModel> filteredList { get; set; }
+
+    public GetAllResponsePaged<DanhMucKhachHangModel> lsResponses { get; set; }
+    public QLSX.Shared.Models.KhachHangSearchRequest itemRequest { get; set; }
+    bool isLoading = true;
+
+    public List<UserModel> lstUser { get; set; }
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Home", href: "/"),
+        new BreadcrumbItem("Danh sách khách hàng",href: null, disabled: true)
+    };
+
+    private IEnumerable<DanhMucKhachHangModel> pagedData;
+    private MudTable<DanhMucKhachHangModel> table;
+    private int totalItems;
+
+
+    public string UrlReport { get; set; }
+
+    protected override void OnInitialized()
+    {
+
+        base.OnInitialized();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+
+
+        khachhang = new DanhMucKhachHangModel();
+        khachhangList = new List<DanhMucKhachHangModel>();
+
+        itemRequest = new QLSX.Shared.Models.KhachHangSearchRequest()
+            {
+                DMDonViSuDungId = AppService.DMDonViSuDungId,
+                PageSize = 10,
+                Page = 0,
+                TotalPages = 0
+
+            };
+        await base.OnInitializedAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+
+        base.OnParametersSet();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+
+        await base.OnParametersSetAsync();
+    }
+
+    protected override bool ShouldRender()
+    {
+        base.ShouldRender();
+
+        return true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isLoading = true;
+            lstNhomKhachHang = await nhomkhachhangService.GetAllAsync();
+            lstTinhThanh = await tinhthanhService.GetAllAsync();
+            lstUser = await dmNhanVienService.GetAllAsync();
+            isLoading = false;
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public void Dispose()
+    {
+    }
+
+    /// <summary>
+    /// Here we simulate getting the paged, filtered and ordered data from the server
+    /// </summary>
+    ///  private async Task<TableData<DanhMucKhoHangModel>> ServerReload(TableState state)
+    private async Task<TableData<DanhMucKhachHangModel>> ServerReload(TableState state)
+    {
+        isLoading = true;
+        var sort = state.SortLabel;
+        itemRequest.Page = state.Page;
+        itemRequest.SortLable = state.SortLabel;
+        itemRequest.SortDirection = state.SortDirection == SortDirection.Descending ? QLSX.Shared.Enums.SortDirection.Descending : QLSX.Shared.Enums.SortDirection.Ascending;
+        itemRequest.Page = state.Page;
+        itemRequest.PageSize = state.PageSize;
+
+
+        lsResponses = new GetAllResponsePaged<DanhMucKhachHangModel>();
+        var user = (await authenticationStateTask).User;
+        var UserId = user.FindFirst(c => c.Type == "UserId")?.Value;
+        UserId = string.IsNullOrEmpty(UserId) ? "0" : UserId;
+        quyenSuDung = await permisstionService.GetQuyenByUserIdAsync(int.Parse(UserId), "DMDonVi");
+
+        if (quyenSuDung.Selectted)
+        {
+            lsResponses = await khachhangService.GetAllPagedAsync(itemRequest);
+        }
+        IEnumerable<DanhMucKhachHangModel> data = lsResponses.Items;
+
+        totalItems = lsResponses.TotalRecords;
+
+        if (data == null)
+        {
+            data = new List<DanhMucKhachHangModel>();
+        }
+        pagedData = data;
+        isLoading = false;
+        StateHasChanged();
+        return new TableData<DanhMucKhachHangModel>() { TotalItems = totalItems, Items = pagedData };
+        //return new TableData<DanhMucKhoHangModel>() { TotalItems = totalItems, Items = pagedData };
+    }
+
+    private async Task EditClick(DanhMucKhachHangModel item)
+    {
+        var parameters = new DialogParameters
+            {
+                ["server"] = item,
+                ["lstNhomKhachHang"] = lstNhomKhachHang,
+                ["lstTinhThanh"] = lstTinhThanh,
+                ["lstUser"] = lstUser,
+                ["IsSuaOrXoa"] = true
+            };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<Edit>("Sửa", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var deletedServer = (bool)result.Data;
+            if (deletedServer)
+            {
+
+                await table.ReloadServerData();
+                toastService.ShowToast(ToastLevel.Success, "Cập nhât thành công", "Thông báo");
+            }
+            else
+            {
+                toastService.ShowToast(ToastLevel.Error, "Xảy ra lỗi khi Cập nhât", "Thông báo");
+            }
+        }
+    }
+
+    private async Task ReloadCatalogItems()
+    {
+        await table.ReloadServerData();
+    }
+
+    private async Task DeleteClick(DanhMucKhachHangModel item)
+    {
+        var parameters = new DialogParameters
+            {
+                ["server"] = item,
+                ["lstNhomKhachHang"] = lstNhomKhachHang,
+                ["lstTinhThanh"] = lstTinhThanh,
+                ["lstUser"] = lstUser,
+                ["IsSuaOrXoa"] = false
+            };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<Edit>("Xóa", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var deletedServer = (bool)result.Data;
+            if (deletedServer)
+            {
+
+                await table.ReloadServerData();
+                toastService.ShowToast(ToastLevel.Success, "Xóa thành công", "Thông báo");
+            }
+            else
+            {
+                toastService.ShowToast(ToastLevel.Error, "Xảy ra lỗi khi Cập nhât", "Thông báo");
+            }
+        }
+    }
+
+    private async Task CreateClick()
+    {
+        var item = new DanhMucKhachHangModel();
+        var parameters = new DialogParameters
+            {
+                ["server"] = item,
+                ["lstNhomKhachHang"] = lstNhomKhachHang,
+                ["lstTinhThanh"] = lstTinhThanh,
+                ["lstUser"] = lstUser
+            };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<Create>("Tạo mới", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var deletedServer = (DanhMucKhachHangModel)result.Data;
+            if (deletedServer.Id > 0)
+            {
+
+                await table.ReloadServerData();
+                toastService.ShowToast(ToastLevel.Success, "Cập nhât thành công", "Thông báo");
+            }
+            else
+            {
+                toastService.ShowToast(ToastLevel.Error, "Xảy ra lỗi khi xóa", "Thông báo");
+            }
+        }
+    }
+    private async Task SearchClick()
+    {
+        await table.ReloadServerData();
+    }
+
+    public async Task onClickPDF()
+    {
+        UrlReport = await khachhangService.GetPathPDFReportAsync();
+        StateHasChanged();
+        await JSRuntime.InvokeVoidAsync("openfile", null);
+    }
+    public async Task onClickExcel()
+    {
+        UrlReport = await khachhangService.GetPathExcelReportAsync();
+        StateHasChanged();
+        await JSRuntime.InvokeVoidAsync("openfile", null);
+    }
+
+    private async Task ExportExcel()
+    {
+        byte[] fileContents;
+        MemoryStream stream = new();
+        var listData = await khachhangService.ExportToExcelAsync(itemRequest);
+        if (listData != null)
+        {
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+            using (var package = new ExcelPackage())
+            {
+                var workSheet = package.Workbook.Worksheets.Add("DMKhachHang_Sheet_1");
+
+                // Set default width cho tất cả column
+                workSheet.DefaultColWidth = 20;
+                // Tự động xuống hàng khi text quá dài
+                workSheet.Cells.Style.WrapText = true;
+
+                #region Header excel
+                workSheet.Cells[1, 1].Value = "Mã đơn vị";
+                workSheet.Cells[1, 1].Style.Font.Size = 12;
+                workSheet.Cells[1, 1].Style.Font.Bold = true;
+                workSheet.Cells[1, 1].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 2].Value = "Tên đơn vị";
+                workSheet.Cells[1, 2].Style.Font.Size = 12;
+                workSheet.Cells[1, 2].Style.Font.Bold = true;
+                workSheet.Cells[1, 2].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 3].Value = "Địa chỉ";
+                workSheet.Cells[1, 3].Style.Font.Size = 12;
+                workSheet.Cells[1, 3].Style.Font.Bold = true;
+                workSheet.Cells[1, 3].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 4].Value = "Điện thoại";
+                workSheet.Cells[1, 4].Style.Font.Size = 12;
+                workSheet.Cells[1, 4].Style.Font.Bold = true;
+                workSheet.Cells[1, 4].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 5].Value = "Nhóm đơn vị";
+                workSheet.Cells[1, 5].Style.Font.Size = 12;
+                workSheet.Cells[1, 5].Style.Font.Bold = true;
+                workSheet.Cells[1, 5].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+                #endregion
+
+                #region Body excel
+                int rowIndex = 2;
+                foreach (var item in listData.Items)
+                {
+                    workSheet.Cells[rowIndex, 1].Value = item.MaDonVi;
+                    workSheet.Cells[rowIndex, 1].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 1].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 1].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 2].Value = item.TenDonVi;
+                    workSheet.Cells[rowIndex, 2].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 2].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 2].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 3].Value = item.DiaChi;
+                    workSheet.Cells[rowIndex, 3].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 3].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 3].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 4].Value = item.DienThoai;
+                    workSheet.Cells[rowIndex, 4].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 4].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 4].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 5].Value = item.DMNhomKhachHangs.TenNhom ?? string.Empty;
+                    workSheet.Cells[rowIndex, 5].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 5].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 5].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+                    rowIndex++;
+                }
+                #endregion
+
+                fileContents = await package.GetAsByteArrayAsync();
+            };
+
+            await JSRuntime.InvokeAsync<DanhMucKhachHangModel>(
+                "saveAsFile",
+                $"DMKhachHang_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.xlsx",
+                Convert.ToBase64String(fileContents)
+            );
+        }
+    }
+}

@@ -1,0 +1,44 @@
+﻿@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime;
+@using QLSX.Web.Data
+@namespace QLSX.Web.Components
+@inject IStatusService<CustomerStatus> statusService
+<select class="form-control col-12" @onchange="OnChangeEvent">
+    @if (@items != null)
+    {
+<option value="">Chọn trạng thái</option>
+                @foreach (var item in @items)
+                {
+@if (IdSelected == item.Id)
+{
+<option value="@item.Id" selected>@item.StatusName </option> }
+                    else
+                    {
+<option value="@item.Id">@item.StatusName </option>                    }}}
+</select>
+
+@code { [Parameter]
+    public EventCallback<ChangeEventArgs> OnChangeEvent { get; set; }
+
+    [Parameter]
+    public int IdSelected { get; set; }
+
+    public List<CustomerStatus> items { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && @items == null)
+        {
+            try
+            {
+                items = await statusService.GetAllAsync();
+                StateHasChanged();
+            }
+            catch (Exception)
+            {
+
+                //throw;
+            }
+
+        }
+    } }

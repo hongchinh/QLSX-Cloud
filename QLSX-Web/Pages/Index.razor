@@ -1,0 +1,745 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.SignalR.Client
+@using QLSX.Shared.Models
+@using QLSX.Shared.Models.Request
+@using QLSX.Web.Data
+@using Blazored.LocalStorage
+@using System.Security.Claims
+@using QLSX.Web.Components
+@using AutoMapper
+
+@inject NavigationManager navigationManager
+@inject ILocalStorageService localStorageService
+@inject IAuthorizationService authorizationService
+@inject IEmloyeeService<UserModel> employeeService
+@inject ICustomersService<Customer> customerService
+@inject IUserService userService
+@inject AppService AppService
+@inject IThuChiService<ThuChiModel> listThuChiService
+@inject INhapXuatsService<TraCuuNhapXuatAll> nhapXuatChiService
+@inject IMapper mapper;
+@inject IDialogService DialogService
+@inject IToastService toastService
+
+@attribute [Authorize]
+ @namespace QLSX.Web.Pages.Index
+
+<MudContainer Class="px-8" MaxWidth="MaxWidth.False">
+    <MudGrid>
+        @*https://img.vietqr.io/image/vietinbank-113366668888-qr_only.png?amount=790000&addInfo=AX1001&accountName=QUY%20VAC%20XIN%20PHONG%20CHONG%20COVID%2019*@
+        @*<img height="480" width="480" src="https://img.vietqr.io/image/vietinbank-113366668888-qr_only.png?amount=790000&addInfo=AX1001&accountName=QUY%20VAC%20XIN%20PHONG%20CHONG%20COVID%2019" />*@
+       @*  <IgbGrid Id="grid1" Data="data" AutoGenerate="true"></IgbGrid> *@
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="5">
+                <MudCard Style="background-color: #17a2b8 !important">
+                    <MudCardContent>
+                        <MudToolBar>
+                            <div>
+                                <h3>@totalItemsThu</h3>
+                                <MudText Typo="Typo.body2">Phiếu thu</MudText>
+                            </div>
+                            <MudSpacer />
+                            <MudIcon Icon="@Icons.Material.Filled.AirlineSeatFlatAngled" Title="Phiếu thu" Style="font-size: 3rem;" />
+                        </MudToolBar>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="ClickTraCuuTC">Xem thêm</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="5">
+                <MudCard Style="background-color: #28a745 !important">
+                    <MudCardContent>
+                        <MudToolBar>
+                            <div>
+                                <h3>@totalItemsChi</h3>
+                                <MudText Typo="Typo.body2">Phiếu chi</MudText>
+                            </div>
+                            <MudSpacer />
+                            <MudIcon Icon="@Icons.Material.Filled.AdsClick" Title="Phiếu chi" Style="font-size: 3rem;" />
+                        </MudToolBar>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="ClickTraCuuTC">Xem thêm</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="12" md="3">
+            <MudPaper Elevation="5">
+                <MudCard Style="background-color: #ffc107 !important">
+                    <MudCardContent>
+                        <MudToolBar>
+                            <div>
+                                <h3>@totalItemsNhap</h3>
+                                <MudText Typo="Typo.body2">Phiếu nhập</MudText>
+                            </div>
+                            <MudSpacer />
+                            <MudIcon Icon="@Icons.Material.Filled.Api" Title="Phiếu nhập" Style="font-size: 3rem;" />
+                        </MudToolBar>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="ClickTraCuuNX">Xem thêm</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="12" md="3">
+            <MudPaper Elevation="5">
+                <MudCard Style="background-color: #dc3545 !important">
+                    <MudCardContent>
+                        <MudToolBar>
+                            <div>
+                                <h3>@totalItemsXuat</h3>
+                                <MudText Typo="Typo.body2"> Phiếu xuất</MudText>
+                            </div>
+                            <MudSpacer />
+                            <MudIcon Icon="@Icons.Material.Filled.Favorite" Title="API" Style="font-size: 3rem;" />
+                        </MudToolBar>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="ClickTraCuuNX">Xem thêm</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+<MudDropContainer T="DropItem" Items="_items" ItemsSelector="@((item,dropzone) => item.Identifier == dropzone)" ItemDropped="ItemUpdated" Class="d-flex flex-wrap flex-grow-1">
+    <ChildContent>
+        <MudDropZone T="DropItem" Identifier="5 phiếu thu mới nhất" Class="rounded mud-background-gray pa-6 ma-8 flex-grow-1">
+            <MudToolBar DisableGutters="true">
+                <MudText Typo="Typo.h6" Class="mb-4">5 phiếu thu mới nhất</MudText>
+                <MudSpacer />
+                <MudIconButton Icon="@Icons.Material.Filled.Search" OnClick="@( async () => await SearchThuChi("thutm"))" Size="Size.Small" aria-label="Tìm"></MudIconButton>
+                <MudIconButton Icon="@Icons.Material.Filled.Add" OnClick="@( async () => await CreateThuChi("chitm"))" Size="Size.Small" aria-label="Thêm"></MudIconButton>
+            </MudToolBar>
+            <MudTable ServerData="@(new Func<TableState, Task<TableData<ThuChiModel>>>(ServerReloadThu))" Breakpoint="Breakpoint.Sm"
+                      Dense="true" Hover="true" Bordered="true" Striped="true" Loading="@isLoadingThu"
+                      @ref="tableThu" HorizontalScrollbar="true">
+                <ColGroup>
+                    <col />
+                    <col />
+                    <col />
+                    <col />
+                </ColGroup>
+                <HeaderContent>
+                    <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortLabel="NgayCT" T="ThuChiModel">Ngày lập</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="SoPhieu" T="ThuChiModel">Số phiếu</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="TenDoiTuong" T="ThuChiModel">Tên đơn vị</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="SoTien" T="ThuChiModel">Số tiền</MudTableSortLabel></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="NgayCT">@(string.Format("{0:dd/MM/yyyy}", context.NgayCT))</MudTd>
+                    <MudTd DataLabel="SoPhieu">
+                        <MudButton Color="Color.Primary" Size="Size.Small" OnClick="@(async ()=> await SuaClickThuChi(context.Loai, context.Id))">@context.SoPhieu</MudButton>
+                    </MudTd>
+                    <MudTd DataLabel="TenDonVi">@context.TenDoiTuong</MudTd>
+                    <MudTd DataLabel="SoTien" Style="text-align:right">@context.SoTien?.ToString("###,###")</MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText>Không có bản ghi nào tìm thấy</MudText>
+                </NoRecordsContent>
+                <LoadingContent>
+                    <MudText>Đang tải dữ liệu...</MudText>
+                </LoadingContent>
+                <PagerContent>
+                    <MudTablePager RowsPerPageString="Số dòng mỗi trang" PageSizeOptions="new int[] { 5, 10,20,50}" />
+                </PagerContent>
+            </MudTable>
+        </MudDropZone>
+        <MudDropZone T="DropItem" Identifier="5 phiếu chi mới nhất" Class="rounded mud-background-gray pa-6 ma-8 flex-grow-1">
+            <MudToolBar DisableGutters="true">
+                <MudText Typo="Typo.h6" Class="mb-4">5 phiếu chi mới nhất</MudText>
+                <MudSpacer />
+                <MudIconButton Icon="@Icons.Material.Filled.Search" OnClick="@( async () => await SearchThuChi("chitm"))" Size="Size.Small" aria-label="Tìm"></MudIconButton>
+                    <MudIconButton Icon="@Icons.Material.Filled.Add" OnClick="@( async () => await CreateThuChi("chitm"))" Size="Size.Small" aria-label="Thêm"></MudIconButton>
+            </MudToolBar>
+            <MudTable ServerData="@(new Func<TableState, Task<TableData<ThuChiModel>>>(ServerReloadChi))" Breakpoint="Breakpoint.Sm"
+                      Dense="true" Hover="true" Bordered="true" Striped="true" Loading="@isLoadingChi"
+                      @ref="tableChi" HorizontalScrollbar="true">
+                <ColGroup>
+                    <col />
+                    <col />
+                    <col />
+                    <col />
+                </ColGroup>
+                <HeaderContent>
+                    <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortLabel="NgayCT" T="ThuChiModel">Ngày lập</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="SoPhieu" T="ThuChiModel">Số phiếu</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="TenDoiTuong" T="ThuChiModel">Tên đơn vị</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="SoTien" T="ThuChiModel">Số tiền</MudTableSortLabel></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="NgayCT">@(string.Format("{0:dd/MM/yyyy}", context.NgayCT))</MudTd>
+                    <MudTd DataLabel="SoPhieu">
+                        <MudButton Color="Color.Primary" Size="Size.Small" OnClick="@(async ()=> await SuaClickThuChi(context.Loai, context.Id))">@context.SoPhieu</MudButton>
+                    </MudTd>
+                    <MudTd DataLabel="TenDonVi">@context.TenDoiTuong</MudTd>
+                    <MudTd DataLabel="SoTien" Style="text-align:right">@context.SoTien?.ToString("###,###")</MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText>Không có bản ghi nào tìm thấy</MudText>
+                </NoRecordsContent>
+                <LoadingContent>
+                    <MudText>Đang tải dữ liệu...</MudText>
+                </LoadingContent>
+                <PagerContent>
+                    <MudTablePager RowsPerPageString="Số dòng mỗi trang" PageSizeOptions="new int[] { 5, 10,20,50}" />
+                </PagerContent>
+            </MudTable>
+        </MudDropZone>
+        <MudDropZone T="DropItem" Identifier="5 phiếu nhập mới nhất" Class="rounded mud-background-gray pa-6 ma-8 flex-grow-1">
+            <MudToolBar DisableGutters="true">
+                <MudText Typo="Typo.h6" Class="mb-4">5 phiếu nhập mới nhất</MudText>
+                <MudSpacer />
+                <MudIconButton Icon="@Icons.Material.Filled.Search" OnClick="@( async () => await SearchNhapXuat("nhap"))" Size="Size.Small" aria-label="Tìm"></MudIconButton>
+                <MudIconButton Icon="@Icons.Material.Filled.Add" OnClick="@( async () => await CreateNhapXuat("nhap"))" Size="Size.Small" aria-label="Thêm"></MudIconButton>
+            </MudToolBar>
+            <MudTable ServerData="@(new Func<TableState, Task<TableData<TraCuuNhapXuatAll>>>(ServerReloadNhap))" Breakpoint="Breakpoint.Sm"
+                      Dense="true" Hover="true" Bordered="true" Striped="true" Loading="@isLoadingNhap"
+                      @ref="tableNhap" HorizontalScrollbar="true">
+                <ColGroup>
+                    <col />
+                    <col />
+                    <col />
+                    <col />
+                </ColGroup>
+                <HeaderContent>
+                    <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortLabel="NgayCT" T="QLSX.Shared.Models.TraCuuNhapXuatAll">Ngày lập</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="SoCT" T="QLSX.Shared.Models.TraCuuNhapXuatAll">Số phiếu</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="TenDonVi" T="QLSX.Shared.Models.TraCuuNhapXuatAll">Tên đơn vị</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="SoTien" T="QLSX.Shared.Models.TraCuuNhapXuatAll">Số tiền</MudTableSortLabel></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="NgayCT">@(string.Format("{0:dd/MM/yyyy}", context.NgayCT))</MudTd>
+                    <MudTd DataLabel="SoChungTu">
+                            <MudButton Color="Color.Primary" Size="Size.Small" OnClick="@(async ()=> await SuaClick(context.Loai, context.Id))">@context.SoChungTu</MudButton>
+                    </MudTd>
+                    <MudTd DataLabel="TenDonVi">@context.TenDoiTuong</MudTd>
+                    <MudTd DataLabel="SoTien" Style="text-align:right">@context.SoTien.ToString("###,###")</MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText>Không có bản ghi nào tìm thấy</MudText>
+                </NoRecordsContent>
+                <LoadingContent>
+                    <MudText>Đang tải dữ liệu...</MudText>
+                </LoadingContent>
+                <PagerContent>
+                    <MudTablePager RowsPerPageString="Số dòng mỗi trang" PageSizeOptions="new int[] { 5, 10,20,50}" />
+                </PagerContent>
+            </MudTable>
+        </MudDropZone>
+        <MudDropZone T="DropItem" Identifier="10 phiếu xuất mới nhất" Class="rounded mud-background-gray pa-6 ma-8 flex-grow-1">
+
+            <MudToolBar DisableGutters="true">
+                <MudText Typo="Typo.h6" Class="mb-4">5 phiếu xuất mới nhất</MudText>
+                <MudSpacer />
+                <MudIconButton Icon="@Icons.Material.Filled.Search" OnClick="@( async () => await SearchNhapXuat("xuat"))" Size="Size.Small" aria-label="Tìm"></MudIconButton>
+                <MudIconButton Icon="@Icons.Material.Filled.Add" OnClick="@( async () => await CreateNhapXuat("xuat"))" Size="Size.Small" aria-label="Thêm"></MudIconButton>
+            </MudToolBar>
+            <MudTable ServerData="@(new Func<TableState, Task<TableData<TraCuuNhapXuatAll>>>(ServerReloadXuat))" Breakpoint="Breakpoint.Sm"
+                      Dense="true" Hover="true" Bordered="true" Striped="true" Loading="@isLoadingXuat"
+                      @ref="tableXuat" HorizontalScrollbar="true">
+                <ColGroup>
+                    <col />
+                    <col />
+                    <col />
+                    <col />
+                </ColGroup>
+                <HeaderContent>
+                    <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortLabel="NgayCT" T="QLSX.Shared.Models.TraCuuNhapXuatAll">Ngày lập</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="SoCT" T="QLSX.Shared.Models.TraCuuNhapXuatAll">Số phiếu</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="TenDonVi" T="QLSX.Shared.Models.TraCuuNhapXuatAll">Tên đơn vị</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="SoTien" T="QLSX.Shared.Models.TraCuuNhapXuatAll">Số tiền</MudTableSortLabel></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="NgayCT">@(string.Format("{0:dd/MM/yyyy}", context.NgayCT))</MudTd>
+                    <MudTd DataLabel="SoChungTu">
+                            <MudButton Color="Color.Primary" Size="Size.Small" OnClick="@(async ()=> await SuaClick(context.Loai, context.Id))">@context.SoChungTu</MudButton>
+                    </MudTd>
+                    <MudTd DataLabel="TenDonVi">@context.TenDoiTuong</MudTd>
+                    <MudTd DataLabel="SoTien" Style="text-align:right">@context.SoTien.ToString("###,###")</MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText>Không có bản ghi nào tìm thấy</MudText>
+                </NoRecordsContent>
+                <LoadingContent>
+                    <MudText>Đang tải dữ liệu...</MudText>
+                </LoadingContent>
+                <PagerContent>
+                    <MudTablePager RowsPerPageString="Số dòng mỗi trang" PageSizeOptions="new int[] { 5, 10,20,50}" />
+                </PagerContent>
+            </MudTable>
+        </MudDropZone>
+
+
+    </ChildContent>
+    <ItemRenderer>
+
+    </ItemRenderer>
+</MudDropContainer>
+@* <div class="container">
+    <h1>Chat</h1>
+
+    <input type="text" @bind="message" />
+    <button @onclick="SendMessage">Send</button>
+
+    <ul>
+        @foreach (var msg in messages)
+        {
+            <li>@msg</li>
+        }
+    </ul>
+</div> *@
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    ClaimsPrincipal user;
+
+    bool IsUserAuthenticated;
+    bool IsPublisher;
+    bool IsSeniorEmployee;
+    public List<UserModel> customerUser { get; set; }
+
+    private List<string> messages = new List<string>();
+    private string message;
+
+    //phieu Thu
+    public GetAllResponsePaged<ThuChiModel> lsResponsesThu { get; set; }
+    public ThuChiSearchRequest itemRequestThu { get; set; }
+    private IEnumerable<ThuChiModel> pagedDataThu;
+    private MudTable<ThuChiModel> tableThu;
+    private int? totalItemsThu;
+    bool isLoadingThu = true;
+    //phieu Chi
+    public GetAllResponsePaged<ThuChiModel> lsResponsesChi { get; set; }
+    public ThuChiSearchRequest itemRequestChi { get; set; }
+    private IEnumerable<ThuChiModel> pagedDataChi;
+    private MudTable<ThuChiModel> tableChi;
+    private int totalItemsChi;
+    bool isLoadingChi = true;
+
+    //phieu Nhap
+    public GetAllResponsePaged<TraCuuNhapXuatAll> lsResponsesNhap { get; set; }
+    public NhapXuatSearchRequest itemRequestNhap { get; set; }
+    private IEnumerable<TraCuuNhapXuatAll> pagedDataNhap;
+    private MudTable<TraCuuNhapXuatAll> tableNhap;
+    private int totalItemsNhap;
+    bool isLoadingNhap = true;
+
+    //phieu Xuat
+    public GetAllResponsePaged<TraCuuNhapXuatAll> lsResponsesXuat { get; set; }
+    public NhapXuatSearchRequest itemRequestXuat { get; set; }
+    private IEnumerable<TraCuuNhapXuatAll> pagedDataXuat;
+    private MudTable<TraCuuNhapXuatAll> tableXuat;
+    private int totalItemsXuat;
+    bool isLoadingXuat = true;
+
+    // total record
+    public int TotalNhap { get; set; }
+    public int TotalXuat { get; set; }
+    public int TotalThu { get; set; }
+    public int TotalChi { get; set; }
+
+    private IEnumerable<QLSX.Web.Pages.Index.Index.Element> Elements = new List<QLSX.Web.Pages.Index.Index.Element>();
+
+    public TongHopThongKe itemUser { get; set; }
+    public List<TongHopThongKe> usersList { get; set; }
+    public List<TongHopThongKe> filteredUsersList { get; set; }
+    public bool IsGridViewFiltered { get; set; }
+    public int Count { get; set; } = 400;
+    TongHopThongKeRequest request = new TongHopThongKeRequest();
+    bool isLoading = true;
+
+    //private HubConnection hubConnection;
+
+    // Method to send a message
+    // private async Task SendMessage()
+    // {
+    //     if (!string.IsNullOrWhiteSpace(message))
+    //     {
+    //         await hubConnection.SendAsync("SendMessage", message);
+    //         message = string.Empty; // Clear input after sending message
+    //     }
+    // }
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = (await authenticationStateTask).User;
+        // hubConnection = new HubConnectionBuilder()
+        //     .WithUrl(("https://localhost:5005/myHub")) // Connect to the SignalR hub endpoint
+        //     .Build();
+
+        // hubConnection.On<string>("ReceiveMessage", (message) =>
+        // {
+        //     // Handle received message
+        //     // Update UI or perform actions
+        //     Console.WriteLine($"Received message: {message}");
+        //     // Handle received message
+        //     messages.Add(message);
+        //     StateHasChanged(); // Update UI
+        // });
+        // hubConnection.On<string>("ReceiveObject", (message) =>
+        // {
+        //     // tableThu.a
+
+        //     StateHasChanged(); // Update UI
+        // });
+        // await hubConnection.StartAsync();
+    }
+
+    // Method to send a message
+    // private async Task SendMessage(string message)
+    // {
+    //     await hubConnection.SendAsync("SendMessage", message);
+    // }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            tableThu.SetRowsPerPage(5);
+            tableChi.SetRowsPerPage(5);
+            tableNhap.SetRowsPerPage(5);
+            tableXuat.SetRowsPerPage(5);
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private void ItemUpdated(MudItemDropInfo<DropItem> dropItem)
+    {
+        dropItem.Item.Identifier = dropItem.DropzoneIdentifier;
+    }
+
+    private List<DropItem> _items = new()
+    {
+        new DropItem(){ Name = "Drag me!", Identifier = "Drop Zone 1" },
+        new DropItem(){ Name = "Or me!", Identifier = "Drop Zone 2" },
+        new DropItem(){ Name = "Just Mud", Identifier = "Drop Zone 1" },
+    };
+
+    public class DropItem
+    {
+        public string Name { get; init; }
+        public string Identifier { get; set; }
+    }
+    #region "ThuChi"
+    #endregion
+
+
+    public class Element
+    {
+        public int Number { get; set; }
+        public string Sign { get; set; }
+        public string Name { get; set; }
+        public string Position { get; set; }
+        public string Molar { get; set; }
+    }
+
+
+    /// <summary>
+    /// Here we simulate getting the paged, filtered and ordered data from the server
+    /// </summary>
+    private async Task<TableData<ThuChiModel>> ServerReloadThu(TableState state)
+    {
+        isLoadingThu = true;
+        itemRequestThu = new ThuChiSearchRequest()
+            {
+                DMDonViSuDungId = AppService.DMDonViSuDungId,
+                PageSize = 5,
+                Page = 0,
+                TotalPages = 0,
+                Loai = "thutm"
+            };
+        itemRequestThu.SortLable = state.SortLabel;
+        itemRequestThu.SortDirection = (QLSX.Shared.Enums.SortDirection)state.SortDirection;
+        itemRequestThu.Page = state.Page;
+        itemRequestThu.PageSize = state.PageSize;
+
+        lsResponsesThu = new GetAllResponsePaged<ThuChiModel>() { };
+
+
+        lsResponsesThu = await listThuChiService.GetAllPagedAsync(itemRequestThu);
+
+        IEnumerable<ThuChiModel> data = lsResponsesThu?.Items;
+
+        totalItemsThu = lsResponsesThu?.TotalRecords;
+
+        pagedDataThu = data ?? new List<ThuChiModel>();
+        isLoadingThu = false;
+        StateHasChanged();
+        return new TableData<ThuChiModel>() { TotalItems = totalItemsThu ?? 0, Items = pagedDataThu };
+    }
+
+
+    /// <summary>
+    /// Here we simulate getting the paged, filtered and ordered data from the server
+    /// </summary>
+    private async Task<TableData<ThuChiModel>> ServerReloadChi(TableState state)
+    {
+        isLoadingChi = true;
+        itemRequestChi = new ThuChiSearchRequest()
+            {
+                DMDonViSuDungId = AppService.DMDonViSuDungId,
+                PageSize = 5,
+                Page = 0,
+                TotalPages = 0,
+                Loai = "chitm"
+            };
+        itemRequestChi.SortLable = state.SortLabel;
+        itemRequestChi.SortDirection = (QLSX.Shared.Enums.SortDirection)state.SortDirection;
+        itemRequestChi.Page = state.Page;
+        itemRequestChi.PageSize = state.PageSize;
+
+        lsResponsesChi = new GetAllResponsePaged<ThuChiModel>() { };
+
+
+        lsResponsesChi = await listThuChiService.GetAllPagedAsync(itemRequestChi);
+
+        IEnumerable<ThuChiModel> data = lsResponsesChi.Items;
+        totalItemsChi = lsResponsesChi.TotalRecords;
+
+        pagedDataChi = data ?? new List<ThuChiModel>();
+        isLoadingChi = false;
+        StateHasChanged();
+        return new TableData<ThuChiModel>() { TotalItems = totalItemsChi, Items = pagedDataChi };
+    }
+
+
+    /// <summary>
+    /// Here we simulate getting the paged, filtered and ordered data from the server
+    /// </summary>
+    private async Task<TableData<TraCuuNhapXuatAll>> ServerReloadNhap(TableState state)
+    {
+        isLoadingNhap = true;
+        itemRequestNhap = new NhapXuatSearchRequest()
+            {
+                DMDonViSuDungId = AppService.DMDonViSuDungId,
+                PageSize = 5,
+                Page = 0,
+                TotalPages = 0,
+                Loai = "nhap"
+            };
+        itemRequestNhap.SortLable = state.SortLabel;
+        itemRequestNhap.SortDirection = (QLSX.Shared.Enums.SortDirection)state.SortDirection;
+        itemRequestNhap.Page = state.Page;
+        itemRequestNhap.PageSize = state.PageSize;
+
+        lsResponsesNhap = new GetAllResponsePaged<TraCuuNhapXuatAll>() { };
+
+
+        lsResponsesNhap = await nhapXuatChiService.GetAllPagedOnTraCuuAllAsync(itemRequestNhap);
+
+        IEnumerable<TraCuuNhapXuatAll> data = lsResponsesNhap.Items;
+
+        totalItemsNhap = lsResponsesNhap.TotalRecords;
+
+        pagedDataNhap = data ?? new List<TraCuuNhapXuatAll>();
+        isLoadingNhap = false;
+        StateHasChanged();
+        return new TableData<TraCuuNhapXuatAll>() { TotalItems = totalItemsNhap, Items = pagedDataNhap };
+    }
+    /// <summary>
+    /// Here we simulate getting the paged, filtered and ordered data from the server
+    /// </summary>
+    private async Task<TableData<TraCuuNhapXuatAll>> ServerReloadXuat(TableState state)
+    {
+        isLoadingXuat = true;
+        itemRequestXuat = new NhapXuatSearchRequest()
+            {
+                DMDonViSuDungId = AppService.DMDonViSuDungId,
+                PageSize = 5,
+                Page = 0,
+                TotalPages = 0,
+                Loai = "xuat"
+            };
+        itemRequestXuat.SortLable = state.SortLabel;
+        itemRequestXuat.SortDirection = (QLSX.Shared.Enums.SortDirection)state.SortDirection;
+        itemRequestXuat.Page = state.Page;
+        itemRequestXuat.PageSize = state.PageSize;
+
+        lsResponsesXuat = new GetAllResponsePaged<TraCuuNhapXuatAll>() { };
+
+
+        lsResponsesXuat = await nhapXuatChiService.GetAllPagedOnTraCuuAllAsync(itemRequestXuat);
+
+        IEnumerable<TraCuuNhapXuatAll> data = lsResponsesXuat.Items;
+
+        totalItemsXuat = lsResponsesXuat.TotalRecords;
+
+        pagedDataXuat = data ?? new List<TraCuuNhapXuatAll>();
+        isLoadingXuat = false;
+        StateHasChanged();
+        return new TableData<TraCuuNhapXuatAll>() { TotalItems = totalItemsXuat, Items = pagedDataXuat };
+    }
+    private async Task ClickTraCuuNX()
+    {
+        navigationManager.NavigateTo($"nhapxuats?rid=" + Guid.NewGuid());
+    }
+    private async Task ClickTraCuuTC()
+    {
+        navigationManager.NavigateTo($"thuchis?rid=" + Guid.NewGuid());
+    }
+
+
+    private async Task SuaClick(string loai, int id)
+    {
+        string title = "Sửa";
+        if (loai == "nhap")
+        {
+            title = "Sửa Phiếu nhập";
+        }
+        else if (loai == "xuat")
+        {
+            title = "Sửa Phiếu xuất";
+
+        }
+        else if (loai == "nhaptra")
+        {
+            title = "Sửa Phiếu nhập trả";
+        }
+        else if (loai == "xuattra")
+        {
+            title = "Sửa Phiếu xuất trả";
+        }
+
+        var parameters = new DialogParameters { ["NhapXuatId"] = id, ["loaiNX"] = loai, ["Title"] = title };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.ExtraExtraLarge, FullScreen = true, FullWidth = true };
+        var result = await DialogService.Show<QLSX.Web.Pages.NhapXuatPage.NhapXuatEdit>("Sửa", parameters, options).Result;
+        if (!result.Canceled)
+        {
+            var itemSelected = (NhapXuatModel)(result.Data ?? null);
+            if (itemSelected != null)
+            {
+                if (loai == "nhap")
+                {
+                    await tableNhap.ReloadServerData();
+                }
+                if (loai == "xuat")
+                {
+                    await tableXuat.ReloadServerData();
+                }
+            }
+        }
+    }
+    private async Task CreateNhapXuat(string loai)
+    {
+        string title = "Tạo";
+        if (loai == "nhap")
+        {
+            title = "Tạo Phiếu nhập";
+        }
+        else if (loai == "xuat")
+        {
+            title = "Tạo Phiếu xuất";
+
+        }
+        else if (loai == "nhaptra")
+        {
+            title = "Tạo Phiếu nhập trả";
+        }
+        else if (loai == "xuattra")
+        {
+            title = "Tạo Phiếu xuất trả";
+        }
+
+        var nhapxuat = new NhapXuatModel();
+        var parameters = new DialogParameters { ["nhapxuat"] = nhapxuat, ["loaiNX"] = loai, ["Title"] = title };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.ExtraExtraLarge, FullScreen = true, FullWidth = true };
+        var result = await DialogService.Show<QLSX.Web.Pages.NhapXuatPage.NhapXuatsCreate>("Thêm", parameters, options).Result;
+        if (!result.Canceled)
+        {
+            var itemSelected = (NhapXuatModel)(result.Data ?? null);
+            if (itemSelected != null)
+            {
+                toastService.ShowToast(ToastLevel.Success, "Tạo phiếu thành công", "Thông báo");
+            }
+            else { toastService.ShowToast(ToastLevel.Error, "Có lỗi xảy ra.", "Thông báo"); }
+            if (loai == "nhap")
+            {
+                await tableNhap.ReloadServerData();
+            }
+            if (loai == "xuat")
+            {
+                await tableXuat.ReloadServerData();
+            }
+        }
+    }
+    private async Task SearchNhapXuat(string loai)
+    {
+        navigationManager.NavigateTo("nhapxuats?rid=" + Guid.NewGuid());
+    }
+    private async Task SearchThuChi(string loai)
+    {
+        navigationManager.NavigateTo("thuchis?rid=" + Guid.NewGuid());
+
+    }
+    private async Task CreateThuChi(string loai)
+    {
+        string title = "Thêm";
+        if (loai == "thutm")
+        {
+            title = "Thêm Phiếu thu";
+        }
+        else if (loai == "chitm")
+        {
+            title = "Thêm Phiếu chi";
+
+        }
+        var parameters = new DialogParameters { ["loaiThuChi"] = loai, ["Title"] = title };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.ExtraExtraLarge, FullScreen = true, FullWidth = true };
+        var result = await DialogService.Show<QLSX.Web.Pages.ThuChiPage.ThuChiCreate>("Sửa", parameters, options).Result;
+        if (!result.Canceled)
+        {
+            var itemSelected = (ThuChiModel)(result.Data ?? null);
+            if (itemSelected != null)
+            {
+                if (loai == "thutm")
+                {
+                    await tableThu.ReloadServerData();
+                }
+                if (loai == "chitm")
+                {
+                    await tableChi.ReloadServerData();
+                }
+            }
+        }
+    }
+    private async Task SuaClickThuChi(string loai, int id)
+    {
+        string title = "Sửa";
+        if (loai == "thutm")
+        {
+            title = "Sửa Phiếu thu";
+        }
+        else if (loai == "chitm")
+        {
+            title = "Sửa Phiếu chi";
+        }
+        var parameters = new DialogParameters { ["ThuChiId"] = id, ["loaiThuChi"] = loai, ["Title"] = title };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.ExtraExtraLarge, FullScreen = true, FullWidth = true };
+        var result = await DialogService.Show<QLSX.Web.Pages.ThuChiPage.ThuChiEdit>("Sửa", parameters, options).Result;
+        if (!result.Canceled)
+        {
+            var itemSelected = (ThuChiModel)(result.Data ?? null);
+            if (itemSelected != null)
+            {
+                if (loai == "thutm")
+                {
+                    await tableThu.ReloadServerData();
+                }
+                if (loai == "chitm")
+                {
+                    await tableChi.ReloadServerData();
+                }
+            }
+        }
+    }
+
+}

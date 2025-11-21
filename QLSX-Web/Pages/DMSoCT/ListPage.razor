@@ -1,0 +1,364 @@
+﻿@page "/DMSoCT"
+@using QLSX.Shared.Models
+@using QLSX.Web.Data
+@using QLSX.Web.Services
+@using Blazored.LocalStorage
+@using OfficeOpenXml
+@using OfficeOpenXml.Style
+
+@inject IDMSoCTService<QLSX.Shared.Models.DanhMucSoChungTuModel> listService
+@inject IUserService userService
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService localStorageService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+@attribute [Authorize]
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject NavigationManager NavigationManager
+@inject IToastService toastService
+@inject IDialogService DialogService
+@inject IPhanQuyenSuDungService< QLSX.Shared.Models.QuyenSuDungModel> permisstionService
+
+@namespace QLSX.Web.Pages.DMSoCTPage
+
+<AuthorizeView Roles="Admin">
+    <Authorized>
+        <MudBreadcrumbs Items="_items" Style="padding:0px !important"></MudBreadcrumbs>
+        <MudToolBar>
+            <MudButton Variant="Variant.Filled" @onclick="@(() => CreateClick())" StartIcon="@Icons.Material.Filled.Create" Color="Color.Primary">Tạo mới</MudButton>
+            <MudButton Class="ml-1" Variant="Variant.Filled" @onclick="@(async() => await ExportExcel())" StartIcon="@Icons.Material.Filled.ImportExport" Color="Color.Secondary">Excel</MudButton>
+        </MudToolBar>
+        <MudTable ServerData="@(new Func<TableState, Task<TableData<QLSX.Shared.Models.DanhMucSoChungTuModel>>>(ServerReload))"
+                  @ref="table" HorizontalScrollbar="true"
+                  Filter="new Func<QLSX.Shared.Models.DanhMucSoChungTuModel,bool>(FilterFunc)"
+                  @bind-SelectedItem="selectedItem1"
+                  SortLabel="Sort By" CommitEditTooltip="Commit Edit"
+                  RowEditPreview="BackupItem"
+                  RowEditCancel="ResetItemToOriginalValues"
+                  RowEditCommit="ItemHasBeenCommitted"
+                  IsEditRowSwitchingBlocked="false" CanCancelEdit="true"
+                  Dense="true" Hover="true" Bordered="true" Striped="true" Loading="@isLoading">
+            <ToolBarContent>
+                <MudSpacer />
+                <MudTextField @bind-Value="searchString" Placeholder="Tìm kiếm" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            </ToolBarContent>
+            <ColGroup>
+                <col />
+                <col />
+            </ColGroup>
+            <HeaderContent>
+                <MudTh><MudTableSortLabel SortLabel="TenGia" T="QLSX.Shared.Models.DanhMucSoChungTuModel">Loại CT</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="CongThuc" T="QLSX.Shared.Models.DanhMucSoChungTuModel">Ký hiệu</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="GhiChu" T="QLSX.Shared.Models.DanhMucSoChungTuModel">Độ dài</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="GhiChu" T="QLSX.Shared.Models.DanhMucSoChungTuModel">Ghi chú</MudTableSortLabel></MudTh>
+                <MudTh>#</MudTh>
+            </HeaderContent>
+            <RowTemplate Context="ctx1">
+                <MudTd DataLabel="LoaiCT">@ctx1.LoaiCT</MudTd>
+                <MudTd DataLabel="KyHieu">@ctx1.KyHieu</MudTd>
+                <MudTd DataLabel="DoDai">@ctx1.DoDai</MudTd>
+                <MudTd DataLabel="GhiChu">@ctx1.GhiChu</MudTd>
+                <MudTd>
+                    <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Primary" aria-label="Xóa" @onclick="@(()=> DeleteClick(@ctx1))"></MudIconButton>
+                    <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" aria-label="Sửa" @onclick="@(()=> EditClick(@ctx1))">EditClick</MudIconButton>
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText>Không có bản ghi nào tìm thấy</MudText>
+            </NoRecordsContent>
+            <LoadingContent>
+                <MudText>Đang tải dữ liệu...</MudText>
+            </LoadingContent>
+            <PagerContent>
+                <MudTablePager RowsPerPageString="Số dòng mỗi trang" />
+            </PagerContent>
+        </MudTable>
+    </Authorized>
+    <NotAuthorized>
+        <NotPermission></NotPermission>
+    </NotAuthorized>
+</AuthorizeView>
+@code
+{
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    private QLSX.Shared.Models.QuyenSuDungModel quyenSuDung { get; set; } =
+        new QLSX.Shared.Models.QuyenSuDungModel() { Sua = false, Them = false, Xoa = false, XemIn = false, Selectted = false };
+
+    public GetAllResponsePaged<QLSX.Shared.Models.DanhMucSoChungTuModel> lsResponses { get; set; }
+    public QLSX.Shared.Models.BaseSearchRequest itemRequest { get; set; }
+    bool isLoading = true;
+
+    private IEnumerable<QLSX.Shared.Models.DanhMucSoChungTuModel> pagedData;
+    private MudTable<QLSX.Shared.Models.DanhMucSoChungTuModel> table;
+    private int totalItems;
+    private string searchString = "";
+    private QLSX.Shared.Models.DanhMucSoChungTuModel selectedItem1 { get; set; }
+    private QLSX.Shared.Models.DanhMucSoChungTuModel elementBeforeEdit { get; set; }
+
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Home", href: "/"),
+        new BreadcrumbItem("Danh mục số CT",href: null, disabled: true)
+    };
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        itemRequest = new BaseSearchRequest()
+            {
+                PageSize = 10,
+                Page = 0,
+                TotalPages = 0
+            };
+        lsResponses = new GetAllResponsePaged<QLSX.Shared.Models.DanhMucSoChungTuModel>();
+
+        await base.OnInitializedAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+    }
+
+    protected override bool ShouldRender()
+    {
+        base.ShouldRender();
+        return true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+    private void BackupItem(object element)
+    {
+        elementBeforeEdit = new QLSX.Shared.Models.DanhMucSoChungTuModel()
+            {
+                Id = ((QLSX.Shared.Models.DanhMucSoChungTuModel)element).Id,
+                LoaiCT = ((QLSX.Shared.Models.DanhMucSoChungTuModel)element).LoaiCT,
+                KyHieu = ((QLSX.Shared.Models.DanhMucSoChungTuModel)element).KyHieu,
+                DoDai = ((QLSX.Shared.Models.DanhMucSoChungTuModel)element).DoDai,
+                GhiChu = ((QLSX.Shared.Models.DanhMucSoChungTuModel)element).GhiChu,
+
+            };
+    }
+
+    private void ItemHasBeenCommitted(object element)
+    {
+    }
+
+    private void ResetItemToOriginalValues(object element)
+    {
+        selectedItem1.Id = elementBeforeEdit.Id;
+        selectedItem1.LoaiCT = elementBeforeEdit.LoaiCT;
+        selectedItem1.KyHieu = elementBeforeEdit.KyHieu;
+        selectedItem1.DoDai = elementBeforeEdit.DoDai;
+        selectedItem1.GhiChu = elementBeforeEdit.GhiChu;
+        StateHasChanged();
+    }
+    public void Dispose() { }
+
+    private bool FilterFunc(QLSX.Shared.Models.DanhMucSoChungTuModel element)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (element.LoaiCT.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.GhiChu.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.KyHieu.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
+    }
+    /// <summary>
+    /// Here we simulate getting the paged, filtered and ordered data from the server
+    /// </summary>
+    private async Task<TableData<QLSX.Shared.Models.DanhMucSoChungTuModel>> ServerReload(TableState state)
+    {
+        isLoading = true;
+        itemRequest.SortLable = state.SortLabel;
+        itemRequest.SortDirection = (QLSX.Shared.Enums.SortDirection)state.SortDirection;
+        itemRequest.Page = state.Page;
+        itemRequest.PageSize = state.PageSize;
+        itemRequest.Keywords = searchString;
+
+        lsResponses = new GetAllResponsePaged<QLSX.Shared.Models.DanhMucSoChungTuModel>();
+        lsResponses = await listService.GetAllPagedAsync(itemRequest);
+
+        IEnumerable<QLSX.Shared.Models.DanhMucSoChungTuModel> data = lsResponses.Items;
+
+        totalItems = lsResponses.TotalRecords;
+
+        if (data == null)
+        {
+            data = new List<DanhMucSoChungTuModel>();
+        }
+        pagedData = data;
+        isLoading = false;
+        StateHasChanged();
+        return new TableData<QLSX.Shared.Models.DanhMucSoChungTuModel>() { TotalItems = totalItems, Items = pagedData };
+    }
+
+    private async Task EditClick(QLSX.Shared.Models.DanhMucSoChungTuModel item)
+    {
+        var parameters = new DialogParameters
+            {
+                ["server"] = item
+            };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<Edit>("Sửa", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var deletedServer = (bool)result.Data;
+            if (deletedServer)
+            {
+
+                await table.ReloadServerData();
+                toastService.ShowToast(ToastLevel.Success, "Xóa thành công", "Thông báo");
+            }
+            else
+            {
+                toastService.ShowToast(ToastLevel.Error, "Xảy ra lỗi khi xóa", "Thông báo");
+            }
+        }
+    }
+
+    private async Task ReloadCatalogItems()
+    {
+        await table.ReloadServerData();
+    }
+
+    private async Task DeleteClick(QLSX.Shared.Models.DanhMucSoChungTuModel item)
+    {
+        var parameters = new DialogParameters { ["server"] = item };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<Delete>("Xóa", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var deletedServer = (bool)result.Data;
+            if (deletedServer)
+            {
+
+                await table.ReloadServerData();
+                toastService.ShowToast(ToastLevel.Success, "Xóa thành công", "Thông báo");
+            }
+            else
+            {
+                toastService.ShowToast(ToastLevel.Error, "Xảy ra lỗi khi xóa", "Thông báo");
+            }
+        }
+    }
+
+    private async Task CreateClick()
+    {
+        var item = new QLSX.Shared.Models.DanhMucSoChungTuModel();
+        var parameters = new DialogParameters
+            {
+                ["server"] = item
+            };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<Create>("Tạo mới", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var deletedServer = (bool)result.Data;
+            if (deletedServer)
+            {
+
+                await table.ReloadServerData();
+                toastService.ShowToast(ToastLevel.Success, "Xóa thành công", "Thông báo");
+            }
+            else
+            {
+                toastService.ShowToast(ToastLevel.Error, "Xảy ra lỗi khi xóa", "Thông báo");
+            }
+        }
+    }
+    private async Task SearchClick()
+    {
+        await table.ReloadServerData();
+    }
+    private async Task ExportExcel()
+    {
+        //byte[] fileContents;
+        //MemoryStream stream = new();
+        //var listData = await listService.ExportToExcelAsync(itemRequest);
+        //ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        //if (listData != null)
+        //{
+        //    using (var package = new ExcelPackage())
+        //    {
+        //        var workSheet = package.Workbook.Worksheets.Add("DMTinhGia_Sheet_1");
+
+        //        // Set default width cho tất cả column
+        //        workSheet.DefaultColWidth = 20;
+        //        // Tự động xuống hàng khi text quá dài
+        //        workSheet.Cells.Style.WrapText = true;
+
+        //        #region Header excel
+        //        workSheet.Cells[1, 1].Value = "Mã phòng";
+        //        workSheet.Cells[1, 1].Style.Font.Size = 12;
+        //        workSheet.Cells[1, 1].Style.Font.Bold = true;
+        //        workSheet.Cells[1, 1].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+        //        workSheet.Cells[1, 2].Value = "Tên phòng";
+        //        workSheet.Cells[1, 2].Style.Font.Size = 12;
+        //        workSheet.Cells[1, 2].Style.Font.Bold = true;
+        //        workSheet.Cells[1, 2].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+        //        #endregion
+
+        //        #region Body excel
+        //        int rowIndex = 2;
+        //        foreach (var item in listData.Items)
+        //        {
+        //            workSheet.Cells[rowIndex, 1].Value = item.MaPhong;
+        //            workSheet.Cells[rowIndex, 1].Style.Font.Size = 12;
+        //            workSheet.Cells[rowIndex, 1].Style.Font.Bold = false;
+        //            workSheet.Cells[rowIndex, 1].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+        //            workSheet.Cells[rowIndex, 2].Value = item.TenPhong;
+        //            workSheet.Cells[rowIndex, 2].Style.Font.Size = 12;
+        //            workSheet.Cells[rowIndex, 2].Style.Font.Bold = false;
+        //            workSheet.Cells[rowIndex, 2].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+        //            rowIndex++;
+        //        }
+        //        #endregion
+
+        //        fileContents = await package.GetAsByteArrayAsync();
+        //    };
+
+        //    await JSRuntime.InvokeAsync<QLSX.Shared.Models.DMSoCT>(
+        //        "saveAsFile",
+        //        $"DMTinhGia_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.xlsx",
+        //        Convert.ToBase64String(fileContents)
+        //    );
+        //}
+    }
+}

@@ -1,0 +1,71 @@
+﻿@inject ILogger<Delete> Logger
+@inject IJSRuntime JSRuntime
+@inject IDieuChuyensService<NhapXuatModel> nhapxuatService
+@inject NavigationManager navigationManager
+
+@inherits QLSX.Web.Helpers.BlazorComponent
+
+@namespace QLSX.Web.Pages.DieuChuyensPage
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.DeleteForever" Class="mr-3 mb-n1" />
+            Xóa
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12" sm="2">
+                <MudTextField Value="@server.Id.ToString()" Label="Id" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="2">
+                <MudTextField Value="@server.Loai" Label="Loại" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="2">
+                <MudTextField Value="@server.SoChungTu" Label="Số CT" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="2">
+                <MudTextField Value="@server.NgayCT" Label="Ngày CT" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="0" sm="4" Class="m-0 p-0"></MudItem>
+            <MudItem xs="12" sm="2">
+                <MudTextField Value="@server.MaDonVi" Label="Mã đơn vị" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="5">
+                <MudTextField Value="@server.TenDonVi" Label="Tên đơn vị" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="5">
+                <MudTextField Value="@server.DiaChi" Label="Địa chỉ" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField Value="@server.NoiDungNhapXuats.Sum(p=>p.SoTien)" Label="Tổng tiền hàng" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField Value="@server.SoTienTT" Label="Số tiền thanh toán" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel" Variant="Variant.Filled" Color="Color.Error">Bỏ qua</MudButton>
+        <MudButton StartIcon="@Icons.Material.Filled.Delete" Color="Color.Primary" Variant="Variant.Filled" OnClick="@(() => DeleteClick(server.Id))" Class="me-3">Xóa</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public NhapXuatModel server { get; set; } = new NhapXuatModel();
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    private async void DeleteClick(int id)
+    {
+        var isDelete = await nhapxuatService.DeleteAsync(id);
+        MudDialog.Close(DialogResult.Ok(isDelete));
+    }
+}

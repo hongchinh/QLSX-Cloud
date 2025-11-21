@@ -1,0 +1,167 @@
+﻿@using System.Net
+@using System.Text
+@using QLSX.Shared.Models.Request
+@using QLSX.Web.Helpers
+@using QLSX.Shared.Models;
+@using System.Net.Http.Json
+@inject ILogger<DialogChonDonDatHang> Logger
+@inject IJSRuntime jsRuntime
+@inject IDonDatHangsService<PhieuNhapXuatAllModel> nhapxuatService
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject AppService AppService
+@inject IDialogService DialogService
+
+@namespace Dialogs
+<MudDialog DisableSidePadding="true" DefaultFocus="DefaultFocus.LastChild">
+    <DialogContent>
+        <MudContainer Style="overflow-y: scroll">
+            <MudTable ServerData="@(new Func<TableState, Task<TableData<PhieuNhapXuatAllModel>>>(ServerReload))" FixedHeader="true" Height="400px"
+                      Dense="true" Hover="true" Bordered="true" Striped="true" Loading="@Loading" @ref="table" RowClassFunc="@SelectedRowClassFunc"
+                      OnRowClick="@RowClickEvent"
+                      T="PhieuNhapXuatAllModel"
+                      SelectOnRowClick="true"
+                      @bind-SelectedItem="selectedItem1">
+                <ToolBarContent>
+                    <MudIconButton Icon="@Icons.Material.Filled.Add" OnClick="AddNewClick"> Thêm </MudIconButton>
+                    <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Tìm kiếm" Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Ngày CT</MudTh>
+                    <MudTh>Số CT</MudTh>
+                    <MudTh>Đơn vị</MudTh>
+                    <MudTh>Số tiền</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Ngày CT">
+                        <div @onclick:stopPropagation="true"
+                             @ondblclick="@( (x) => DoSelectedRow(context))">
+                            @context.NgayCT?.ToString("dd/MM/yyyy")
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="Số CT">
+                        <div @onclick:stopPropagation="true"
+                             @ondblclick="@( (x) => DoSelectedRow(context))">
+                            @context.SoChungTu
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="MaDonVi">
+                        <div @onclick:stopPropagation="true"
+                             @ondblclick="@( (x) => DoSelectedRow(context))">
+                            @string.Format("{0} {1} {2}", @context.MaDonVi, @context.TenDonVi, @context.DiaChiDoiTuong)
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="SoTien">
+                        <div @onclick:stopPropagation="true"
+                             @ondblclick="@( (x) => DoSelectedRow(context))">
+                            @context.SoTien?.ToString("###,###")
+                        </div>
+                    </MudTd>
+
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText>Không có bản ghi nào tìm thấy</MudText>
+                </NoRecordsContent>
+                <LoadingContent>
+                    <MudText>Đang tải dữ liệu...</MudText>
+                </LoadingContent>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="Cancel">Bỏ qua</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    public DonHangRequest itemRequest { get; set; }
+
+    public GetDonHangResponse<PhieuNhapXuatAllModel> lsResponses { get; set; }
+
+    public List<PhieuNhapXuatAllModel> productsList { get; set; }
+    private PhieuNhapXuatAllModel selectedItem1 = null;
+    public List<PhieuNhapXuatAllModel> filteredproductsList { get; set; }
+    private IEnumerable<PhieuNhapXuatAllModel> pagedData;
+    private MudTable<PhieuNhapXuatAllModel> table;
+    private int totalItems;
+
+    protected override async Task OnInitializedAsync()
+    {
+        itemRequest = new DonHangRequest()
+            {
+                NgayCTFrom = DateTime.Now,
+                NgayCTTo = DateTime.Now
+            };
+
+
+        await base.OnInitializedAsync();
+    }
+
+
+    private string searchString { get; set; } = "";
+    private bool Loading { get; set; } = false;
+    private List<string> clickedEvents = new();
+    void Cancel() => MudDialog.Cancel();
+
+    private void Ok()
+    {
+        MudDialog.Close(DialogResult.Ok<PhieuNhapXuatAllModel>(selectedItem1));
+    }
+    private void OnButtonSelect(PhieuNhapXuatAllModel item)
+    {
+        selectedItem1 = item;
+        Ok();
+    }
+    /// <summary>
+    /// Here we simulate getting the paged, filtered and ordered data from the server
+    /// </summary>
+    private async Task<TableData<PhieuNhapXuatAllModel>> ServerReload(TableState state)
+    {
+        Loading = true;
+        lsResponses = new GetDonHangResponse<PhieuNhapXuatAllModel>();
+        lsResponses = await nhapxuatService.GetAllPagedAsync(itemRequest);
+        IEnumerable<PhieuNhapXuatAllModel> data = lsResponses.Items; ;
+        totalItems = lsResponses.TotalRows;
+        if (data == null)
+        {
+            data = new List<PhieuNhapXuatAllModel>();
+        }
+        pagedData = data;
+        Loading = false;
+        return new TableData<PhieuNhapXuatAllModel>() { TotalItems = totalItems, Items = pagedData };
+    }
+
+    private PhieuNhapXuatAllModel DoSelectedRow(PhieuNhapXuatAllModel ctx)
+    {
+        selectedItem1 = ctx;
+        Ok();
+        return ctx;
+    }
+    private async Task OnSearch(string text)
+    {
+        searchString = text;
+        await table.ReloadServerData();
+    }
+
+    private void RowClickEvent(TableRowClickEventArgs<PhieuNhapXuatAllModel> tableRowClickEventArgs)
+    {
+        // clickedEvents.Add("Row has been clicked");
+        selectedItem1 = tableRowClickEventArgs.Item;
+    }
+    private int selectedRowNumber = -1;
+    private string SelectedRowClassFunc(PhieuNhapXuatAllModel element, int rowNumber)
+    {
+        return string.Empty;
+
+    }
+    private async Task AddNewClick()
+    {
+
+
+
+    }
+}

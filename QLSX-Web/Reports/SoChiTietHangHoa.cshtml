@@ -1,0 +1,162 @@
+﻿@using QLSX.Shared.Data.Responses
+@using QLSX.Shared.Data.Responses.BaoCao
+
+@model ReportResponseBase<SoChiTietHangHoaResponse>
+
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<link rel="stylesheet" href="@Model.Host/lib/bootstrap/dist/css/bootstrap.css" />
+	<link rel="stylesheet" href="@Model.Host/lib/bootstrap/dist/css/bootstrap-grid.css" />
+	<link rel="stylesheet" href="@Model.Host/lib/bootstrap/dist/css/bootstrap-reboot.css" />
+	<link rel="stylesheet" href="@Model.Host/lib/bootstrap/dist/css/bootstrap-theme.css" />
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="@Model.Host/css/report.css" />
+	<title>Sổ chi tiết hàng hóa</title>
+</head>
+<body>
+	@if (Model.ListData.Count > 0)
+		{
+			
+		@foreach(var groupKho in Model.ListData.GroupBy(x=>x.TenKho, (key, grp) => new { Name= key,List= grp})){
+			foreach(var groupHangHoa in Model.ListData.GroupBy(x=>x.TenHangHoa, (key, grp) => new { Name= key,List= grp})){
+			
+				Html.RenderPartial("Header", @Model.ThongTin);
+				<div class="row" style="margin-top:10px !important">
+				<div class="col-md-12" style="text-align:center"> 
+						<h3>SỔ CHI TIẾT HÀNG HÓA</h3>
+						<div class="d-flex" style="margin-top:-10px">Tên kho: <b style="color:blue"> @groupKho.Name </b></div>
+						<div class="d-flex" style="margin-top:-10px">Tên hàng hóa: <b style="color:blue"> @groupHangHoa.Name </b></div>
+				</div>
+				</div>
+				<div class="row" style="margin-top:5px !important">
+					<div class="col-md-12" style="text-align:center"> <i> @Model.ListData?.First()?.ThoiGian </i></div>
+				</div>
+				 
+			 
+			  <table class="table table-bordered">
+			   <thead>
+				<tr>
+					 <th class="text-center" colspan="2">CHỨNG TỪ</th>
+					 <th class="text-left w25" rowspan="2">DIỄN GIẢI</th>
+					 <th class="text-center" rowspan="2">Đơn giá</th>
+					 <th class="text-center" colspan="2" >Nhập</th>
+					 <th class="text-center" colspan="2" >Xuất</th>
+					 <th class="text-center" colspan="2" >Tồn</th>
+					 <th class="text-center" rowspan="2">Ghi chú</th>
+				</tr>
+				<tr>
+					 <th class="text-center">Số hiệu</th>
+					 <th class="text-center">Ngày tháng</th>
+					 <th class="text-center">Số lượng</th>
+					 <th class="text-center">Tiền</th>
+					 <th class="text-center">Số lượng</th>
+					 <th class="text-center">Tiền</th>
+					 <th class="text-center">Số lượng</th>
+					 <th class="text-center">Tiền</th>
+				</tr>
+			   </thead>
+			   <tbody>
+					<tr>
+					 <th class="text-center"></th>
+					 <th class="text-center"></th>
+					 <th class="text-center">Số dư đầu kỳ </th>
+					 <th class="text-center"></th>
+					 <th class="text-center"></th>
+					 <th class="text-center"></th>
+					 <th class="text-center"></th>
+					 <th class="text-center"></th>
+					 <th class="text-center">@groupHangHoa.List?.First()?.SoLuongDau.ToString("###,###.##")</th>
+					 <th class="text-center">@groupHangHoa.List?.First()?.SoTienDau.ToString("###,###")</th>
+					 <th class="text-center"></th>
+				 
+					</tr>
+					@foreach (var row in groupHangHoa.List.OrderBy(x=>x.NgayCT))
+					{
+						 
+						<tr>  
+							<th style="font-weight:normal;">@row?.NgayCT.ToString("dd/MM/yyyy")</th>
+							<th style="font-weight:normal; text-align: left;">@row.SoCT</th>
+							<th style="font-weight:normal; text-align: center;">@row.DienGiai</th>
+							<th style="font-weight:normal; text-align: right;">@row.DonGia</th>
+							<th style="font-weight:normal; text-align: right;">@row.SoLuongNhap.ToString("###,###.##")</th>
+							<th style="font-weight:normal; text-align: right;">@row.SoTienNhap.ToString("###,###")</th>
+							<th style="font-weight:normal; text-align: right;">@row.SoLuongXuat.ToString("###,###.##")</th>
+							<th style="font-weight:normal; text-align: right;">@row.SoTienXuat.ToString("###,###")</th>
+							<th style="font-weight:normal; text-align: right;">@row.SoLuongTon.ToString("###,###.##")</th>
+							<th style="font-weight:normal; text-align: right;">@row.SoTienTon.ToString("###,###")</th>
+							<th style="font-weight:bold; text-align: right"></th>
+
+						</tr>
+					}
+					<tr>
+						<th style="font-weight:bold; text-align: right" colspan="4"> Tổng cộng phát sinh </th>
+						<th style="font-weight:bold;text-align: right">@groupHangHoa.List.Sum(x=> x.SoLuongNhap).ToString("###,###.##")</th>
+						<th style="font-weight:bold;text-align: right">@groupHangHoa.List.Sum(x=> x.SoTienNhap).ToString("###,###")</th>
+						<th style="font-weight:bold;text-align: right">@groupHangHoa.List.Sum(x=> x.SoLuongXuat).ToString("###,###.##")</th>
+						<th style="font-weight:bold;text-align: right">@groupHangHoa.List.Sum(x=> x.SoTienXuat).ToString("###,###")</th>
+						<th style="font-weight:bold;text-align: right">@groupHangHoa.List.First()?.SoLuongCuoi.ToString("###,###.##")</th>
+						<th style="font-weight:bold;text-align: right">@groupHangHoa.List.First()?.SoTienCuoi.ToString("###,###")</th>
+						<th style="font-weight:bold; text-align: right"></th>
+					</tr>					
+			   </tbody>
+			  </table>
+			  Html.RenderPartial("TitlePrint", @Model.ThongTin);
+			 <p style="page-break-before: always;"></p>
+			}
+		}
+		}
+		}else
+		{
+
+			
+				 @{ await Html.RenderPartialAsync("Header", @Model.ThongTin);}
+			
+			
+			<div class="row" style="margin-top:10px !important">
+		   <div class="col-md-12" style="text-align:center"> <h1>SỔ CHI TIẾT HÀNG HÓA </h1> </div>
+		  </div>
+		  <div class="row" style="margin-top:5px !important">
+		   <div class="col-md-12" style="text-align:center"> <i> </i></div>
+		  </div>
+
+		  <table class="table table-bordered">
+		   <thead>
+			<tr>
+					 <th class="text-center" colspan="2">CHỨNG TỪ</th>
+					 <th class="text-center w35">DIỄN GIẢI</th>
+					 <th class="text-center" rowspan="2">Đơn giá</th>
+					 <th class="text-center" colspan="2" >Nhập</th>
+					 <th class="text-center" colspan="2" >Xuất</th>
+					 <th class="text-center" colspan="2" >Tồn</th>
+					 <th class="text-center" rowspan="2">Ghi chú</th>
+				</tr>
+				<tr>
+					 <th class="text-center">Số hiệu</th>
+					 <th class="text-center">Ngày tháng</th>
+					 <th class="text-center">Số lượng</th>
+					 <th class="text-center">Tiền</th>
+					 <th class="text-center">Số lượng</th>
+					 <th class="text-center">Tiền</th>
+					 <th class="text-center">Số lượng</th>
+					 <th class="text-center">Tiền</th>
+				</tr>
+		   </thead>
+			<tbody>
+				<tr><td colspan="11" style="font-weight:bold; text-align: center"> Không có dữ liệu </td> </tr>
+			</tbody>
+		  </table>
+		   
+			   @{
+		 await Html.RenderPartialAsync("TitlePrint", @Model.ThongTin); }
+		  
+		  
+		 
+	
+	
+	  
+</body>
+</html>

@@ -1,0 +1,80 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <UserSecretsId>9c933491-0168-4898-b44a-a12bc98a12f3</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Controllers\AuthorsController.cs" />
+    <Compile Remove="Controllers\CustomerCaresController.cs" />
+    <Compile Remove="Controllers\CustomersController.cs" />
+    <Compile Remove="Controllers\CustomerStatusController.cs" />
+    <Compile Remove="Controllers\CustomerTypesController.cs" />
+    <Compile Remove="Controllers\NotificationsController.cs" />
+    <Compile Remove="Controllers\PermissionDepartmentsController.cs" />
+    <Compile Remove="Controllers\PermissionRegionsController.cs" />
+    <Compile Remove="Controllers\ProductsController.cs" />
+    <Compile Remove="Controllers\PublishersController.cs" />
+    <Compile Remove="Controllers\SalesController.cs" />
+    <Compile Remove="Controllers\WeatherForecastController.cs" />
+    <Compile Remove="Models\Author.cs" />
+    <Compile Remove="Models\Book.cs" />
+    <Compile Remove="Models\BookAuthor.cs" />
+    <Compile Remove="Models\Job.cs" />
+    <Compile Remove="Models\Publisher.cs" />
+    <Compile Remove="Models\RefreshRequest.cs" />
+    <Compile Remove="Models\RefreshToken.cs" />
+    <Compile Remove="Models\Region.cs" />
+    <Compile Remove="Models\Role.cs" />
+    <Compile Remove="Models\Sale.cs" />
+    <Compile Remove="Models\Store.cs" />
+    <Compile Remove="Models\User.cs" />
+    <Compile Remove="Models\UserWithToken.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Controllers\CustomersController.cs.bak" />
+    <None Remove="Controllers\NotificationsController.cs.bak" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AspNetCore.Reporting" Version="2.1.0" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="11.0.0" />
+    <PackageReference Include="Bricelam.EntityFrameworkCore.Pluralizer" Version="1.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="EPPlus" Version="6.0.5" />
+    <PackageReference Include="HtmlSanitizer" Version="7.1.488" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="5.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="6.0.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="6.0.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.5" />
+    <PackageReference Include="MudBlazor" Version="6.1.2" />
+    <PackageReference Include="Serilog" Version="2.11.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="5.0.0" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="3.3.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="4.0.1" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.3.1" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Logs\" />
+    <Folder Include="wwwroot\ExcelFiles\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\QLSX.Shared\QLSX.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

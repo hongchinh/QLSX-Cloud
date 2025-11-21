@@ -1,0 +1,185 @@
+﻿@using QLSX.Shared.Models
+@using QLSX.Web.Helpers
+@inject ILogger<DlgHangHoa> Logger
+@inject IJSRuntime jsRuntime
+@inject IDMHangHoaService<DanhMucHangHoaModel> productServicece
+@inherits QLSX.Web.Helpers.BlazorComponent
+ 
+@namespace Dialogs
+
+<div class="modal @_modalClass" tabindex="-1" role="dialog" style="display:@_modalDisplay; overflow-y:auto" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+    <div class="modal-dialog" role="document" style="max-width:750px !important; width:auto !important">
+        <div class="modal-content">
+            <EditForm Model="@ItemRequest" OnValidSubmit="@SearchClick">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Tìm kiếm hàng hóa</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="container" style="width:auto !important">
+                        <div class="row" style="margin-bottom: 10px">
+                            <label class="control-label" style="width:50px">Mã HH</label>
+                            <InputText @bind-Value="ItemRequest.MaHangHoa" style="width:100px" />
+                            <label class="control-label" style="width:60px">Tên HH</label>
+                            <InputText @bind-Value="ItemRequest.TenHangHoa" style="width:100px" />
+                            <label class="control-label col-md-2" style="width:45px">ĐVT</label>
+                            <InputText @bind-Value="ItemRequest.DonViTinh" style="width:45px" />
+                        </div>
+                        <div class="row" style="margin-bottom: 10px">
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary">
+                                    Tìm
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <SpinLoader IsLoading="isLoading">
+                                <LoadingTemplate>
+                                   <MudProgressCircular Color="Color.Tertiary" Size="Size.Large" Indeterminate="true"/>
+                                </LoadingTemplate>
+                                <ContentTemplate>
+                                    @if (filteredproductsList != null)
+                    {
+                                    <GridViewPaginate CurrentPage="@lsResponses.PageIndex"
+                                                      PageSize="@lsResponses.PageSize"
+                                                      TotalPages="@lsResponses.TotalPages"
+                                                      TotalRecords="@lsResponses.TotalRecords"
+                                                      Items="filteredproductsList" ReloadList="IsGridViewFiltered"
+                                                      Movepage="NextClick">
+                                        <GridColumns>
+                                            <GridColumn ColumnTitle="Mã HH" IsSearch="false"></GridColumn>
+                                            <GridColumn ColumnTitle="Tên HH" IsSearch="false"></GridColumn>
+                                            <GridColumn ColumnTitle="ĐVT" IsSearch="false"></GridColumn>
+                                            <GridColumn ColumnTitle="Giá Nhập" IsSearch="false"></GridColumn>
+                                            <GridColumn ColumnTitle="Giá Xuất" IsSearch="false"></GridColumn>
+                                        </GridColumns>
+                                        <GridRow Context="product">
+                                            <td width="20%">
+                                                <div style="width:80%; float: left"> @product.MaHangHoa</div>
+                                                <button type="button" class="btn btn-primary"
+                                                        style="width:10%; float: right;font-size:2px; padding:10px"
+                                                        @onclick="@(() => RowClick(product))" @onclick:stopPropagation="true">
+                                                    <span class="oi oi-magnifying-glass"></span>
+                                                </button>
+                                            </td>
+                                            <td width="40%">
+                                                @product.TenHangHoa
+                                            </td>
+                                            <td width="10%">
+                                                @product.DonViTinh
+                                            </td>
+                                            <td width="15%">
+                                                @product.DonViTinh
+                                            </td>
+                                            <td width="15%">
+                                                @product.DonViTinh
+                                            </td>
+                                        </GridRow>
+                                    </GridViewPaginate>
+                                    }
+                                </ContentTemplate>
+                            </SpinLoader>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="Close">Bỏ qua</button>
+                </div>
+            </EditForm>
+        </div>
+
+    </div>
+</div>
+
+
+
+@if (_showCreateModal)
+{
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    [Parameter]
+    public EventCallback<DanhMucHangHoaModel> OnRowClick { get; set; }
+
+    [Parameter]
+    public QLSX.Shared.Models.HangHoaSearchRequest ItemRequest { get; set; }
+
+    public DanhMucHangHoaModel product { get; set; }
+    public List<DanhMucHangHoaModel> productsList { get; set; }
+    public List<DanhMucHangHoaModel> filteredproductsList { get; set; }
+    public GetAllResponsePaged<DanhMucHangHoaModel> lsResponses { get; set; }
+
+    string status;
+    public int index = -1;
+
+    private DanhMucHangHoaModel _item = new DanhMucHangHoaModel();
+
+    private string _modalDisplay = "none;";
+    private string _modalClass = "";
+    private bool _showCreateModal = false;
+
+    bool isLoading = true;
+    public bool IsGridViewFiltered { get; set; }
+
+    private async Task RowClick(DanhMucHangHoaModel pro)
+    {
+        await OnRowClick.InvokeAsync(pro );
+        await Close();
+    }
+
+    public async Task Open(int index)
+    {
+        this.index = index;
+        Logger.LogInformation("Open Product List");
+        isLoading = true;
+        _modalDisplay = "block;";
+        _modalClass = "Show";
+        await new Css(jsRuntime).HideBodyOverflow();
+
+        IsGridViewFiltered = true;
+        await LoadData();
+
+        _showCreateModal = true;
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task Close()
+    {
+        await new Css(jsRuntime).ShowBodyOverflow();
+        _modalDisplay = "none";
+        _modalClass = "";
+        _showCreateModal = false;
+    }
+
+    private async Task SearchClick()
+    {
+        isLoading = true;
+        IsGridViewFiltered = true;
+        ItemRequest.Page = 0;
+        await LoadData();
+        isLoading = false;
+    }
+    private async Task NextClick(string page)
+    {
+        isLoading = true;
+        IsGridViewFiltered = true;
+        int pageint = 0;
+        int.TryParse(page, out pageint);
+        ItemRequest.Page = pageint;
+        await LoadData();
+        isLoading = false;
+    }
+
+    private async Task LoadData()
+    {
+        await Task.Delay(500);
+        lsResponses = new GetAllResponsePaged<DanhMucHangHoaModel>();
+        lsResponses = await productServicece.GetAllPagedAsync(ItemRequest);
+        productsList = filteredproductsList = lsResponses.Items;
+        StateHasChanged();
+    }
+}

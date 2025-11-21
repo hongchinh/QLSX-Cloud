@@ -1,0 +1,78 @@
+﻿@inject ILogger<Edit> Logger
+@inject IJSRuntime JSRuntime
+@inject ISettingService<QLSX.Shared.Models.SettingModel> itemService
+@inherits QLSX.Web.Helpers.BlazorComponent
+@namespace QLSX.Web.Pages.SettingsPage
+<div class="modal draggable @_modalClass" tabindex="-1" role="dialog" style="display:@_modalDisplay ; overflow-y:auto">
+	<div class="modal-dialog" role="document" style=" width:1000px; max-width:1000px !important">
+		<div class="modal-content">
+			<EditForm Model="_item" OnValidSubmit="@SaveClick">
+				<DataAnnotationsValidator />
+				<div class="modal-header">
+					<h5 class="modal-title" id="exampleModalLabel">Sửa <b> @_item.TenDonVi</b></h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<ValidationSummary></ValidationSummary>
+					@if (_item == null)
+					{
+		 <SpinnerData></SpinnerData>
+					}
+					else
+					{
+						<FormInput itemForm="@_item"> </FormInput>
+					}
+	</div>
+	<div class="modal-footer">
+	 <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="Close">Bỏ qua</button>
+	 <button type="submit" class="btn btn-primary">
+	  Lưu
+	 </button>
+	</div>
+   </EditForm>
+  </div>
+ </div>
+</div>
+
+
+
+ 
+
+@code {
+	[Parameter]
+	public EventCallback<string> OnSaveClick { get; set; }
+
+	private string _badFileMessage = string.Empty;
+	private string _modalDisplay = "none;";
+	private string _modalClass = "";
+	private bool _showEditModal = false;
+	private QLSX.Shared.Models.SettingModel _item = new QLSX.Shared.Models.SettingModel();
+
+	private async Task SaveClick()
+	{
+		await itemService.UpdateAsync(_item.Id, _item);
+		await OnSaveClick.InvokeAsync(null);
+		await Close();
+	}
+
+	public async Task Open(int id)
+	{
+		Logger.LogInformation("Now loading... /Setting/Edit/{Id}", id);
+		await new Css(JSRuntime).HideBodyOverflow();
+		_item = await itemService.GetByIdAsync(id);
+		_modalDisplay = "block;";
+		_modalClass = "Show";
+		_showEditModal = true;
+		StateHasChanged();
+	}
+
+	private async Task Close()
+	{
+		await new Css(JSRuntime).ShowBodyOverflow();
+		_modalDisplay = "none";
+		_modalClass = "";
+		_showEditModal = false;
+	}
+}

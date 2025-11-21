@@ -1,0 +1,102 @@
+﻿@using Microsoft.Extensions.Configuration;
+@using QLSX.Shared.Models.Request;
+@inject ISnackbar Snackbar
+@inject IDonDatHangsService<PhieuNhapXuatAllModel> donDatHangService
+@inject IConfiguration configuration
+@inject IJSRuntime JSRuntime
+<style>
+    .custom-dialog {
+        max-width: 300px; /* Adjust width as needed */
+        width: 100%;
+        margin: 0 auto; /* Center the dialog horizontally */
+    }
+
+        .custom-dialog .mud-dialog-content {
+            padding: 16px; /* Adjust padding inside the dialog content */
+        }
+
+        .custom-dialog .mud-dialog-actions {
+            display: flex;
+            justify-content: flex-end; /* Align buttons to the right */
+            margin-top: 16px; /* Adjust top margin for the actions */
+        }
+
+        .custom-dialog .mud-button {
+            margin-left: 8px; /* Adjust spacing between buttons */
+        }
+
+</style>
+<MudDialog Class="custom-dialog">
+    <DialogContent>
+        <MudDatePicker Label="Ngày" @bind-Date="_date" />
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Bỏ qua</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Chấp nhận</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [Parameter]
+    public List<int> ListIdId { get; set; }
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; }
+
+    private void Cancel() => MudDialog.Cancel();
+    private DateTime? _date = DateTime.Today;
+    private async Task Submit()
+    {
+        await CheckTemplateReport(ListIdId);
+        DateTime dateTimeWithCurrentTime = _date.Value.Date.Add(DateTime.Now.TimeOfDay);
+        await UpdateTrangThai(2, ListIdId, dateTimeWithCurrentTime, null);
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+    private async Task CheckTemplateReport(List<int> selectedIds)
+    {
+        var request = new CheckTemplateRequest
+            {
+                ListIdId = selectedIds,
+            };
+        var success = await donDatHangService.CheckTemplateAsync(request);
+        string idIds = string.Join(",", selectedIds);
+        string hostReport = configuration.GetValue<string>("AppSettings:ReportUrlPublic");
+        string formattedDate = _date?.ToString("yy/MM/dd");
+        var reportConditions = new List<(bool IsCondition, string FileName)>
+        {
+            (success.IsMau_CuaCuon ?? false, "PhieuLSX_Mau1"),
+            (success.IsMau_CuaNhom ?? false, "PhieuLSX_Mau2"),
+            (success.IsMau_CuaXep ?? false, "PhieuLSX_Mau3"),
+            (success.IsMau_Nano ?? false, "PhieuLSX_Mau4"),
+            (success.IsMau_Panel ?? false, "PhieuLSX_Mau5"),
+            (success.IsMau_Tran36 ?? false, "PhieuLSX_Mau6"),
+            (success.IsMau_Tranh ?? false, "PhieuLSX_Mau7"),
+            (success.IsMau_ThanTre ?? false, "PhieuLSX_Mau8")
+        };
+        foreach (var condition in reportConditions)
+        {
+            if (condition.IsCondition)
+            {
+                await ReportAction(condition.FileName, idIds, hostReport, formattedDate);
+            }
+        }
+    }
+
+    private async Task ReportAction(string fileName, string listIdId, string hostReport, string formattedDate)
+    {
+        string param = string.Format("Reports/Viewer?ReportFileName={0}&idids={1}&mdvsd=1&&ngay={2}", fileName, listIdId, formattedDate);
+        string strURL = hostReport + param;
+        await JSRuntime.InvokeVoidAsync("open", strURL, "_blank");
+    }
+
+    private async Task UpdateTrangThai(int trangThai, List<int> selectedIds, DateTime ngay, string spx)
+    {
+        var request = new UpdateTrangThaiRequest
+            {
+                TrangThai = trangThai,
+                IdIdList = selectedIds,
+                Ngay = ngay
+            };
+
+        await donDatHangService.UpdateTrangThaiDonHangAsync(request);
+    }
+}

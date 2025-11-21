@@ -1,0 +1,429 @@
+﻿@page "/BaoCao"
+@using QLSX.Shared.Models
+@using QLSX.Web.Data
+@using QLSX.Web.Services
+@using Blazored.LocalStorage
+@using AspNetCore.Reporting
+@using System.Data
+@using System.Data.SqlClient
+@using Microsoft.Extensions.Configuration;
+@using System.Globalization
+
+@inject IBaoCaoService<QLSX.Shared.Models.BaoCao> baocaoService
+@inject IUserService userService
+
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService localStorageService
+@inject IJSRuntime JSRuntime
+@inject AppService AppService
+@inject IConfiguration Configuration
+@inject IDialogService DialogService
+
+@implements IDisposable
+@attribute [Authorize]
+@inherits QLSX.Web.Helpers.BlazorComponent
+@inject NavigationManager NavigationManager
+@inject IPhanQuyenSuDungService< QLSX.Shared.Models.QuyenSuDungModel> permisstionService
+
+@namespace QLSX.Web.Pages.BaoCaoPage
+
+
+
+<div class="col-12">
+    <MudBreadcrumbs Items="_items" Style="padding:0px !important"></MudBreadcrumbs>
+    <EditForm Model="@itemRequest" OnValidSubmit="@PrintClick">
+        <MudPaper Elevation="25" Class="py-8 px-8" Style="padding-top:2px !important">
+            <MudGrid>
+                <MudItem xs="12" sm="4">
+                    <MudDatePicker Label="Từ ngày" IconSize="Size.Small" @bind-Date="itemRequest.TuNgay" DateFormat="dd/MM/yyyy" Variant="Variant.Outlined"></MudDatePicker>
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudDatePicker Label="Đến ngày" IconSize="Size.Small" @bind-Date="itemRequest.DenNgay" DateFormat="dd/MM/yyyy" Variant="Variant.Outlined"></MudDatePicker>
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    @* <MudButton Class="mt-3" ButtonType="ButtonType.Submit" Size="Size.Large" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Print" Color="Color.Primary">In báo cáo</MudButton>*@
+                </MudItem>
+                <MudItem xs="12">
+                    <MudButton Color="Color.Primary" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.SelectAll"
+                               Size="Size.Small"
+                               OnClick="@(() => ShowKhoHang())"
+                               aria-label="Chọn kho hàng">
+                        Chọn kho hàng
+                    </MudButton>
+                    <MudButton Color="Color.Primary" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.SelectAll"
+                               Size="Size.Small"
+                               OnClick="@(() => ShowNhomHang())"
+                               aria-label="Chọn nhóm hàng">
+                        Chọn nhóm hàng
+                    </MudButton>
+                    <MudButton Color="Color.Primary" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.SelectAll"
+                               Size="Size.Small"
+                               OnClick="@(() => ShowHangHoa())"
+                               aria-label="Chọn hàng hóa in">
+                        Chọn hàng hóa
+                    </MudButton>
+
+                    <MudButton Color="Color.Primary" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.SelectAll"
+                               Size="Size.Small"
+                               OnClick="@(() => ShowNhomKhachHang())"
+                               aria-label="Chọn nhóm đơn vị">
+                        Chọn nhóm đơn vị
+                    </MudButton>
+
+                    <MudButton Color="Color.Primary" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.SelectAll"
+                               Size="Size.Small"
+                               OnClick="@(() => ShowKhachHang())"
+                               aria-label="Chọn đơn vị in">
+                        Chọn đơn vị
+                    </MudButton>
+
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudTabs Outlined="true" 
+                        Position="Position.Start" 
+                        Rounded="true" Border="true"
+                        Style="min-height:300px"
+                        ApplyEffectsToContainer="true">
+                        <MudTabPanel Text="Thu chi" Icon="@Icons.Material.Filled.Money">
+                            <MudTable ServerData="@(new Func<TableState, Task<TableData<QLSX.Shared.Models.BaoCao>>>(ServerReloadThuChi))" Breakpoint="Breakpoint.Sm"
+                                      Dense="true" Hover="true" Bordered="true" Striped="true" Loading="@isLoading"
+                                      @ref="table" HorizontalScrollbar="true" Style="width:100%" Height="@minHeigt" FixedHeader="true" FixedFooter="true">
+                                <ColGroup>
+                                    <col />
+                                </ColGroup>
+                                <HeaderContent>
+                                    <MudTh><MudTableSortLabel SortLabel="TenBaoCao" T="QLSX.Shared.Models.BaoCao">Tên báo cáo</MudTableSortLabel></MudTh>
+                                </HeaderContent>
+                                <RowTemplate Context="ctx1">
+                                    <MudTd DataLabel="TenBaoCao"><a href="@hostReport/Reports/Viewer?ReportFileName=@ctx1.ReportFiles&tungay=@itemRequest.TuNgay?.ToString("yyyy/MM/dd")&denngay=@itemRequest.DenNgay?.ToString("yyyy/MM/dd")&mdvsd=@itemRequest.DMDonViSuDungId&UserId=@pbUserId" target="_blank">  @ctx1.TenBaoCao  </a> </MudTd>
+                                </RowTemplate>
+                                <NoRecordsContent>
+                                    <MudText>Không có bản ghi nào tìm thấy</MudText>
+                                </NoRecordsContent>
+                                <LoadingContent>
+                                    <MudText>Đang tải dữ liệu...</MudText>
+                                </LoadingContent>
+                            </MudTable>
+                        </MudTabPanel>
+                        <MudTabPanel Text="Công nợ" Icon="@Icons.Material.Filled.Cabin">
+                            <MudTable ServerData="@(new Func<TableState, Task<TableData<QLSX.Shared.Models.BaoCao>>>(ServerReloadCongNo))" Breakpoint="Breakpoint.Sm"
+                                      Dense="true" Hover="true" Bordered="true" Striped="true" Loading="@isLoading"
+                                      @ref="table" HorizontalScrollbar="true" Style="width:100%" Height="@minHeigt" FixedHeader="true" FixedFooter="true">
+                                <ColGroup>
+                                    <col />
+                                </ColGroup>
+                                <HeaderContent>
+                                    <MudTh><MudTableSortLabel SortLabel="TenBaoCao" T="QLSX.Shared.Models.BaoCao">Tên báo cáo</MudTableSortLabel></MudTh>
+                                </HeaderContent>
+                                <RowTemplate Context="ctx1">
+                                    <MudTd DataLabel="TenBaoCao"><a href="@hostReport/Reports/Viewer?ReportFileName=@ctx1.ReportFiles&tungay=@itemRequest.TuNgay?.ToString("yyyy/MM/dd")&denngay=@itemRequest.DenNgay?.ToString("yyyy/MM/dd")&mdvsd=@itemRequest.DMDonViSuDungId&UserId=@pbUserId" target="_blank">  @ctx1.TenBaoCao  </a> </MudTd>
+                                </RowTemplate>
+                                <NoRecordsContent>
+                                    <MudText>Không có bản ghi nào tìm thấy</MudText>
+                                </NoRecordsContent>
+                                <LoadingContent>
+                                    <MudText>Đang tải dữ liệu...</MudText>
+                                </LoadingContent>
+                            </MudTable>
+                        </MudTabPanel>
+                        <MudTabPanel Text="Tồn kho" Icon="@Icons.Material.Filled.Warehouse">
+                            <MudTable ServerData="@(new Func<TableState, Task<TableData<QLSX.Shared.Models.BaoCao>>>(ServerReloadTonKho))" Breakpoint="Breakpoint.Sm"
+                                      Dense="true" Hover="true" Bordered="true" Striped="true" Loading="@isLoading"
+                                      @ref="table" HorizontalScrollbar="true" Style="width:100%" Height="@minHeigt" FixedHeader="true" FixedFooter="true">
+                                <ColGroup>
+                                    <col />
+                                </ColGroup>
+                                <HeaderContent>
+                                    <MudTh><MudTableSortLabel SortLabel="TenBaoCao" T="QLSX.Shared.Models.BaoCao">Tên báo cáo</MudTableSortLabel></MudTh>
+                                </HeaderContent>
+                                <RowTemplate Context="ctx1">
+                                    <MudTd DataLabel="TenBaoCao"><a href="@hostReport/Reports/Viewer?ReportFileName=@ctx1.ReportFiles&tungay=@itemRequest.TuNgay?.ToString("yyyy/MM/dd")&denngay=@itemRequest.DenNgay?.ToString("yyyy/MM/dd")&mdvsd=@itemRequest.DMDonViSuDungId&UserId=@pbUserId" target="_blank">  @ctx1.TenBaoCao  </a> </MudTd>
+                                </RowTemplate>
+                                <NoRecordsContent>
+                                    <MudText>Không có bản ghi nào tìm thấy</MudText>
+                                </NoRecordsContent>
+                                <LoadingContent>
+                                    <MudText>Đang tải dữ liệu...</MudText>
+                                </LoadingContent>
+                            </MudTable>
+                        </MudTabPanel>
+                        <MudTabPanel Text="Doanh thu" Icon="@Icons.Material.Filled.Schedule">
+                            <MudTable ServerData="@(new Func<TableState, Task<TableData<QLSX.Shared.Models.BaoCao>>>(ServerReloadDoanhThu))" Breakpoint="Breakpoint.Sm"
+                                      Dense="true" Hover="true" Bordered="true" Striped="true" Loading="@isLoading"
+                                      @ref="table" HorizontalScrollbar="true" Style="width:100%" Height="@minHeigt" FixedHeader="true" FixedFooter="true">
+                                <ColGroup>
+                                    <col />
+                                </ColGroup>
+                                <HeaderContent>
+                                    <MudTh><MudTableSortLabel SortLabel="TenBaoCao" T="QLSX.Shared.Models.BaoCao">Tên báo cáo</MudTableSortLabel></MudTh>
+                                </HeaderContent>
+                                <RowTemplate Context="ctx1">
+                                    <MudTd DataLabel="TenBaoCao"><a href="@hostReport/Reports/Viewer?ReportFileName=@ctx1.ReportFiles&tungay=@itemRequest.TuNgay?.ToString("yyyy/MM/dd")&denngay=@itemRequest.DenNgay?.ToString("yyyy/MM/dd")&mdvsd=@itemRequest.DMDonViSuDungId&UserId=@pbUserId" target="_blank">  @ctx1.TenBaoCao  </a> </MudTd>
+                                </RowTemplate>
+                                <NoRecordsContent>
+                                    <MudText>Không có bản ghi nào tìm thấy</MudText>
+                                </NoRecordsContent>
+                                <LoadingContent>
+                                    <MudText>Đang tải dữ liệu...</MudText>
+                                </LoadingContent>
+                            </MudTable>
+                        </MudTabPanel>
+                        <MudTabPanel Text="Quản trị" Icon="@Icons.Material.Filled.AdminPanelSettings">
+                            <MudTable ServerData="@(new Func<TableState, Task<TableData<QLSX.Shared.Models.BaoCao>>>(ServerReloadQuanTri))" Breakpoint="Breakpoint.Sm"
+                                      Dense="true" Hover="true" Bordered="true" Striped="true" Loading="@isLoading"
+                                      @ref="table" HorizontalScrollbar="true" Style="width:100%" Height="@minHeigt" FixedHeader="true" FixedFooter="true">
+                                <ColGroup>
+                                    <col />
+                                </ColGroup>
+                                <HeaderContent>
+                                    <MudTh><MudTableSortLabel SortLabel="TenBaoCao" T="QLSX.Shared.Models.BaoCao">Tên báo cáo</MudTableSortLabel></MudTh>
+                                </HeaderContent>
+                                <RowTemplate Context="ctx1">
+                                    <MudTd DataLabel="TenBaoCao"><a href="@hostReport/Reports/Viewer?ReportFileName=@ctx1.ReportFiles&tungay=@itemRequest.TuNgay?.ToString("yyyy/MM/dd")&denngay=@itemRequest.DenNgay?.ToString("yyyy/MM/dd")&mdvsd=@itemRequest.DMDonViSuDungId&UserId=@pbUserId" target="_blank">  @ctx1.TenBaoCao  </a> </MudTd>
+                                </RowTemplate>
+                                <NoRecordsContent>
+                                    <MudText>Không có bản ghi nào tìm thấy</MudText>
+                                </NoRecordsContent>
+                                <LoadingContent>
+                                    <MudText>Đang tải dữ liệu...</MudText>
+                                </LoadingContent>
+                            </MudTable>
+                        </MudTabPanel>
+                    </MudTabs>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </EditForm>
+</div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    private QLSX.Shared.Models.QuyenSuDungModel quyenSuDung { get; set; } =
+        new QLSX.Shared.Models.QuyenSuDungModel() { Sua = false, Them = false, Xoa = false, XemIn = false, Selectted = false };
+
+    public GetAllResponsePaged<QLSX.Shared.Models.BaoCao> lsResponses { get; set; }
+    public QLSX.Shared.Models.BaoCao baocao { get; set; }
+    public List<QLSX.Shared.Models.BaoCao> baocaoList { get; set; }
+
+    public QLSX.Shared.Models.BaoCaoRequest itemRequest { get; set; }
+    bool isLoading = true;
+    public string minHeigt { get; set; } = "500px";
+    public string hostReport { get; set; }
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Home", href: "/"),
+        new BreadcrumbItem("Báo cáo",href: null, disabled: true)
+    };
+    private IEnumerable<QLSX.Shared.Models.BaoCao> pagedData;
+    private MudTable<QLSX.Shared.Models.BaoCao> table;
+    private int totalItems;
+
+    public int pbUserId { get; set; }
+
+
+    public string UrlReport { get; set; }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        baocao = new QLSX.Shared.Models.BaoCao();
+        baocaoList = new List<QLSX.Shared.Models.BaoCao>();
+
+        itemRequest = new QLSX.Shared.Models.BaoCaoRequest()
+            {
+                TuNgay = DateTime.Now,
+                DenNgay = DateTime.Now,
+                DMDonViSuDungId = AppService.DMDonViSuDungId,
+                PageSize = 10,
+                Page = 0,
+                TotalPages = 0
+            };
+        hostReport = Configuration.GetValue<string>("AppSettings:ReportUrl");
+        await base.OnInitializedAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+    }
+
+    protected override bool ShouldRender()
+    {
+        base.ShouldRender();
+        return true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isLoading = true;
+            await baocaoService.ClearDataInAsync();
+            isLoading = false;
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public void Dispose()
+    {
+    }
+
+    private async Task<TableData<QLSX.Shared.Models.BaoCao>> ServerReloadThuChi(TableState state)
+    {
+        return await ServerReload(state, "THUCHI");
+    }
+    private async Task<TableData<QLSX.Shared.Models.BaoCao>> ServerReloadTonKho(TableState state)
+    {
+        return await ServerReload(state, "KHO");
+    }
+    private async Task<TableData<QLSX.Shared.Models.BaoCao>> ServerReloadCongNo(TableState state)
+    {
+        return await ServerReload(state, "CONGNO");
+    }
+    private async Task<TableData<QLSX.Shared.Models.BaoCao>> ServerReloadDoanhThu(TableState state)
+    {
+        return await ServerReload(state, "DOANHTHU");
+    }
+    private async Task<TableData<QLSX.Shared.Models.BaoCao>> ServerReloadQuanTri(TableState state)
+    {
+        return await ServerReload(state, "QUANTRI");
+    }
+    /// <summary>
+    /// Here we simulate getting the paged, filtered and ordered data from the server
+    /// </summary>
+    private async Task<TableData<QLSX.Shared.Models.BaoCao>> ServerReload(TableState state, string loai)
+    {
+        isLoading = true;
+        itemRequest.SortLable = state.SortLabel;
+        itemRequest.SortDirection = (QLSX.Shared.Enums.SortDirection)state.SortDirection;
+        itemRequest.Page = state.Page;
+        itemRequest.Loai = loai;
+        itemRequest.PageSize = state.PageSize;
+        IEnumerable<QLSX.Shared.Models.BaoCao> data = new List<QLSX.Shared.Models.BaoCao>();
+        var user = (await authenticationStateTask).User;
+        var UserId = user.FindFirst(c => c.Type == "UserId")?.Value;
+        UserId = string.IsNullOrEmpty(UserId) ? "0" : UserId;
+        pbUserId = int.Parse(UserId);
+        quyenSuDung = await permisstionService.GetQuyenByUserIdAsync(pbUserId, "BaoCao");
+        if (quyenSuDung.Selectted)
+        {
+            data = await baocaoService.GetAllAsync(itemRequest);
+        }
+        totalItems = data.Count();
+        if (data == null)
+        {
+            data = new List<BaoCao>();
+        }
+
+        pagedData = data;
+        isLoading = false;
+        StateHasChanged();
+        return new TableData<QLSX.Shared.Models.BaoCao>() { TotalItems = totalItems, Items = pagedData };
+    }
+
+
+    private async Task PrintClick()
+    {
+        UrlReport = await baocaoService.GetPathReportAsync(itemRequest);
+        StateHasChanged();
+        await JSRuntime.InvokeVoidAsync("openfile", null);
+
+    }
+    private async Task ShowHangHoa()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var result = await DialogService.Show<DialogHangHoa>("Danh sách hàng hóa", options).Result;
+
+        if (!result.Canceled)
+        {
+            var itemSelected = (bool)(result.Data ?? null);
+            if (itemSelected)
+            {
+
+            }
+
+        }
+    }
+    private bool CheckHangHoa(string tenbaocao)
+    {
+        if (tenbaocao.Contains("hàng hóa"))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private async Task ShowKhachHang()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var result = await DialogService.Show<DialogKhachHang>("Danh sách khách hàng", options).Result;
+
+        if (!result.Canceled)
+        {
+            var itemSelected = (bool)(result.Data ?? null);
+            if (itemSelected)
+            {
+
+            }
+        }
+    }
+    private async Task ShowKhoHang()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var result = await DialogService.Show<DialogKhoHang>("Danh sách kho hàng", options).Result;
+
+        if (!result.Canceled)
+        {
+            var itemSelected = (bool)(result.Data ?? null);
+            if (itemSelected)
+            {
+            }
+        }
+    }
+    private async Task ShowNhomHang()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var result = await DialogService.Show<DialogNhomHang>("Danh sách nhóm hàng", options).Result;
+
+        if (!result.Canceled)
+        {
+            var itemSelected = (bool)(result.Data ?? null);
+            if (itemSelected)
+            {
+
+            }
+        }
+    }
+    private async Task ShowNhomKhachHang()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var result = await DialogService.Show<DialogNhomKhachHang>("Danh sách nhóm khách hàng", options).Result;
+
+        if (!result.Canceled)
+        {
+            var itemSelected = (bool)(result.Data ?? null);
+            if (itemSelected)
+            {
+
+            }
+        }
+    }
+}

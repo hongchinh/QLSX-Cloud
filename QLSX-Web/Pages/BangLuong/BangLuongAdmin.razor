@@ -1,0 +1,269 @@
+﻿@page "/BangLuongAdmin"
+
+@using QLSX.Shared.Models
+@using QLSX.Web.Data
+@using QLSX.Web.Services
+@using Blazored.LocalStorage
+@using QLSX.Web.Shared;
+@using QLSX.Shared.Models.Request
+
+@inject IUserService userService
+@inject ICustomersService<BangLuong> cusService
+@inject ILocalStorageService localStorageService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+@attribute [Authorize(Roles="Admin")]
+@inherits QLSX.Web.Helpers.BlazorComponent
+
+@namespace QLSX.Web.Pages.BangLuongAdmin
+<br />
+<div class="col-12">
+    <h3><b>Bảng lương</b></h3>
+    <div class="row">
+        <div class="col-12">
+            <EditForm Model="@request" OnValidSubmit="@SearchClick">
+                <div class="col-md-1">
+                    Từ ngày
+                </div>
+                <div class="col-md-2">
+                    <InputNumber @bind-Value="request.thang" />
+                </div>
+                <div class="col-md-1">
+                    Đến ngày
+                </div>
+                <div class="col-md-2">
+                    <InputNumber @bind-Value="request.nam" />
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary">
+                        Tìm
+                    </button>
+                </div>
+
+            </EditForm>
+        </div>
+    </div>
+    <p class="esh-link-wrapper">
+    </p>
+    <SpinLoader IsLoading="isLoading">
+        <LoadingTemplate>
+            <MudProgressCircular Color="Color.Tertiary" Size="Size.Large" Indeterminate="true"/>
+        </LoadingTemplate>
+        <ContentTemplate>
+            @if (filteredUsersListNV != null)
+            {
+                    <h3> BẢNG LƯƠNG NHÂN VIÊN THÁNG @thang - @nam </h3>
+                    <div style="overflow-x:auto; width:1200px; max-width:1300px">
+                        <table class="table table-bordered table-striped mb-0" style="white-space: nowrap;">
+                            <thead class="bg-info">
+                                <tr>
+                                    <th>Mã NV </th>
+                                    <th>Tên NV </th>
+                                    <th>Chức vụ </th>
+                                    <th>Số Ngày LV</th>
+                                    <th>Lương CB</th>
+                                    <th>Hệ số</th>
+                                    <th>Ngày công</th>
+                                    <th>Lương thực tế</th>
+                                    <th>Doanh thu tính lương</th>
+                                    <th>Tỷ lệ</th>
+                                    <th>Lương theo DT</th>
+                                    <th>Phụ cấp TN</th>
+                                    <th>Lương thêm giờ</th>
+                                    <th>Tổng thu nhập</th>
+                                    <th>Lương tính BH</th>
+                                    <th>BHXH(8%)</th>
+                                    <th>BHYT(1.5%)</th>
+                                    <th>BHTN(1%)</th>
+                                    <th>Cộng BH(10.5%)</th>
+                                    <th>Tạm ứng</th>
+                                    <th>Thực lĩnh</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in filteredUsersListNV)
+                                {
+            <tr>
+                <td> @item.MADONVI </td>
+                <td>@item.TENDONVI   </td>
+                <td>@item.CHUCVU   </td>
+                <td style="text-align:right">@item.SONGAYLAMVIEC.ToString("###,##0.##")    </td>
+                <td style="text-align:right">@item.LUONGCOBAN.ToString("###,###")   </td>
+                <td style="text-align:right">@item.HESO.ToString("###,##0.##")    </td>
+                <td style="text-align:right">@item.NGAYCONG.ToString("###,##0.##")  </td>
+                <td style="text-align:right">@item.TONGTHUCTE.ToString("###,###")   </td>
+                <td style="text-align:right">@item.DOANHTHUTHANG.ToString("###,###")    </td>
+                <td style="text-align:right">@item.TYLE.ToString("###,##0.##")   </td>
+                <td style="text-align:right">@item.LUONGDOANHTHU.ToString("###,###")   </td>
+                <td style="text-align:right">@item.PHUCAP.ToString("###,###")     </td>
+                <td style="text-align:right">@item.LUONGTHEMGIO.ToString("###,###")   </td>
+                <td style="text-align:right">@item.TONGTHUNHAP.ToString("###,####")   </td>
+                <td style="text-align:right">@item.LUONGBAOHIEM.ToString("###,###")    </td>
+                <td style="text-align:right">@item.BHXH.ToString("###,###")   </td>
+                <td style="text-align:right">@item.BHYT.ToString("###,###")   </td>
+                <td style="text-align:right">@item.BHTN.ToString("###,###")   </td>
+                <td style="text-align:right">@item.TONGBAOHIEM.ToString("###,###")   </td>
+                <td style="text-align:right">@item.TAMUNG.ToString("###,###")   </td>
+                <td style="text-align:right">@item.THUCLINH.ToString("###,###")   </td>
+            </tr>
+}
+                            </tbody>
+                        </table>
+                    </div>}
+
+
+            @if (filteredUsersListKD != null)
+
+            {
+<h3> BẢNG TỔNG HỢP BÁN HÀNG</h3>
+                    <div style="overflow-x:auto; width:1200px; max-width:1300px">
+                        <table class="table table-bordered table-striped mb-0" style="white-space: nowrap;">
+                            <thead class="bg-info">
+                                <tr>
+                                    <th>Mã NV </th>
+                                    <th>Tên NV </th>
+                                    <th>Hoàn thành trong tháng(TM)</th>
+                                    <th>Hoàn thành trong tháng(TC)</th>
+                                    <th>Hoàn thành tháng trước(TM)</th>
+                                    <th>Hoàn thành tháng trước(TC)</th>
+                                    <th>Chưa hoàn thành trong tháng(TM)</th>
+                                    <th>Chưa hoàn thành trong tháng(TC)</th>
+                                    <th>Chưa hoàn thành tháng trước(TM)</th>
+                                    <th>Chưa hoàn thành tháng trước(TC)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in filteredUsersListKD)
+                                {
+            <tr>
+                <td> @item.MaNV </td>
+                <td>@item.TenNV   </td>
+                <td style="text-align:right">@item.TRONG_THANG_HOANTHANH_TM.ToString("###,###")    </td>
+                <td style="text-align:right">@item.TRONG_THANG_HOANTHANH_TC.ToString("###,###")   </td>
+                <td style="text-align:right">@item.TRUOC_THANG_HOANTHANH_TRUOC_TM.ToString("###,###")    </td>
+                <td style="text-align:right">@item.TRUOC_THANG_HOANTHANH_TRUOC_TC.ToString("###,###")  </td>
+                <td style="text-align:right">@item.TRONG_CHUA_HOANTHANH_TM.ToString("###,###")   </td>
+                <td style="text-align:right">@item.TRONG_CHUA_HOANTHANH_TC.ToString("###,###")    </td>
+                <td style="text-align:right">@item.TRUOC_CHUA_HOANTHANH_TM.ToString("###,###")   </td>
+                <td style="text-align:right">@item.TRUOC_CHUA_HOANTHANH_TM.ToString("###,###")   </td>
+            </tr>
+}
+                            </tbody>
+                        </table>
+                    </div>}
+        </ContentTemplate>
+    </SpinLoader>
+</div>
+
+@code { 
+
+    public List<BangLuongNhanVien> itemsListNV { get; set; }
+    public List<BangLuongKinhDoanh> itemsListKD { get; set; }
+
+    public List<BangLuongNhanVien> filteredUsersListNV { get; set; }
+    public List<BangLuongKinhDoanh> filteredUsersListKD { get; set; }
+
+    public bool IsVisible { get; set; }
+    public bool Result { get; set; }
+    public string RecordName { get; set; }
+    public string[] Cities { get; set; }
+    public bool IsGridViewFiltered { get; set; }
+    bool isLoading = true;
+    int thang { get; set; }
+    int nam { get; set; }
+    BangLuongRequest request = new BangLuongRequest();
+
+    protected override void OnInitialized()
+    {
+        Console.WriteLine("Customer - OnInitialized");
+        base.OnInitialized();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine("Customer - OnInitializedAsync");
+
+        itemsListNV = filteredUsersListNV = new List<BangLuongNhanVien >();
+        itemsListKD = filteredUsersListKD = new List<BangLuongKinhDoanh>();
+        request.nam = nam= DateTime.Now.Year;
+        request.thang = thang= DateTime.Now.Month;
+
+        await base.OnInitializedAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        Console.WriteLine("Customers - OnParametersSet");
+        base.OnParametersSet();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Console.WriteLine("Customers - OnParametersSetAsync");
+        await base.OnParametersSetAsync();
+    }
+
+    protected override bool ShouldRender()
+    {
+        base.ShouldRender();
+        Console.WriteLine("Customers - ShouldRender");
+
+        return true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Console.WriteLine("Customers - OnAfterRender - firstRender = " + firstRender);
+        base.OnAfterRender(firstRender);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        Console.WriteLine("Customers - OnAfterRenderAsync - firstRender = " + firstRender);
+
+        if (firstRender)
+        {
+            await LoadCustomers();
+            isLoading = false;
+            StateHasChanged();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public void Dispose()
+    {
+        Console.WriteLine("Customers - Dispose");
+    }
+
+    private async Task LoadCustomers()
+    {
+        await Task.Delay(500);
+        BangLuong item = new BangLuong();
+
+        item = await cusService.BangLuongAsync(request);
+        if(item != null)
+        {
+            itemsListNV = filteredUsersListNV = item.lstLuongNhanVien.ToList();
+            itemsListKD = filteredUsersListKD = item.lstLuongKinhDoanh.ToList();
+        }
+
+
+
+        StateHasChanged();
+
+    }
+
+    private async Task ReloadListItems()
+    {
+        IsGridViewFiltered = true;
+        await LoadCustomers();
+
+    }
+
+
+    private async Task SearchClick()
+    {
+        await LoadCustomers();
+
+    }}

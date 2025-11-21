@@ -1,0 +1,170 @@
+﻿@*@inject ILogger<Edit> Logger*@
+@inject IJSRuntime JSRuntime
+@inject ICustomersService<Customer> CustomerItemService
+
+@inherits CRMApp.Helpers.BlazorComponent
+@using CRMApp.Components
+
+@namespace CRMApp.Pages.CustomerPageNew
+
+<div class="modal @_modalClass" tabindex="-1" role="dialog" style="display:@_modalDisplay">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <EditForm Model="_item" OnValidSubmit="@SaveClick">
+                <DataAnnotationsValidator />
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Edit @_item.CustomerName</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+
+                    @if (_item == null)
+                    {
+    <Spinner></Spinner> }
+else
+{
+<div class="container">
+    <div class="row">
+
+        <div class="col-12">
+
+            <div class="form-group">
+                <label class="control-label col-md-6">Tên khách hàng</label>
+                <div class="col-md-12">
+                    <InputText class="form-control" @bind-Value="_item.CustomerName" />
+                    <ValidationMessage For="(() => _item.CustomerName)" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="control-label col-md-6">Tuổi</label>
+                <div class="col-md-12">
+                    <InputText class="form-control" @bind-Value="_item.CustomerAge" />
+                    <ValidationMessage For="(() => _item.CustomerAge)" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="control-label col-md-6">Điện thoại</label>
+                <div class="col-md-12">
+                    <InputText class="form-control" @bind-Value="_item.Mobile1" />
+                    <ValidationMessage For="(() => _item.Mobile1)" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="control-label col-12">Khu vực</label>
+                <div class="col-12">
+                    <SelectRegion OnChangeEvent="OnSelectStatusChange" IdSelected="@_item.RegionId"></SelectRegion>
+                    <ValidationMessage For="(() => _item.RegionId)" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-12">Loại khách hàng</label>
+                <div class="col-12">
+                    <SelectType OnChangeEvent="OnSelectStatusChange" IdSelected="@_item.CustomerTypeId"></SelectType>
+                    <ValidationMessage For="(() => _item.CustomerTypeId)" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-12">Trạng thái</label>
+                <div class="col-12">
+                    <SelectStatus OnChangeEvent="OnSelectStatusChange" IdSelected="@_item.StatusId"></SelectStatus>
+                    <ValidationMessage For="(() => _item.StatusId )" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-12">Nhân viên</label>
+                <div class="col-12">
+                    <SelectUser OnChangeEvent="OnSelectStatusChange" IdSelected="@_item.EmployeeId"></SelectUser>
+                    <ValidationMessage For="(() => _item.StatusId )" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="Close">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        Save
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+
+
+@if (_showEditModal)
+{
+<div class="modal-backdrop fade show"></div>}
+
+@code { [Parameter]
+    public IEnumerable<CustomerStatus> CusStatus { get; set; }
+    [Parameter]
+    public IEnumerable<CustomerType> CusTypes { get; set; }
+    [Parameter]
+    public IEnumerable<CustomerCare> CusCares { get; set; }
+
+
+    [Parameter]
+    public EventCallback<string> OnSaveClick { get; set; }
+
+
+    public int SelectedStatus { get; set; }
+    public int SelectedType { get; set; }
+    public int SelectedRegion { get; set; }
+
+    private string _badFileMessage = string.Empty;
+    private string _modalDisplay = "none;";
+    private string _modalClass = "";
+    private bool _showEditModal = false;
+    private Customer _item = new Customer();
+
+    private async Task SaveClick()
+    {
+        await CustomerItemService.UpdateAsync("customers/Update/", _item.CustomerId, _item);
+        await OnSaveClick.InvokeAsync(null);
+        await Close();
+    }
+
+    public async Task Open(int id)
+    {
+        // Logger.LogInformation("Now loading... /Catalog/Edit/{Id}", id);
+
+        await new Css(JSRuntime).HideBodyOverflow();
+
+        _item = await CustomerItemService.GetByIdAsync("customers", id);
+
+        _modalDisplay = "block;";
+        _modalClass = "Show";
+        _showEditModal = true;
+
+        StateHasChanged();
+    }
+
+    private async Task Close()
+    {
+        await new Css(JSRuntime).ShowBodyOverflow();
+
+        _modalDisplay = "none";
+        _modalClass = "";
+        _showEditModal = false;
+    }
+
+
+
+    private void RemoveImage()
+    {
+        //_item.PictureName = null;
+        //_item.PictureBase64 = null;
+        //_item.PictureUri = null;
+    }
+    private void OnSelectStatusChange(ChangeEventArgs changeEventArgs)
+    {
+        SelectedStatus = (int)changeEventArgs.Value;
+    } }

@@ -1,0 +1,554 @@
+﻿@using Newtonsoft.Json
+@using Dialogs
+@using AutoMapper
+@using Microsoft.Extensions.Configuration;
+@using System.Globalization
+@using Blazored.LocalStorage;
+@using QLSX.Shared.Models;
+
+@inject IDMKhachHangService<DanhMucKhachHangModel> dmkhachhangService
+@inject IReportService reportService
+@inject IJSRuntime JSRuntime
+@inject IThuChiService<ThuChiModel> thuchitService
+@inject NavigationManager navigationManager
+@inject AppService AppService
+@inject IDialogService DialogService
+@inject IDMLoaiTienService<DanhMucLoaiTienModel> loaiTienService
+@inject IMapper mapper;
+@inject IConfiguration configuration
+@inject ILocalStorageService localStorageService
+@inject ISnackbar Snackbar
+
+@namespace QLSX.Web.Pages.ThuChiPage
+<MudGrid>
+    <MudItem xs="12">
+        <EditForm Model="thuchi">
+            <DataAnnotationsValidator />
+            <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+                <MudPaper Elevation="25" Class="py-8 px-8" Style="padding-top:30px !important">
+                    <MudGrid id="tracuuThuChi">
+                        <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                            <MudTextField ReadOnly="@IsReadOnly" Label="Số phiếu" @bind-Value="@thuchi.SoPhieu" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <ValidationMessage For="(() => thuchi.SoPhieu)" />
+                        </MudItem>
+                        <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                            <MudDatePicker ReadOnly="@IsReadOnly" Label="Ngày CT" @bind-Date="thuchi.NgayCT" Culture="@CultureInfo.GetCultureInfo("vi-VN")" TitleDateFormat="dd/MM/yyyy" Variant="Variant.Outlined" Margin="Margin.Dense"></MudDatePicker>
+                            <ValidationMessage For="(() => thuchi.NgayCT)" />
+                        </MudItem>
+                        <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                            <MudDatePicker ReadOnly="@IsReadOnly" Label="Ngày hoàn thành" @bind-Date="thuchi.NgayHoanThanh" Culture="@CultureInfo.GetCultureInfo("vi-VN")" TitleDateFormat="dd/MM/yyyy" Variant="Variant.Outlined" Margin="Margin.Dense"></MudDatePicker>
+                            <ValidationMessage For="(() => thuchi.NgayHoanThanh)" />
+                        </MudItem>
+                        <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                            <MudTextField ReadOnly="@IsReadOnly" Label="Mã đơn hàng" @bind-Value="@thuchi.MaDonHang" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <ValidationMessage For="(() => thuchi.MaDonHang)" />
+                        </MudItem>
+                        <MudItem xs="0" sm="0" lg="4" Class="m-0 p-0">
+                        </MudItem>
+
+                        <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                            <MudTextField ReadOnly="@IsReadOnly" Label="Mã đơn vị" @bind-Value="@thuchi.MaDoiTuong" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                          TextChanged="@( (input) => MaDonViTextChanged(input))"
+                                          Adornment="Adornment.End"
+                                          AdornmentIcon="@Icons.Material.Filled.Search"
+                                          OnKeyDown="@( async (e) => await OnKeyDownMaDonVi(e))"
+                                          OnAdornmentClick="@(() => OpenDialogKhachHang())"
+                                          Immediate="true" />
+                        </MudItem>
+                        <MudItem xs="12" sm="3" lg="5" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                            <MudTextField ReadOnly="@IsReadOnly" Label="Tên đơn vị"  @bind-Value="@thuchi.TenDoiTuong" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                        </MudItem>
+
+                        <MudItem xs="12" sm="3" lg="3" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                            <MudTextField ReadOnly="@IsReadOnly" Label="Địa chỉ" @bind-Value="@thuchi.DiaChi" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                        </MudItem>
+                        <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                            <MudTextField ReadOnly="@IsReadOnly" Label="Điện thoại" @bind-Value="@thuchi.DienThoai" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                        </MudItem>
+                        <MudItem xs="12" sm="3" lg="3" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                            @if (thuchi.Loai == "thutm")
+                            {  
+                                <MudSelect ReadOnly="@IsReadOnly" Label="Khoản thu" AnchorOrigin="Origin.BottomCenter" @bind-Value="@thuchi.MaKhoanThu" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                    <MudSelectItem Value="@("")">Chọn khoản thu</MudSelectItem>
+                                    @if (lstKhoanThu != null)
+                                    {
+                                        @foreach (var cnt in lstKhoanThu)
+                                        {
+                                            <MudSelectItem Value="@cnt.MaKhoanThu">@cnt.TenKhoanThu</MudSelectItem>
+                                        }
+                                    }
+                                </MudSelect>
+                            }
+                            else if (thuchi.Loai == "chitm")
+                            {
+                                <MudSelect ReadOnly="@IsReadOnly" Label="Khoản chi" AnchorOrigin="Origin.BottomCenter" @bind-Value="@thuchi.MaKhoanChi" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                    <MudSelectItem Value="@("")">Chọn khoản chi</MudSelectItem>
+                                    @if (lstKhoanChi != null)
+                                    {
+                                        @foreach (var cnt in lstKhoanChi)
+                                        {
+                                            <MudSelectItem Value="@cnt.MaKhoanChi">@cnt.TenKhoanChi</MudSelectItem>
+                                        }
+                                    }
+                                </MudSelect>
+                            }
+                        </MudItem>
+                        <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                            @if (thuchi.Loai == "chitm" || thuchi.Loai == "thutm")
+                            {
+                                <MudSelect ReadOnly="@IsReadOnly" Label="Loại tiền" AnchorOrigin="Origin.BottomCenter" @bind-Value="@thuchi.LoaiTien" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                    <MudSelectItem Value="@("")">Chọn loại tiền</MudSelectItem>
+                                    @if (lstLoaiTien != null)
+                                    {
+                                        @foreach (var cnt in lstLoaiTien)
+                                        {
+                                            <MudSelectItem Value="@cnt.LoaiTien">@cnt.LoaiTien</MudSelectItem>
+                                        }
+                                    }
+                                </MudSelect>
+                            }
+                        </MudItem>
+
+                        <MudItem xs="12" sm="3" lg="7" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                            <div class="mt-5 ml-3">Số dư công nợ: <MudButton Color="Color.Success" OnClick="@(() => ShowCongNo())"> @SoDuCN.ToString("##0,###")</MudButton></div>
+                            </MudItem>
+
+                            <MudItem xs="12" sm="3" lg="3" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                                <MudNumericField ReadOnly="@IsReadOnly" Immediate ="true" Label="Số tiền thanh toán" HideSpinButtons="true" @bind-Value="@thuchi.SoTien" Format="###,###" Variant="Variant.Outlined" OnBlur="ChangeSoTien" Margin="Margin.Dense" Required="true" RequiredError="Số tiền bắt buộc nhập!" />
+                                <ValidationMessage For="@(() => thuchi.SoTien)" />
+                            </MudItem>
+                            <MudItem xs="12" sm="9" lg="9" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                                <div class="mt-5 ml-3"> @bangchu </div>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" lg="6" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+
+                        </MudItem>
+                        <MudItem xs="12" sm="12" lg="12" Class="pd-left-0 pd-right-0  pd-top-1 pd-bottom-1">
+                            <MudTextField ReadOnly="@IsReadOnly" Label="Ghi chú" @bind-Value="@thuchi.DienGiai" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <ValidationMessage For="@(() => thuchi.DienGiai)" />
+                        </MudItem>
+
+                    </MudGrid>
+                </MudPaper>
+            </MudForm>
+            <ToolBarThuChi thuchi="thuchi"
+                           quyenSuDung="quyenSuDung"
+                           IsCreateOrEdit="IsCreateOrEdit"
+                           saveAndCreate="saveAndCreate"
+                           SaveData="SaveData"
+                           CancelClick="CancelClick"
+                           SuaClickCallBack="SuaClickCallBack" />
+
+        </EditForm>
+    </MudItem>
+
+</MudGrid>
+
+<MudTable ServerData="@(new Func<TableState, Task<TableData<TraCuuNhapXuatAll>>>(ServerReload))" Breakpoint="Breakpoint.Sm"
+          Dense="true" Hover="true" Bordered="true" Striped="true" Loading="@isLoading"
+          @ref="table" HorizontalScrollbar="true">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Lịch sử giao dịch</MudText>
+        <MudSpacer />
+        <MudTextField T="string" ValueChanged="@((s)=>OnSearch(s))" Placeholder="Tìm kiếm" Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh><MudTableSortLabel SortLabel="Loai" T="TraCuuNhapXuatAll">Loại</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="NgayCT" InitialDirection="SortDirection.Descending" T="TraCuuNhapXuatAll">Ngày CT</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="SoChungTu" T="TraCuuNhapXuatAll">Số CT</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="MaDoiTuong" T="TraCuuNhapXuatAll">Mã đơn vị</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="TenDoiTuong" T="TraCuuNhapXuatAll">Tên đơn vị</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="DiaChiDoiTuong" T="TraCuuNhapXuatAll">Địa chỉ</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="MaDonHang" T="TraCuuNhapXuatAll">Mã đơn hàng</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortLabel="SoTien" T="TraCuuNhapXuatAll">Số tiền</MudTableSortLabel></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Loai">@context.Loai</MudTd>
+            <MudTd DataLabel="NgayCT">@context.NgayCT.ToString("yyyy/MM/dd")</MudTd>
+            <MudTd DataLabel="SoChungTu">@context.SoChungTu  </MudTd>
+        @* <MudButton Color="Color.Primary" Size="Size.Small" OnClick="@(async ()=> await SuaClickThuChi(context.Loai, context.Id))">@context.SoChungTu</MudButton> *@
+        <MudTd DataLabel="MaDoiTuong">@context.MaDoiTuong</MudTd>
+            <MudTd DataLabel="TenDoiTuong">@context.TenDoiTuong</MudTd>
+            <MudTd DataLabel="DiaChiDoiTuong">@context.DiaChiDoiTuong</MudTd>
+            <MudTd DataLabel="MaDonHang">@context.MaDonHang</MudTd>
+            <MudTd DataLabel="SoTien">@context.SoTien.ToString("###,###")</MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText>Không có dữ liệu nào được hiển thị</MudText>
+        </NoRecordsContent>
+        <LoadingContent>
+            <MudText>Loading...</MudText>
+        </LoadingContent>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+
+
+
+    @code {
+    [CascadingParameter] private Task<AuthenticationState> authenticationStateTask { get; set; }
+    [Parameter] public ThuChiModel thuchi { get; set; } = new ThuChiModel();
+    [Parameter] public string loaiThuChi { get; set; }
+    [Parameter] public List<DanhMucLoaiTienModel> lstLoaiTien { get; set; }
+    [Parameter] public List<DanhMucKhoanChiModel> lstKhoanChi { get; set; }
+    [Parameter] public List<DanhMucKhoanThuModel> lstKhoanThu { get; set; }
+    [Parameter] public List<UserModel> lstUser { get; set; }
+    [Parameter] public QLSX.Shared.Models.QuyenSuDungModel quyenSuDung { get; set; } = new QLSX.Shared.Models.QuyenSuDungModel();
+
+    [Parameter] public double SoDuCN { get; set; }
+
+    [Parameter] public EventCallback<bool> OnValidSubmit { get; set; }
+    [Parameter] public EventCallback OnValidDelete { get; set; }
+
+    [Parameter] public EventCallback ValueChangedText { get; set; }
+
+    [Parameter] public bool IsCreateOrEdit { get; set; }
+    [Parameter] public EventCallback CancelClickCallBack { get; set; }
+    [Parameter] public bool IsReadOnly { get; set; } = true;
+
+    public bool saveAndCreate { get; set; } = false;
+
+    public string hostReport { get; set; }
+    public string UrlReport { get; set; }
+    public string bangchu { get; set; } = "";
+
+    //HISTORY
+    private IEnumerable<TraCuuNhapXuatAll> pagedData;
+    private MudTable<TraCuuNhapXuatAll> table;
+    public ThuChiSearchRequest itemRequest { get; set; }
+    public GetAllResponsePaged<TraCuuNhapXuatAll> lsResponses { get; set; }
+
+    private int totalItems;
+    private string searchString = null;
+    bool isLoading = true;
+
+    bool success;
+    string[] errors = { };
+    MudTextField<string> pwField1;
+    MudForm form;
+    MudSelect<int> mySwitch;
+    /// <summary>
+    /// Here we simulate getting the paged, filtered and ordered data from the server
+    /// </summary>
+    private async Task<TableData<TraCuuNhapXuatAll>> ServerReload(TableState state)
+    {
+        isLoading = true;
+        itemRequest.SortLable = state.SortLabel;
+        itemRequest.SortDirection = (QLSX.Shared.Enums.SortDirection)state.SortDirection;
+        itemRequest.Page = state.Page;
+        itemRequest.PageSize = state.PageSize;
+        itemRequest.MaDonVi = thuchi.MaDoiTuong;
+        itemRequest.Id = itemRequest.Id ?? 0;
+        lsResponses = new GetAllResponsePaged<TraCuuNhapXuatAll>();
+        IEnumerable<TraCuuNhapXuatAll> data = new List<TraCuuNhapXuatAll>();
+        if (!string.IsNullOrEmpty(thuchi.MaDoiTuong))
+        {
+            lsResponses = await thuchitService.GetHistoryPagedAsync(itemRequest);
+            data = lsResponses.Items;
+            totalItems = lsResponses.TotalRecords;
+        }
+
+        if (data == null)
+        {
+            data = new List<TraCuuNhapXuatAll>();
+        }
+        pagedData = data;
+        isLoading = false;
+        StateHasChanged();
+        return new TableData<TraCuuNhapXuatAll>() { TotalItems = totalItems, Items = pagedData };
+    }
+    private async Task OnSearch(string text)
+    {
+        await table.ReloadServerData();
+    }
+
+    public QLSX.Shared.Models.KhachHangSearchRequest itemKHRequest { get; set; } =
+    new QLSX.Shared.Models.KhachHangSearchRequest
+        {
+            MaDonVi = "",
+            TenDonVi = "",
+            DiaChi = "",
+            DienThoai = "",
+            Page = 0,
+            PageSize = 20,
+            TotalPages = 0
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            itemKHRequest = new QLSX.Shared.Models.KhachHangSearchRequest
+                {
+                    DMDonViSuDungId = AppService.DMDonViSuDungId,
+                    MaDonVi = "",
+                    TenDonVi = "",
+                    DiaChi = "",
+                    DienThoai = "",
+                    Page = 0,
+                    PageSize = 10,
+                    TotalPages = 0
+                };
+
+            itemRequest = new ThuChiSearchRequest()
+                {
+                    DMDonViSuDungId = AppService.DMDonViSuDungId,
+                    PageSize = 10,
+                    Page = 0,
+                    TotalPages = 0
+
+                };
+            hostReport = configuration.GetValue<string>("AppSettings:ReportUrl");
+            saveAndCreate = await localStorageService.GetItemAsync<bool>($"{thuchi.Loai}-SaveStatus");
+            StateHasChanged();
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+
+    private readonly Random _random = new Random();
+    public async Task MaDonViTextChanged(string madv)
+    {
+        await table.ReloadServerData();
+        if (IsReadOnly) return;
+        DanhMucKhachHangModel dmKH = await dmkhachhangService.GetByCodeAsync(madv);
+        if (dmKH != null && dmKH.Id > 0)
+        {
+            thuchi.DMKhachHangId = dmKH.Id;
+            thuchi.MaDoiTuong = dmKH.MaDonVi;
+            thuchi.TenDoiTuong = dmKH.TenDonVi;
+            thuchi.DiaChi = dmKH.DiaChi;
+            thuchi.DienThoai = dmKH.DienThoai;
+        }
+        else
+        {
+            thuchi.MaDoiTuong = "";
+            thuchi.TenDoiTuong = "";
+            thuchi.DiaChi = "";
+            thuchi.DienThoai = "";
+        }
+        await GetSoDuCongNo();
+    }
+    private async Task SetKhachHangCallBack(DanhMucKhachHangModel pro)
+    {
+        thuchi.DMKhachHangId = pro.Id;
+        thuchi.MaDoiTuong = pro.MaDonVi;
+        thuchi.TenDoiTuong = pro.TenDonVi;
+        thuchi.DiaChi = pro.DiaChi;
+        thuchi.DienThoai = pro.DienThoai;
+    }
+    private async Task<List<DanhMucKhachHangModel>> GetDataKhacHangSearch(string filter)
+    {
+        QLSX.Shared.Models.KhachHangSearchRequest request =
+        new QLSX.Shared.Models.KhachHangSearchRequest
+            {
+                DMDonViSuDungId = AppService.DMDonViSuDungId,
+                MaDonVi = "",
+                TenDonVi = "",
+                DiaChi = "",
+                DienThoai = "",
+                Page = 0,
+                PageSize = 10,
+                TotalPages = 0
+            };
+        var lstitems = await dmkhachhangService.GetAllPagedAsync(request);
+        var items = lstitems.Items;
+
+        var kq = items.Where(i => i.TenDonVi.ToString().ToLower().Contains(filter.ToLower())
+                                            || i.MaDonVi.ToString().ToLower().Contains(filter.ToLower())).ToList();
+        return kq;
+    }
+    private async Task DeleteClick()
+    {
+        var parameters = new DialogParameters { ["server"] = thuchi };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<Delete>("Xóa", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            //In a real world scenario we would reload the data from the source here since we "removed" it in the dialog already.
+            int.TryParse(result.Data.ToString(), out int deletedServer);
+            await thuchitService.DeleteAsync(thuchi.Id);
+            ThuChiSearchRequest request = new ThuChiSearchRequest();
+
+            request.DMDonViSuDungId = AppService.DMDonViSuDungId;
+            request.Loai = thuchi.Loai;
+            // get all ids
+            var lstIDs = await thuchitService.GetAllThuChiIDs(request);
+            //if (lstIDs.Count == 0)
+            //{
+            //    navigationManager.NavigateTo("thuchis/" + thuchi.Loai + "/edit/0" + "?rid=" + Guid.NewGuid(), true);
+            //}
+            //else
+            //{
+            //    int id = lstIDs[lstIDs.Count - 1];
+            //    navigationManager.NavigateTo("thuchis/" + thuchi.Loai + "/edit/" + id + "?rid=" + Guid.NewGuid(), true);
+            //}
+        }
+    }
+
+    private async Task SaveData()
+    {
+        await form.Validate();
+        if (errors.Count() == 0)
+        {
+            await SaveStatus();
+            await OnValidSubmit.InvokeAsync(saveAndCreate);
+        }
+    }
+    private async Task CancelClick()
+    {
+        await CancelClickCallBack.InvokeAsync();
+
+    }
+    private async Task SaveStatus()
+    {
+        await localStorageService.SetItemAsync($"{thuchi.Loai}-SaveStatus", saveAndCreate);
+    }
+    private async Task GetSoDuCongNo()
+    {
+        if (thuchi.DMKhachHangId > 0)
+        {
+            QLSX.Shared.Models.GetSoDuCongNoRequest request = new QLSX.Shared.Models.GetSoDuCongNoRequest();
+            request.DMDonViSuDungId = AppService.DMDonViSuDungId;
+            request.MaKhachHang = thuchi.MaDoiTuong;
+            request.Loai = thuchi.Loai;
+            request.Ngay = thuchi.NgayCT;
+            request.Id = thuchi.Id;
+            var user1 = (await authenticationStateTask).User;
+            var UserId = user1.FindFirst(c => c.Type == "UserId")?.Value ?? "0";
+            //quyenSuDung = await permisstionService.GetQuyenByUserIdAsync(int.Parse(UserId), loaiThuChi);
+            SoDuCN = await dmkhachhangService.GetSoDuCongNoById(request);
+
+        }
+
+    }
+    private async Task SuaClickCallBack(bool isRead)
+    {
+        if (isRead)
+        {
+            ThuChiSearchRequest request = new ThuChiSearchRequest();
+            request.DMDonViSuDungId = AppService.DMDonViSuDungId;
+            request.Loai = thuchi.Loai;
+            request.Id = thuchi.Id;
+            var thuchinew = await thuchitService.GetThuChiById(request);
+            thuchi = mapper.Map<ThuChiModel>(thuchinew);
+        }
+        IsReadOnly = isRead;
+        StateHasChanged();
+    }
+    [JSInvokable]
+    private async Task PrintClick(ThuChiModel thuchi)
+    {
+        string urlPrint = @"{0}/Reports/Viewer?ReportFileName={1}&id={2}&mdvsd={3}";
+        if (thuchi.Loai == "thutm")
+        {
+            urlPrint = string.Format(urlPrint, hostReport, "rptPhieuThu", thuchi.Id, thuchi.DMDonViSuDungId);
+
+        }
+        else
+        {
+            urlPrint = string.Format(urlPrint, hostReport, "rptPhieuChi", thuchi.Id, thuchi.DMDonViSuDungId);
+        }
+        await JSRuntime.InvokeAsync<WindowDimensions>("printReport", urlPrint);
+    }
+    private async Task OpenDialogKhachHang()
+    {
+        if (IsReadOnly) return;
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var result = await DialogService.Show<DialogKhachHang>("Danh sách Khách hàng", options).Result;
+
+        if (!result.Canceled)
+        {
+            var itemSelected = (DanhMucKhachHangModel)(result.Data ?? null);
+            if (itemSelected != null)
+            {
+                thuchi.DMKhachHangId = itemSelected.Id;
+                thuchi.MaDoiTuong = itemSelected.MaDonVi;
+                thuchi.TenDoiTuong = itemSelected.TenDonVi;
+                thuchi.DiaChi = itemSelected.DiaChi;
+                thuchi.DienThoai = itemSelected.DienThoai;
+
+                //await table.ReloadServerData();
+            }
+        }
+    }
+    public async override Task SetParametersAsync(ParameterView parameters)
+    {
+        parameters.SetParameterProperties(this);
+        await Task.Delay(100);
+        await base.SetParametersAsync(ParameterView.Empty);
+    }
+    private async Task ChangeSoTien(FocusEventArgs value)
+    {
+        bangchu = await thuchitService.ChuyenSoSangChuAsync(thuchi.SoTien);
+    }
+
+    private void OpenDialogTimNhanh()
+    {
+        var parameters = new DialogParameters { ["TimNhanhCalback"] = EventCallback.Factory.Create<int>(this, TimNhanhCalback), ["Loai"] = loaiThuChi };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<DialogTimKiemNhanhThuChi>("Tìm kiếm nhanh", parameters, options);
+    }
+
+    private async Task TimNhanhCalback(int id)
+    {
+        var thuchinew = await thuchitService.GetByIdAsync(id);
+        if (thuchinew.Total == 0)
+        {
+            return;
+        }
+        thuchi = mapper.Map<ThuChiModel>(thuchinew);
+    }
+    private string ValidateLoaiTien(int arg)
+    {
+        if (arg == 0)
+            return "Loại tiền bắt buộc nhập!";
+        return null;
+    }
+    private async Task SuaClickThuChi(string loai, int id)
+    {
+
+        ThuChiSearchRequest request = new ThuChiSearchRequest();
+        request.DMDonViSuDungId = AppService.DMDonViSuDungId;
+        request.Loai = loai;
+        request.Id = id;
+        var thuchinew = await thuchitService.GetThuChiById(request);
+        thuchi = mapper.Map<ThuChiModel>(thuchinew);
+        StateHasChanged();
+    }
+
+    private async Task OnKeyDownMaDonVi(KeyboardEventArgs e)
+    {
+        if (IsReadOnly) return;
+        if (e.Key == "F3")
+        {
+            await OpenDialogKhachHang();
+        }
+    }
+    private void ShowCongNo()
+    {
+        if (thuchi.DMKhachHangId == 0
+           || thuchi.DMKhachHangId == null
+           || string.IsNullOrEmpty(thuchi.MaDoiTuong)
+           || !thuchi.NgayCT.HasValue)
+        {
+            SoDuCN = 0;
+            return;
+        }
+        string loai = thuchi.Loai == "thutm" ? "1" : "2";
+        string tungay = "";
+        string denngay = string.Format("{0:MM/dd/yyyy}", thuchi.NgayCT);
+        string madonvi;
+        madonvi = thuchi.MaDoiTuong;
+        var parameters = new DialogParameters { ["Loai"] = loai, ["SoDu"] = 1, ["TuNgay"] = tungay, ["DenNgay"] = denngay, ["MaDonVi"] = madonvi };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<QLSX.Web.Pages.TraCuuCongNo.DialogShowCongNo>("View danh sách", parameters, options);
+    }
+}

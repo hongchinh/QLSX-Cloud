@@ -1,0 +1,54 @@
+﻿@inject IJSRuntime JSRuntime
+@inject IEmloyeeService<UserModel> usersService
+
+@inherits QLSX.Web.Helpers.BlazorComponent
+
+@namespace QLSX.Web.Pages.ListUsers
+@using QLSX.Shared.Models
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.DeleteForever" Class="mr-3 mb-n1" />
+            Xóa
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="6" sm="2">
+                <MudTextField Value="@server.Id.ToString()" Label="Id" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="6" sm="3">
+                <MudTextField Value="@server.EmailAddress" Label="Email" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="6" sm="3">
+                <MudTextField Value="@server.FirstName" Label="Họ tên" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="6" sm="2">
+                <MudTextField Value="@server.DMPhongBans?.TenPhong" Label="Bộ phận" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="6" sm="2">
+                <MudTextField Value="@server.Role?.RoleDesc" Label="Quyền" ReadOnly="true" Variant="Variant.Outlined" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel" Variant="Variant.Filled" Color="Color.Error" >Bỏ qua</MudButton>
+        <MudButton Color="Color.Error" OnClick="@(() => DeleteClick(server.Id))">Xóa</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public UserModel server { get; set; } = new UserModel();
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    private async Task DeleteClick(int id)
+    {
+        var isdelete = await usersService.DeleteAsync(id);
+        MudDialog.Close(DialogResult.Ok(isdelete));
+    }
+ }

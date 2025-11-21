@@ -1,0 +1,76 @@
+﻿@using QLSX.Shared.Data.Responses
+@using QLSX.Shared.Data.Responses.BaoCao
+
+@model ReportResponseBase<BangCanDoiThuChiResponse>
+
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<link rel="stylesheet" href="@Model.Host/lib/bootstrap/dist/css/bootstrap.css" />
+	<link rel="stylesheet" href="@Model.Host/lib/bootstrap/dist/css/bootstrap-grid.css" />
+	<link rel="stylesheet" href="@Model.Host/lib/bootstrap/dist/css/bootstrap-reboot.css" />
+	<link rel="stylesheet" href="@Model.Host/lib/bootstrap/dist/css/bootstrap-theme.css" />
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="@Model.Host/css/report.css" />
+	<title>Bảng cân đối thu chi</title>
+</head>
+<body>
+
+
+		Html.RenderPartial("Header", @Model.ThongTin);
+		@if (Model.ListData?.Count > 0)
+		{
+			<div class="row" style="margin-top:10px !important">
+		   <div class="col-md-12 classs" style="text-align:center"> BẢNG CÂN ĐỐI THU CHI </div>
+		  </div>
+		  <div class="row" style="margin-top:5px !important">
+		   <div class="col-md-12" style="text-align:center"> <i> @Model.ListData?.First()?.ThoiGian </i></div>
+		  </div>
+		}else{
+			<div class="row" style="margin-top:10px !important">
+		   <div class="col-md-12" style="text-align:center"> <h1>Sổ quỹ </h1> </div>
+		  </div>
+		  <div class="row" style="margin-top:5px !important">
+		   <div class="col-md-12" style="text-align:center"> <i> </i></div>
+		  </div>
+		}
+	  <table class="table table-bordered">
+	   <thead>
+		<tr>
+			 <th rowspan="2" class="text-center">STT</th>
+			 <th rowspan="2" class="text-center">Nội dung</th>
+			 <th colspan="2" class="text-center ">Số tiền</th>
+		</tr>
+	   </thead>
+	   <tbody>
+			 
+				@foreach (var item in Model.ListData.OrderBy(x=>x.MaSo))
+				{
+				<tr>
+						<th style="font-weight:normal;text-align: center;">@(item.Stt == 0 ? "" : item.Stt )  </th>
+						<th class="text-center w50" style="font-weight:normal; text-align: left;">@item.NoiDung </th>
+						<th style="font-weight:normal; text-align: right;">@item.SoTien.ToString("###,###.##") </th>
+				</tr>
+				}
+				 
+					 
+	   </tbody>
+	  </table>
+	  <table border="0" cellspacing="0" cellpadding="0" style="width: 100%; font-family:Tahoma">
+		 <tr>
+			 <td width="33%">  </td>
+			 <td width="33%">  </td>
+			 <td width="33%"> @Model.ThongTin.NgayThangLB </td>
+		 </tr>
+		  <tr>
+			 <td> <b> @Model.ThongTin.ChucDanhThuTruong</b> </td>
+			 <td> <b>@Model.ThongTin.ChucDanhKeToan</b> </td>
+			 <td> <b>@Model.ThongTin.ChucDanhLapBieu </b></td>
+		 </tr>
+	 </table>
+
+</body>
+</html>

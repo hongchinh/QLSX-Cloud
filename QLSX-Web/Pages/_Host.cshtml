@@ -1,0 +1,389 @@
+﻿@page "/"
+@namespace QLSX.Web.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@using EmbeddedBlazorContent;
+
+<!DOCTYPE html>
+<html lang="en">
+@Html.EmbeddedBlazorContent()
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản lý bán hàng</title>
+    <base href="~/" />
+    <link href="/favicon.ico" type="image/x-icon" rel="shortcut icon" />
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+
+    <link href="QLSX.Web.styles.css" rel="stylesheet" />
+    <link href="/css/site.css" rel="stylesheet" />
+    <!-- MudBlazor -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+    <link href="_content/Blazored.Toast/blazored-toast.min.css" rel="stylesheet" />
+
+    @*MudBlazorThemeManager*@
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
+
+    <link href="_content/MudBlazor.ThemeManager/MudBlazorThemeManager.css" rel="stylesheet" />
+
+   @*  <link href="_content/IgniteUI.Blazor/themes/light/bootstrap.css" rel="stylesheet" />
+    <link href="_content/IgniteUI.Blazor/themes/grid/light/bootstrap.css" rel="stylesheet" />
+ *@
+    <script>
+        function TestDataTablesAdd(table) {
+            $(document).ready(function () {
+                $(table).DataTable();
+            });
+        }
+        window.getCookie = (cname) => {
+            var name = cname + "=";
+            var decodedCookie = decodeURIComponent(document.cookie);
+            var ca = decodedCookie.split(';');
+            for (var i = 0; i < ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == ' ') {
+                    c = c.substring(1);
+                }
+                if (c.indexOf(name) == 0) {
+                    return c.substring(name.length, c.length);
+                }
+            }
+
+            return "";
+        };
+
+        window.deleteCookie = (cname) => {
+            document.cookie = cname + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        };
+
+        window.routeOutside = (path) => {
+            window.location = path;
+        };
+
+        window.hideBodyOverflow = () => {
+            document.body.classList.add("body-no-overflow");
+        };
+
+        window.showBodyOverflow = () => {
+            document.body.classList.remove("body-no-overflow");
+        };
+
+        window.showEditCustomers = () => {
+            var element = document.getElementById("dlgEdit");
+            element.classList.add("Show");
+            document.getElementById("dlgEdit").style.display = "block";
+        };
+
+        window.hideEditCustomers = () => {
+            var element = document.getElementById("dlgEdit");
+            element.classList.remove("Show");
+            document.getElementById("dlgEdit").style.display = "none";
+        };
+
+
+        window.showmessage = (message) => {
+            $("#messageContents").html(message);
+            $("#btnMessage").click();
+        };
+        window.setCounter = (countNumber) => {
+            let counter = document.querySelector(".ikrNoti_Counter");
+            if (counter != null) counter.innerHTML = countNumber;
+        };
+        window.reportShow = (url, token, id) => {
+            var settings = {
+                "url": url,
+                "method": "GET",
+                "timeout": 0,
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                "data": JSON.stringify({
+                    "DMDonViSuDungId": id
+                }),
+            };
+            console.log("OK");
+            console.log(url, token, id);
+
+            $.ajax(settings).done(function (response) {
+                var file = new Blob([response], { type: 'application/pdf' });
+                var fileURL = URL.createObjectURL(file);
+
+                // Open new windows and show PDF
+                window.open(fileURL);
+            });
+        }
+        window.reportShow1 = (data) => {
+            var fileName = "sample.pdf";
+            var data1 = data;
+            const blob = new Blob([data1]);
+            console.log("OK");
+
+            const a = document.createElement("a");
+            const url = window.URL.createObjectURL(blob);
+            const filename = fileName;
+            a.setAttribute('target', '_blank');
+            console.log(url);
+            a.href = url;
+            a.download = filename;
+            a.click();
+            console.log("OK");
+            window.URL.revokeObjectURL(url);
+
+        }
+
+        window.clickElement = (element) => {
+            element.click();
+        }
+        window.downloadFromUrl = (options) => {
+            var _a;
+            var anchorElement = document.createElement('a');
+            anchorElement.setAttribute('target', '_blank');
+            anchorElement.href = options.url;
+            anchorElement.download = (_a = options.fileName) !== null && _a !== void 0 ? _a : '';
+            anchorElement.click();
+            anchorElement.remove();
+        }
+        window.downloadFromByteArray = (options) => {
+            // The byte array in .NET is encoded to base64 string when it passes to JavaScript.
+            // So we can pass that base64 encoded string to the browser as a "data URL" directly.
+            var url = "data:" + options.contentType + ";base64," + options.byteArray;
+            downloadFromUrl({ url: url, fileName: options.fileName });
+        }
+
+        window.openfile = () => {
+
+            // var file = new Blob([data], {type: 'application/pdf'});
+            // var fileURL = URL.createObjectURL(file);
+            // Open new windows and show PDF
+            // window.open(fileURL);
+            //var
+            // window.open("data:application/pdf;base64, " + data);
+            var element = document.getElementById("reportid");
+            element.click();
+        }
+
+        window.siteFunction = {
+            InitDatePickerwithSelect: function (element, formatDate, minDate, maxDate) {
+                $(element).datepicker('destroy');
+                $(element).datepicker({
+                    showOtherMonths: true,
+                    selectOtherMonths: true,
+                    changeMonth: true,
+                    changeYear: true,
+                    dateFormat: formatDate,
+                    minDate: minDate == null ? null : new Date(minDate),
+                    maxDate: maxDate == null ? null : new Date(maxDate),
+                    onSelect: function (date) {
+                        var myElement = $(this)[0];
+                        var event = new Event('change');
+                        myElement.dispatchEvent(event);
+                    }
+                });
+            },
+            SetMinMaxDate: function (element, minDate, maxDate) {
+                var min = minDate == null ? null : new Date(minDate);
+                var max = maxDate == null ? null : new Date(maxDate);
+                $(element).datepicker('option', 'minDate', min);
+                $(element).datepicker('option', 'maxDate', max);
+            }
+        }
+
+        window.getWindowSize = () => {
+            let formdv = document.getElementById("idForm");
+            let tooldv = document.getElementById("idToolbar");
+            let item = {
+                width: window.innerWidth,
+                height: window.innerHeight,
+                formHeight: formdv == null ? 0 : formdv.offsetHeight,
+                toolbarHeight: tooldv == null ? 0 : tooldv.offsetHeight,
+            };
+            console.log(item);
+            return item;
+        };
+        window.getGridSize = (id1, id2) => {
+            let form1 = document.getElementById(id1);
+            let form2 = document.getElementById(id2);
+            let item = {
+                width: window.innerWidth,
+                height: window.innerHeight - (form1 == null ? 0 : form1.offsetHeight) - (form2 == null ? 0 : form2.offsetHeight),
+                formHeight: form1 == null ? 0 : form1.offsetHeight,
+                toolbarHeight: form2 == null ? 0 : form2.offsetHeight,
+            };
+            console.log(item);
+            return item;
+        };
+        window.getGridSize = (id1, id2, id3) => {
+            let form1 = document.getElementById(id1);
+            let form2 = document.getElementById(id2);
+            let form3 = document.getElementById(id3);
+            let item = {
+                width: window.innerWidth,
+                height: window.innerHeight - (form1 == null ? 0 : form1.offsetHeight) - (form2 == null ? 0 : form2.offsetHeight) - (form3 == null ? 0 : form3.offsetHeight),
+                formHeight: form1 == null ? 0 : form1.offsetHeight,
+                toolbarHeight: form2 == null ? 0 : form2.offsetHeight,
+            };
+            console.log(item);
+            return item;
+        };
+        window.getElementSizeById = (id) => {
+            let formdv = document.getElementById(id);
+            let item = {
+                width: formdv.offsetHeight,
+                height: formdv.offsetWidth,
+                formHeight: 0,
+                toolbarHeight: 0,
+            };
+
+            return item;
+        };
+        window.setElementSizeByClass = (id) => {
+            let formdv = document.querySelector('.' + id);
+            if (formdv != null) {
+                let formdv1 = document.getElementById("idFormNX");
+                let tooldv1 = document.getElementById("idToolbarNX");
+                var elements = formdv.querySelectorAll(".mud-table-container");
+                let hgrid = formdv.offsetHeight - 150 - formdv1.offsetHeight - tooldv1.offsetHeight;
+
+                let item = {
+                    width: 0,
+                    height: hgrid,
+                    formHeight: 0,
+                    toolbarHeight: 0,
+                };
+                for (var i = 0; i < elements.length; i++) {
+                    elements[i].style.height = hgrid + "px";
+                }
+                return item;
+            } else {
+                return {
+                    width: 0,
+                    height: 0,
+                    formHeight: 0,
+                    toolbarHeight: 0,
+                };
+            }
+        };
+        window.resizeListener = (dotnethelper) => {
+            $(window).resize(() => {
+                clearTimeout(window.resizedFinished);
+                window.resizedFinished = setTimeout(function () {
+                    dotnethelper.invokeMethodAsync('UpdatePage').then(() => {
+                    }).catch(error => {
+                        console.log("Error: " + error);
+                    });
+                }, 250);
+            });
+        }
+
+        window.printReport = (url) => {
+            const a = document.createElement("a");
+            a.setAttribute('target', '_blank');
+            console.log(url);
+            a.href = url;
+            a.click();
+            console.log("OK");
+
+        }
+
+        window.downloadFileFromByte = function (mimeType, byte, fileName) {
+            const blob = new Blob([byte], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const anchorElement = document.createElement('a');
+            anchorElement.href = url;
+            anchorElement.download = fileName ?? 'noname';
+            anchorElement.click();
+            anchorElement.remove();
+            URL.revokeObjectURL(url);
+        }
+        window.downloadFileFromStream = async (fileName, arrayBuffer, mimeType) => {
+            const blob = new Blob([arrayBuffer], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const anchorElement = document.createElement('a');
+            anchorElement.href = url;
+            anchorElement.download = fileName ?? '';
+            anchorElement.click();
+            anchorElement.remove();
+            URL.revokeObjectURL(url);
+        }
+        window.SendKeyTab = async (e) => {
+            console.log("aaaaa");
+            console.log(e);
+            if (e.code == "Enter") {
+                //find all tab-able elements
+                const allElements = document.querySelectorAll('input, button, a, area, object, select, textarea, [contenteditable]');
+
+                //Find the current tab index.
+                const currentIndex = [...allElements].findIndex(el => currentNode.isEqualNode(el))
+
+                //focus the following element
+                const targetIndex = (currentIndex + 1) % allElements.length;
+                allElements[targetIndex].focus();
+            }
+        }
+        window.sendKey = function (keyCode) {
+            var eventObj = document.createEventObject ?
+                document.createEventObject() : document.createEvent("Events");
+
+            if (eventObj.initEvent) {
+                eventObj.initEvent("keydown", true, true);
+            }
+
+            eventObj.keyCode = keyCode;
+
+            document.dispatchEvent ? document.dispatchEvent(eventObj) : document.fireEvent("onkeydown", eventObj);
+        }
+        window.saveAutoClick = function () {
+            let btn = document.getElementsByClassName("mud-button-root mud-icon-button mud-ripple mud-ripple-icon mud-icon-button-size-small pa-0")[0]
+            if (btn != null) btn.click();
+        }
+        window.textchangeevent = function () {
+            console.log("xxxxxxxxxxxxxx");
+        }
+
+        window.myJavaScriptFunction = function () {
+            // JavaScript logic here
+            console.log("JavaScript function invoked from Blazor!");
+        }
+    </script>
+</head>
+<body>
+    <app>
+        @(await Html.RenderComponentAsync<App>(RenderMode.Server))
+
+        <div id="blazor-error-ui">
+            <environment include="Staging,Production">
+                An error has occurred. This application may no longer respond until reloaded.
+            </environment>
+            <environment include="Development">
+                An unhandled exception has occurred. See browser dev tools for details.
+            </environment>
+            <a href="" class="reload">Reload</a>
+            <a class="dismiss">🗙</a>
+        </div>
+
+    </app>
+
+    <script src="~/lib/jquery/dist/jquery.js"></script>
+    <!-- select2 -->
+    <script src="~/lib/select2/Select2JsInterop.js" type="text/javascript" language="javascript"></script>
+    <script src="~/lib/select2/js/select2.full.min.js" type="text/javascript" language="javascript"></script>
+
+   @*  <script src="_content/IgniteUI.Blazor/app.bundle.js"></script>
+ *@
+    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <script src="~/js/SaveAsFile.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+    <!-- This is the glue between Blazor and Chart.js -->
+    <script src="_content/ChartJs.Blazor.Fork/ChartJsBlazorInterop.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+    <script src="_framework/blazor.server.js"></script>
+
+   @*  <script src="~/js/DataGridCellEditing.js"></script> *@
+</body>
+</html>

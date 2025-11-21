@@ -1,0 +1,156 @@
+﻿@using System.Net
+@using System.Text
+@using QLSX.Web.Helpers
+@using QLSX.Shared.Models;
+@using System.Net.Http.Json
+@inject ILogger<DialogHangHoa> Logger
+@inject IJSRuntime jsRuntime
+@inject IDMHangHoaService<DanhMucHangHoaModel> productServicece
+@inherits QLSX.Web.Helpers.BlazorComponent
+
+@namespace QLSX.Web.Pages.BaoCaoPage
+<MudDialog DisableSidePadding="true">
+    <DialogContent>
+        <MudContainer Style="overflow-y: scroll">
+            <MudTable ServerData="@(new Func<TableState, Task<TableData<DanhMucHangHoaModel>>>(ServerReload))"
+                      FixedHeader="true"
+                      Height="350px"
+                      Dense="true" Hover="true"
+                      Bordered="true" Striped="true" Loading="@Loading" @ref="table"
+                      @bind-SelectedItems="selectedItems"
+                      MultiSelection="true"
+                      T="DanhMucHangHoaModel">
+                <ToolBarContent>
+                    <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Tìm kiếm" Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Mã Hàng Hóa</MudTh>
+                    <MudTh>Tên hàng hóa</MudTh>
+                    <MudTh>Đơn vị tính</MudTh>
+                    <MudTh>Giá nhập</MudTh>
+                    <MudTh>Giá xuất</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="MaHangHoa">
+                        <div @onclick:stopPropagation="true">
+                            @context.MaHangHoa
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="TenHangHoa">
+                        <div @onclick:stopPropagation="true">
+                            @context.TenHangHoa
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="DonViTinh">
+                        <div @onclick:stopPropagation="true">
+                            @context.DonViTinh
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="GiaNhap">
+                        <div @onclick:stopPropagation="true">
+                            @context.GiaNhap.ToString("###,###")
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="GiaXuat">
+                        <div @onclick:stopPropagation="true">
+                            @context.GiaXuat.ToString("###,###")
+                        </div>
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText>Không có bản ghi nào tìm thấy</MudText>
+                </NoRecordsContent>
+                <LoadingContent>
+                    <MudText>Đang tải dữ liệu...</MudText>
+                </LoadingContent>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+                <FooterContent>
+                    <MudTd colspan="5">Chọn tất cả</MudTd>
+                </FooterContent>
+            </MudTable>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="Ok">Chọn</MudButton>
+        <MudButton Color="Color.Secondary" OnClick="Cancel">Bỏ qua</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    public GetAllResponsePaged<DanhMucHangHoaModel> lsResponses { get; set; }
+
+    private string searchString1 = "";
+
+    public HangHoaSearchRequest itemRequest { get; set; } =
+      new HangHoaSearchRequest
+          {
+              MaHangHoa = "",
+              TenHangHoa = "",
+              DonViTinh = "",
+              Page = 0,
+              PageSize = 10,
+              TotalPages = 0
+          };
+    private HashSet<DanhMucHangHoaModel> selectedItems = new HashSet<DanhMucHangHoaModel>();
+    private IEnumerable<DanhMucHangHoaModel> pagedData;
+    private MudTable<DanhMucHangHoaModel> table;
+    private int totalItems;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    private string searchString { get; set; } = "";
+    private bool Loading { get; set; } = false;
+    private List<string> clickedEvents = new();
+    void Cancel() => MudDialog.Cancel();
+
+    private async Task Ok()
+    {
+        var result = await productServicece.UpdateListPrintAsync(selectedItems.Select(x => x.Id).ToList());
+        MudDialog.Close(DialogResult.Ok<bool>(result));
+    }
+
+    /// <summary>
+    /// Here we simulate getting the paged, filtered and ordered data from the server
+    /// </summary>
+    private async Task<TableData<DanhMucHangHoaModel>> ServerReload(TableState state)
+    {
+        Loading = true;
+        itemRequest.SortLable = state.SortLabel;
+        itemRequest.SortDirection = (QLSX.Shared.Enums.SortDirection)state.SortDirection;
+        itemRequest.Page = state.Page;
+        itemRequest.PageSize = state.PageSize;
+        if (!string.IsNullOrEmpty(searchString))
+        {
+            itemRequest.SearchText = searchString;
+        }
+        else
+        {
+            itemRequest.SearchText = "";
+        }
+        lsResponses = new GetAllResponsePaged<DanhMucHangHoaModel>();
+        lsResponses = await productServicece.GetAllPagedDialogAsync(itemRequest);
+        IEnumerable<DanhMucHangHoaModel> data = lsResponses.Items; ;
+        totalItems = lsResponses.TotalRecords;
+        if (data == null)
+        {
+            data = new List<DanhMucHangHoaModel>();
+        }
+        pagedData = data;
+        Loading = false;
+        return new TableData<DanhMucHangHoaModel>() { TotalItems = totalItems, Items = pagedData };
+    }
+
+
+    private async Task OnSearch(string text)
+    {
+        searchString = text;
+       await table.ReloadServerData();
+    }
+}

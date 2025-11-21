@@ -1,0 +1,126 @@
+﻿@inject ILogger<Edit> Logger
+
+@using Blazored.LocalStorage
+@using QLSX.Shared.Models
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IUserService userReService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+@inject IEmloyeeService<UserModel> usersServices
+@inherits QLSX.Web.Helpers.BlazorComponent
+
+@inject ILocalStorageService localStorageService
+
+@namespace QLSX.Web.Pages.ListUsers
+
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Edit" Class="mr-3 mb-n1" />
+            Cập nhật
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="formData" @bind-IsValid="@success" @bind-Errors="@errors">
+            <EditForm Model="server">
+                <DataAnnotationsValidator />
+                <MudPaper Elevation="25" Class="py-8 px-8" Style="padding-top:2px !important">
+                    <ValidationSummary></ValidationSummary>
+                    <MudGrid>
+                        <MudItem xs="6" sm="6">
+                            <MudTextField @bind-Value="@server.EmailAddress" Label="Email" Variant="Variant.Outlined" Required="true" RequiredError="Trường này bắt buộc nhập!" />
+                        </MudItem>
+                        <MudItem xs="6" sm="6">
+                            <MudTextField @bind-Value="@server.FirstName" Label="Họ tên" Variant="Variant.Outlined" Required="true" RequiredError="Trường này bắt buộc nhập!" />
+                        </MudItem>
+
+                        <MudItem xs="6" sm="6">
+                            <MudTextField InputType="InputType.Password" @bind-Value="@server.MatKhau" Label="Mật khẩu" Variant="Variant.Outlined" Required="true" RequiredError="Trường này bắt buộc nhập!" />
+                        </MudItem>
+                        <MudItem xs="6" sm="6">
+                            <MudTextField InputType="InputType.Password" @bind-Value="@server.ConfirmPassword" Label="Nhập lại mật khẩu" Variant="Variant.Outlined" Required="true" RequiredError="Trường này bắt buộc nhập!" />
+                        </MudItem>
+                        <MudItem xs="6" sm="6">
+                            @* <MudSelect T="int" Label="Nhóm vai trò" AnchorOrigin="Origin.BottomCenter" @bind-Value="@server.RoleId" Variant="Variant.Outlined">
+                            <MudSelectItem T="int" Value="@(0)">Chọn Role</MudSelectItem>
+                            @if (lstRoles != null)
+                            {
+                            @foreach (var cnt in lstRoles)
+                            {
+                            <MudSelectItem T="int" Value="@(cnt.RoleId)"> @cnt.RoleDesc </MudSelectItem>
+                            }
+                            }
+                            </MudSelect> *@
+                        </MudItem>
+                        <MudItem xs="6" sm="6">
+                            <MudSelect T="int" Label="Bộ phận" AnchorOrigin="Origin.BottomCenter" @bind-Value="@server.DMPhongBanId" Variant="Variant.Outlined">
+                                <MudSelectItem T="int" Value="@(0)">Chọn bộ phận</MudSelectItem>
+                                @if (lstPhongBans != null)
+                                {
+                                    @foreach (var cnt in lstPhongBans)
+                                    {
+                                        <MudSelectItem T="int" Value="@(cnt.Id)"> @cnt.TenPhong </MudSelectItem>
+                                    }
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="6" sm="6">
+                            <MudCheckBox @bind-Checked="@server.IsActive" Label="Đang hoạt động" Variant="Variant.Outlined" />
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+            </EditForm>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton StartIcon="@Icons.Material.Filled.Close" OnClick="Cancel" Variant="Variant.Filled" Color="Color.Error">Bỏ qua</MudButton>
+        <MudButton Color="Color.Secondary" OnClick="@(() => SaveClick())">Cập nhật</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public UserModel server { get; set; } = new();
+    [Parameter] public List<Role> lstRoles { get; set; } = new List<Role>();
+    [Parameter] public List<QLSX.Shared.Models.DMPhongBan> lstPhongBans { get; set; } = new List<QLSX.Shared.Models.DMPhongBan>();
+
+    MudForm formData;
+    bool success;
+    string[] errors = { };
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private async Task SaveClick()
+    {
+        await formData.Validate();
+        if (errors.Count() == 0)
+        {
+            var itemByCode = await usersServices.GetByEmailAsync(server.EmailAddress);
+            string passWord = server.MatKhau;
+            if (itemByCode.MatKhau != passWord)
+            {
+                passWord = EncryptionHelper.Encrypt(passWord);
+            }
+            var confirmPass = EncryptionHelper.Encrypt(server.ConfirmPassword);
+            if (itemByCode.Id > 0 && itemByCode.Id != server.Id)
+            {
+                Snackbar.Add("Email đã tồn tại, chọn email khác.", Severity.Error);
+            }
+            else if (passWord != confirmPass)
+            {
+                Snackbar.Add("Nhập lại mật khẩu không đúng.", Severity.Error);
+            }
+            else
+            {
+                server.MatKhau = passWord;
+                var itemCreate = await usersServices.UpdateAsync(server.Id, server);
+                MudDialog.Close(DialogResult.Ok(itemCreate.Id > 0));
+            }
+        }
+    }
+
+}

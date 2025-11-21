@@ -1,0 +1,378 @@
+﻿@page "/SoDuCongNo"
+@using System.Text.Json
+@using Newtonsoft.Json
+@using Dialogs
+@using QLSX.Web.Services
+@using System.Globalization
+@inject NavigationManager navigationManager
+@inject ILogger<FrmSoDuCongNo> Logger
+@inject IJSRuntime JSRuntime
+@inject ISoDuCongNoService<QLSX.Shared.Models.SoDuCongNo> soduService
+@inject IDMKhachHangService<DanhMucKhachHangModel> dmkhachhangService
+@inject AppService AppService
+@inject IReportService reportService
+@inject IToastService toastService
+@inject IPhanQuyenSuDungService< QLSX.Shared.Models.QuyenSuDungModel> permisstionService
+@inject IDialogService DialogService
+
+@inherits QLSX.Web.Helpers.BlazorComponent
+@namespace QLSX.Web.Pages.SoDuPage
+
+<MudBreadcrumbs Items="_items" Style="padding:0px !important" id="idTool"></MudBreadcrumbs>
+<EditForm Model="@requestSearch" OnValidSubmit="@TimKiem" id="idSearch">
+    <MudPaper Elevation="25" Class="py-8 px-8" Style="padding-top:2px !important">
+        <MudGrid Spacing="1">
+            <MudItem xs="12" sm="3" lg="2">
+                <MudTextField Margin="Margin.Dense" @bind-Value="requestSearch.MaDonVi" Label="Mã đơn vị" Variant="Variant.Outlined"></MudTextField>
+            </MudItem>
+            <MudItem xs="12" sm="4" lg="3">
+                <MudTextField Margin="Margin.Dense" @bind-Value="requestSearch.TenDonVi" Label="Tên đơn vị" Variant="Variant.Outlined"></MudTextField>
+            </MudItem>
+            <MudItem xs="12" sm="5" lg="5">
+                <MudTextField Margin="Margin.Dense" @bind-Value="requestSearch.DiaChi" Label="Địa chỉ" Variant="Variant.Outlined"></MudTextField>
+            </MudItem>
+            <MudItem xs="12" sm="4" lg="2">
+                <MudTextField Margin="Margin.Dense" @bind-Value="requestSearch.DienThoai" Label="Điện thoại" Variant="Variant.Outlined"></MudTextField>
+            </MudItem>
+            <MudItem xs="12" sm="4" lg="3">
+                <MudSelect Margin="Margin.Dense" Label="Phân loại" AnchorOrigin="Origin.BottomCenter" @bind-Value="@requestSearch.Loai" Variant="Variant.Outlined" TextChanged="@( (value) => OnValueChanged(value ))">
+                    <MudSelectItem Value="@("")">Tất cả</MudSelectItem>
+                    <MudSelectItem Value="@("phaithu")">Công nợ phải thu</MudSelectItem>
+                    <MudSelectItem Value="@("phaitra")">Công nợ phải trả</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudButton Class="mt-3" ButtonType="ButtonType.Submit" Size="Size.Large" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Search" Color="Color.Primary">Tìm kiếm</MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+</EditForm>
+<MudTable Items="@sodu" Dense="false" Hover="true" ReadOnly="@(!IsEdit)" 
+          @bind-SelectedItem="selectedItem1" SortLabel="Sort By" @ref="table"
+          OnCommitEditClick="@(() => savedata())" RowEditPreview="BackupItem"
+          RowEditCommit="ItemHasBeenCommitted" IsEditRowSwitchingBlocked="false" ApplyButtonPosition="TableApplyButtonPosition.StartAndEnd"
+          Loading="isLoading"
+          Height="@(HeightGrid ==0 ? "": HeightGrid.ToString () + "px" )"
+          FixedHeader="true" FixedFooter="true"
+          OnPreviewEditClick="@OnPreviewEditClick"
+          RowClassFunc="@SelectedRowClassFunc">
+    <ToolBarContent>
+        <MudButton ButtonType="ButtonType.Button" Size="Size.Large" OnClick="OnValidSubmit" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Save" Color="Color.Secondary">Lưu dữ liệu</MudButton>
+        <MudSpacer />
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>	Mã đơn vị</MudTh>
+        <MudTh>	Tên đơn vị</MudTh>
+        <MudTh>	Địa chỉ </MudTh>
+        <MudTh>	Điện thoại </MudTh>
+        <MudTh>	Số tiền</MudTh>
+        <MudTh>	Ghi chú</MudTh>
+        <MudTh>	#</MudTh>
+    </HeaderContent>
+    <RowTemplate Context="ctx">
+        <MudTd DataLabel="MaDonVi" Class="cell-data">@ctx.MaDonVi</MudTd>
+        <MudTd DataLabel="TenDonVi" Class="cell-data">@ctx.TenDonVi</MudTd>
+        <MudTd DataLabel="DiaChi" Class="cell-data">@ctx.DiaChi</MudTd>
+        <MudTd DataLabel="DienThoai" Class="cell-data">@ctx.DienThoai</MudTd>
+        <MudTd DataLabel="SoTien" Style="text-align:right" Class="cell-data">@ctx.SoTien.ToString("###,###")</MudTd>
+        <MudTd DataLabel="GhiChu" Class="cell-data">@ctx.GhiChu</MudTd>
+        <MudTd>
+            <MudIconButton Size="@Size.Small" Icon="@Icons.Material.Outlined.Delete" OnClick="@(()=> XoaClick(ctx.Id))" />
+        </MudTd>
+    </RowTemplate>
+    <RowEditingTemplate Context="ctx1">
+        <MudTd DataLabel="MaDonVi">
+            <MudTextField Margin="Margin.Dense"
+                          @bind-Value="@ctx1.MaDonVi" Immediate="true"
+                          TextChanged="@( async (s) => await MaDonViTextChanged(s,ctx1))"
+                          Adornment="Adornment.End"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          OnAdornmentClick="@(async () => await OpenDialogKhachHang())" />
+        </MudTd>
+        <MudTd DataLabel="TenDonVi">
+            <MudTextField Margin="Margin.Dense" @bind-Value="@ctx1.TenDonVi" Immediate="true" />
+        </MudTd>
+        <MudTd DataLabel="DiaChi">
+            <MudTextField Margin="Margin.Dense" @bind-Value="@ctx1.DiaChi" Immediate="true" />
+        </MudTd>
+        <MudTd DataLabel="DienThoai">
+            <MudTextField Margin="Margin.Dense" @bind-Value="@ctx1.DienThoai" Immediate="true" />
+        </MudTd>
+        <MudTd DataLabel="SoTien">
+            <MudNumericField Margin="Margin.Dense" @bind-Value="@ctx1.SoTien" HideSpinButtons="true" Immediate="true" Format="###,###" Culture="@_vi" T="double" />
+        </MudTd>
+        <MudTd DataLabel="GhiChu">
+            <MudTextField Margin="Margin.Dense" @bind-Value="@ctx1.GhiChu" Immediate="true" />
+        </MudTd>
+    </RowEditingTemplate>
+
+</MudTable>
+<MudPaper Square="true" Class="mud-table-pagination d-flex justify-space-around text-center" Style="align-items:center" id="idTong">
+    <MudIconButton Disabled="@( string.IsNullOrEmpty(requestSearch.Loai) ? true: false)" Icon="@Icons.Material.Filled.AddCircle" @onclick="@(e => AddRow())" Color="Color.Inherit" Title="Thêm dòng" />
+    <MudDivider Vertical="true" FlexItem="true" />
+    <div style="font-weight:bold;color:black"> Tổng cộng  : @sodu?.Sum(x=>x.SoTien).ToString("##0,###")</div> 
+</MudPaper>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    private QLSX.Shared.Models.QuyenSuDungModel quyenSuDung { get; set; } =
+        new QLSX.Shared.Models.QuyenSuDungModel() { Sua = false, Them = false, Xoa = false, XemIn = false, Selectted = false };
+
+    private List<BreadcrumbItem> _items = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Home", href: "/"),
+        new BreadcrumbItem("Số dư công nợ",href: null, disabled: true)
+    };
+    public CultureInfo _vi = CultureInfo.GetCultureInfo("vi-VN");
+    private List<QLSX.Shared.Models.SoDuCongNo> sodu = new List<QLSX.Shared.Models.SoDuCongNo>();
+    public bool isLoading = true;
+    public bool IsEdit = true;
+    SoDuCongNo SelectedCurrentItem;
+    private bool _editTriggerRowClick;
+    public QLSX.Shared.Models.KhachHangSearchRequest itemRequest { get; set; } =
+                    new QLSX.Shared.Models.KhachHangSearchRequest
+                        {
+                            MaDonVi = "",
+                            TenDonVi = "",
+                            DiaChi = "",
+                            Page = 0,
+                            PageSize = 200,
+                            TotalPages = 0
+                        };
+    public QLSX.Shared.Models.SearchSoDuCongNoRequest requestSearch = new QLSX.Shared.Models.SearchSoDuCongNoRequest();
+    public string UrlReport { get; set; }
+    private readonly Random _random = new Random();
+
+    private QLSX.Shared.Models.SoDuCongNo selectedItem1 { get; set; }
+    private QLSX.Shared.Models.SoDuCongNo elementBeforeEdit { get; set; }
+    private MudTable<QLSX.Shared.Models.SoDuCongNo> table;
+    public int HeightGrid { get; set; } = 0;
+
+    protected async override Task OnInitializedAsync()
+    {
+        isLoading = true;
+        sodu = new List<QLSX.Shared.Models.SoDuCongNo>();
+
+        requestSearch.DMDonViSuDungId = AppService.DMDonViSuDungId;
+        requestSearch.Loai = "";
+        isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isLoading = true;
+            var hgrid = await JSRuntime.InvokeAsync<WindowDimensions>("getGridSize", "idSearch", "idTool", "idTong");
+            HeightGrid = hgrid.Height-120;
+            isLoading = false;
+            StateHasChanged();
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+    
+    
+    private async Task OnValidSubmit()
+    {
+        await JSRuntime.InvokeAsync<WindowDimensions>("saveAutoClick");
+        await Task.Delay(500);
+
+        foreach (QLSX.Shared.Models.SoDuCongNo item in sodu)
+        {
+            item.DMDonViSuDungId = AppService.DMDonViSuDungId;
+        }
+        await soduService.UpdateBatchAsync(sodu);
+        toastService.ShowSuccess("Cập nhật dữ liệu thành công.");
+    }
+    public int IsFirstEdit = -1;
+    private void OnPreviewEditClick(object item)
+    {
+        //var row = (QLSX.Shared.Models.SoDuHangHoa)item;
+        IsFirstEdit = 1;
+    }
+    public async Task MaDonViTextChanged(string mahh, SoDuCongNo item)
+    {
+         if (IsFirstEdit == 1) {
+            IsFirstEdit = -1;
+            return;
+        }
+
+        DanhMucKhachHangModel khachhang = await dmkhachhangService.GetByCodeAsync(mahh);
+        if (khachhang.Id > 0)
+        {
+            item.DMKhachHangId = khachhang.Id;
+            item.MaDonVi = khachhang.MaDonVi;
+            item.TenDonVi = khachhang.TenDonVi;
+            item.DiaChi = khachhang.DiaChi;
+            item.DienThoai = khachhang.DienThoai;
+
+        }
+        else
+        {
+            item.DMKhachHangId = 0;
+            item.MaDonVi = "";
+            item.TenDonVi = "";
+            item.DiaChi = "";
+            item.DienThoai = "";
+
+        }
+    }
+
+    private async Task AddRow()
+    {
+        var item = new QLSX.Shared.Models.SoDuCongNo();
+        if (requestSearch.Loai == "")
+        {
+            toastService.ShowError("Bạn phải chọn loại công nợ.");
+            return;
+        }
+        item.DMDonViSuDungId = AppService.DMDonViSuDungId;
+        item.Loai = requestSearch.Loai;
+        //item.IsEditing = true;
+        sodu.Add(item);
+    }
+
+    private async Task TimKiem()
+    {
+        isLoading = true;
+        sodu = await soduService.GetAllAsync(requestSearch);
+        isLoading = false;
+    }
+
+    private async Task OnValueChanged(string value)
+    {
+        isLoading = true;
+        requestSearch.Loai = value;
+        sodu = await soduService.GetAllAsync(requestSearch);
+        if (value == "")
+        {
+            IsEdit = false;
+        }
+        else
+        {
+            IsEdit = true;
+        }
+        isLoading = false;
+    }
+
+
+    private void BackupItem(object element)
+    {
+        elementBeforeEdit = new QLSX.Shared.Models.SoDuCongNo()
+            {
+                MaDonVi = ((QLSX.Shared.Models.SoDuCongNo)element).MaDonVi,
+                TenDonVi = ((QLSX.Shared.Models.SoDuCongNo)element).TenDonVi,
+                DiaChi = ((QLSX.Shared.Models.SoDuCongNo)element).DiaChi,
+                DienThoai = ((QLSX.Shared.Models.SoDuCongNo)element).DienThoai,
+                SoTien = ((QLSX.Shared.Models.SoDuCongNo)element).SoTien,
+                GhiChu = ((QLSX.Shared.Models.SoDuCongNo)element).GhiChu,
+
+            };
+        //AddEditionEvent($"RowEditPreview event: made a backup of Element {((NoiDungNhapXuat)element).TenHangHoa} ");
+    }
+
+    private void ItemHasBeenCommitted(object element)
+    {
+    }
+
+    private void ResetItemToOriginalValues(object element)
+    {
+        selectedItem1.MaDonVi = elementBeforeEdit.MaDonVi;
+        selectedItem1.TenDonVi = elementBeforeEdit.TenDonVi;
+        selectedItem1.DiaChi = elementBeforeEdit.DiaChi;
+        selectedItem1.DienThoai = elementBeforeEdit.DienThoai;
+        selectedItem1.SoTien = elementBeforeEdit.SoTien;
+        selectedItem1.GhiChu = elementBeforeEdit.GhiChu;
+        StateHasChanged();
+    }
+    private async Task savedata()
+    {
+        await JSRuntime.InvokeAsync<WindowDimensions>("saveAutoClick");
+        await Task.Delay(500);
+
+        if (table.SelectedItem.Id > 0)
+        {
+            await soduService.UpdateAsync(table.SelectedItem.Id, table.SelectedItem);
+        }
+        else
+        {
+            await soduService.CreateAsync(table.SelectedItem);
+        }
+        await TimKiem();
+        toastService.ShowSuccess("Cập nhật dữ liệu thành công.");
+    }
+    private async Task XoaClick(int id)
+    {
+        await soduService.DeleteAsync(id);
+        await TimKiem();
+        toastService.ShowSuccess("Cập nhật dữ liệu thành công.");
+    }
+    private int selectedRowNumber = -1;
+    private string SelectedRowClassFunc(QLSX.Shared.Models.SoDuCongNo element, int rowNumber)
+    {
+        if (selectedRowNumber == rowNumber)
+        {
+            selectedRowNumber = -1;
+            // clickedEvents.Add("Selected Row: None");
+            return string.Empty;
+        }
+        else if (table.SelectedItem != null && table.SelectedItem.Equals(element))
+        {
+            selectedRowNumber = rowNumber;
+            //clickedEvents.Add($"Selected Row: {rowNumber}");
+            return "selected";
+        }
+        else
+        {
+            return string.Empty;
+        }
+    }
+    async Task OpenDialogKhachHang()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var result = await DialogService.Show<DialogKhachHang>("Danh sách Khách hàng", options).Result;
+
+        if (!result.Canceled)
+        {
+            var itemSelected = (DanhMucKhachHangModel)(result.Data ?? null);
+            if (itemSelected != null)
+            {
+                selectedItem1.DMKhachHangId = itemSelected.Id;
+                selectedItem1.MaDonVi = itemSelected.MaDonVi;
+                selectedItem1.TenDonVi = itemSelected.TenDonVi;
+                selectedItem1.DiaChi = itemSelected.DiaChi;
+                selectedItem1.DienThoai = itemSelected.DienThoai;
+
+            }
+
+        }
+    }
+    void StartedEditingItem(SoDuCongNo item)
+    {
+        // _events.Insert(0, $"Event = StartedEditingItem, Data = {System.Text.Json.JsonSerializer.Serialize(item)}");
+    }
+
+    void CancelledEditingItem(SoDuCongNo item)
+    {
+        //_events.Insert(0, $"Event = CancelledEditingItem, Data = {System.Text.Json.JsonSerializer.Serialize(item)}");
+    }
+
+    void CommittedItemChanges(SoDuCongNo item)
+    {
+        //_events.Insert(0, $"Event = CommittedItemChanges, Data = {System.Text.Json.JsonSerializer.Serialize(item)}");
+    }
+    void ChangeValue(string s, SoDuCongNo item)
+    {
+        SelectedCurrentItem = item;
+        SelectedCurrentItem.TenDonVi = DateTime.Now.ToString();
+    }
+    void OnBlurItem(FocusEventArgs e, SoDuCongNo item)
+    {
+        item.TenDonVi = DateTime.UtcNow.ToString();
+    }
+    void ValueChanged(SoDuCongNo item)
+    {
+        item.TenDonVi = DateTime.UtcNow.ToString();
+    }
+}

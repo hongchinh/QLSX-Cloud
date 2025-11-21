@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <SelfContained>false</SelfContained>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Entities\DM\**" />
+    <Compile Remove="Entities\NhapXuat\**" />
+    <Compile Remove="Entities\SoDu\**" />
+    <Compile Remove="Entities\ThuChi\**" />
+    <EmbeddedResource Remove="Entities\DM\**" />
+    <EmbeddedResource Remove="Entities\NhapXuat\**" />
+    <EmbeddedResource Remove="Entities\SoDu\**" />
+    <EmbeddedResource Remove="Entities\ThuChi\**" />
+    <None Remove="Entities\DM\**" />
+    <None Remove="Entities\NhapXuat\**" />
+    <None Remove="Entities\SoDu\**" />
+    <None Remove="Entities\ThuChi\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Models\Author.cs" />
+    <Compile Remove="Models\Book.cs" />
+    <Compile Remove="Models\BookAuthor.cs" />
+    <Compile Remove="Models\Publisher.cs" />
+    <Compile Remove="Models\Sale.cs" />
+    <Compile Remove="Models\Store.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="11.0.1" />
+    <PackageReference Include="Blazored.LocalStorage" Version="4.2.0" />
+    <PackageReference Include="FoolProof.Core" Version="1.1.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.DataAnnotations.Validation" Version="3.2.0-rc1.20223.4" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="6.0.0" />
+    <PackageReference Include="MudBlazor" Version="6.1.2" />
+  </ItemGroup>
+
+</Project>
