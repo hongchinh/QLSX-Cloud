@@ -293,7 +293,7 @@
 
         if (quyenSuDung.Selectted)
         {
-            lsResponses = await listService.SoTongHopHangHoaAsync(itemRequest);
+            lsResponses = await listService.TraCuuTonKhoHangHoaAsync(itemRequest);
         }
         IEnumerable<SoTongHopHangHoa> data = lsResponses.Items;
 

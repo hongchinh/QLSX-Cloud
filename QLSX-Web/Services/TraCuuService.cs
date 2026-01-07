@@ -21,7 +21,7 @@ namespace QLSX.Web.Services
     interface ITraCuuService
     {
      
-        Task<GetAllResponsePaged<SoTongHopHangHoa>> SoTongHopHangHoaAsync(TraCuuTonKhoRequest request);
+        Task<GetAllResponsePaged<SoTongHopHangHoa>> TraCuuTonKhoHangHoaAsync(TraCuuTonKhoRequest request);
         Task<GetAllResponsePaged<ViewNhapXuat>> ViewNhapXuatAsync(ViewNhapXuatRequest request);
 
         Task<GetAllResponsePaged<SoPhaiThuTongHop>> SoPhaiThuTongHopAsync(TraCuuCongNoRequest request);
@@ -55,7 +55,7 @@ namespace QLSX.Web.Services
 
         
 
-        public async Task<GetAllResponsePaged<SoTongHopHangHoa>> SoTongHopHangHoaAsync(TraCuuTonKhoRequest request)
+        public async Task<GetAllResponsePaged<SoTongHopHangHoa>> TraCuuTonKhoHangHoaAsync(TraCuuTonKhoRequest request)
         {
             try
             {
