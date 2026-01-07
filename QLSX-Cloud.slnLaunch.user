@@ -12,7 +12,7 @@
       },
       {
         "Path": "QLSX-Report\\QLSX.Report.csproj",
-        "Action": "StartWithoutDebugging"
+        "Action": "Start"
       }
     ]
   }

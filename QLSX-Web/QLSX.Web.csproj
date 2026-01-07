@@ -195,6 +195,7 @@
   <ItemGroup>
     <Reference Include="QLSX.Shared">
       <HintPath>..\QLSX-API\QLSX.Shared\bin\Debug\net6.0\QLSX.Shared.dll</HintPath>
+      <Private>True</Private>
     </Reference>
   </ItemGroup>
 
