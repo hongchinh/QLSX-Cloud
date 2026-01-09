@@ -1113,6 +1113,34 @@
         await formData.Validate();
         if (errors.Count() == 0)
         {
+            // Validate MaDonVi tồn tại trong bảng DanhMucTenDonVI
+            if (!string.IsNullOrEmpty(nhapxuat.MaDonVi))
+            {
+                DanhMucKhachHangModel dmKH = await dmkhachhangService.GetByCodeAsync(nhapxuat.MaDonVi);
+                if (dmKH == null || dmKH.Id == 0)
+                {
+                    Snackbar.Add($"Mã đơn vị '{nhapxuat.MaDonVi}' không tồn tại trong danh mục đơn vị", Severity.Error);
+                    return;
+                }
+            }
+            
+            // Validate MaHangHoa tồn tại trong bảng DanhMucHangHoa cho tất cả các dòng chi tiết
+            if (nhapxuat.NoiDungNhapXuats != null && nhapxuat.NoiDungNhapXuats.Any())
+            {
+                foreach (var noiDung in nhapxuat.NoiDungNhapXuats)
+                {
+                    if (!string.IsNullOrEmpty(noiDung.MaHangHoa))
+                    {
+                        DanhMucHangHoaModel dmHH = await dmhanghoaService.GetByCodeAsync(noiDung.MaHangHoa);
+                        if (dmHH == null || dmHH.Id == 0)
+                        {
+                            Snackbar.Add($"Mã hàng hóa '{noiDung.MaHangHoa}' không tồn tại trong danh mục hàng hóa", Severity.Error);
+                            return;
+                        }
+                    }
+                }
+            }
+            
             await SaveStatus();
             nhapxuat.tblFileAttachments = lstFiles;
             await OnValidSubmit.InvokeAsync(saveAndCreate);
