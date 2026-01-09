@@ -75,7 +75,7 @@ namespace SaleAPI.Models
         public virtual DbSet<TraCuuNhapXuatAll> TracuuAlls { get; set; }
         public virtual DbSet<DuLieuIn> DuLieuIns { get; set; }
         public virtual DbSet<SoPhaiThu> SoPhaiThus { get; set; }
-        public virtual DbSet<SoPhaiThuTongHop> SoPhaiThuTongHops { get; set; }
+        public virtual DbSet<TraCuuCongNo> TraCuuCongNos { get; set; }
         public virtual DbSet<SoPhaiTra> SoPhaiTras { get; set; }
         public virtual DbSet<SoPhaiTraTongHop> SoPhaiTraTongHops { get; set; }
         public virtual DbSet<SoQuyTienMat> SoQuyTienMats { get; set; }

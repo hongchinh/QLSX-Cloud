@@ -973,7 +973,7 @@
         madonvi = nhapxuat.MaDonVi;
         var parameters = new DialogParameters { ["Loai"] = loai, ["SoDu"] = 1, ["TuNgay"] = tungay, ["DenNgay"] = denngay, ["MaDonVi"] = madonvi };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var dialog = DialogService.Show<QLSX.Web.Pages.TraCuuCongNo.DialogShowCongNo>("View danh sách", parameters, options);
+        var dialog = DialogService.Show<QLSX.Web.Pages.TraCuuCongNoPage.DialogShowCongNo>("View danh sách", parameters, options);
     }
     private async Task<double> GetSoLuongTonTheoCode(string mahanghoa, string makho, DateTime ngay)
     {

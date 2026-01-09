@@ -211,6 +211,9 @@ namespace SaleAPI.Controllers
                 //}
                 //_context.NoiDungDonDatHangs.AddRange(item.NoiDungDonDatHangs);
 
+                // Tự động set TenantId cho entity
+                _context.SetTenantIdForEntities(_tenantProvider);
+
                 await _context.SaveChangesAsync();
 
                 // Log Nhat ky

@@ -291,8 +291,11 @@ namespace SaleAPI.Controllers
                 entity.HanThanhToan = model.NgayHenThanhToan;
                 entity.CreatedDate = DateTime.Now;
                 entity.UpdatedDate = DateTime.Now;
+                entity.UserName = _tenantProvider.GetUser().EmailAddress;
 
                 var newItem = _context.NhapXuatTonCuonRepository.Add(entity);
+                _context.SetTenantIdForEntities(_tenantProvider);
+
 
                 await _context.SaveChangesAsync();
 

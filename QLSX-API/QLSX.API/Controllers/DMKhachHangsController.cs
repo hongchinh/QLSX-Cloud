@@ -145,6 +145,10 @@ namespace SaleAPI.Controllers
             entity.UpdatedDate = DateTime.Now;
             //model.DMDonViSuDungId = _tenantProvider.TenantId;
             _context.DanhMucKhachHangRepository.Add(entity);
+            
+            // Tự động set TenantId cho entity
+            _context.SetTenantIdForEntities(_tenantProvider);
+            
             await _context.SaveChangesAsync();
 
             // Log Nhat ky

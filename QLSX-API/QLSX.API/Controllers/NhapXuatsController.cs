@@ -177,7 +177,7 @@ public class NhapXuatsController : ControllerBase
             entity.MaLyDo = model.MaQuanLy;
             entity.NgayGiao = model.NgayGiao;
             entity.NoiGiaoHang = model.NoiGiao;
-            entity.MaDonViSuDung = model.MaDonHang;
+            // MaDonViSuDung sẽ được set tự động bởi extension method SetTenantIdForEntities
             entity.HinhThucTT = model.DMHinhThucTTId.ToString();
             entity.TyLeVAT = model.TyleVAT;
             entity.DienGiai = model.DienGiai;
@@ -329,7 +329,7 @@ public class NhapXuatsController : ControllerBase
             entity.TenLyDo = model.TenLyDo;
             entity.NgayGiao = model.NgayGiao;
             entity.NoiGiaoHang = model.NoiGiao;
-            entity.MaDonViSuDung = model.MaDonHang;
+            // MaDonViSuDung sẽ được set tự động bởi extension method SetTenantIdForEntities
             entity.HinhThucTT = model.DMHinhThucTTId.ToString();
             entity.TyLeVAT = model.TyleVAT;
             entity.DienGiai = model.DienGiai;
@@ -346,7 +346,11 @@ public class NhapXuatsController : ControllerBase
             entity.SoTienVC = model.SoTienVC;
             entity.SoTienGiam = model.SoTienGiam;
             entity.TrangThai = model.TrangThai;
+            entity.UserName = _tenantProvider.GetUser().EmailAddress;
             var newItem = _context.NhapXuatRepository.Add(entity);
+
+            // Tự động set TenantId cho entity
+            _context.SetTenantIdForEntities(_tenantProvider);
 
             await _context.SaveChangesAsync();
 

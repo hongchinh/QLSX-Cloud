@@ -247,7 +247,13 @@ namespace SaleAPI.Controllers
             enity.MaKhoanThu = model.MaKhoanThu;
             enity.CreatedDate = DateTime.Now;
             enity.UpdatedDate = DateTime.Now;
+            enity.UserName = _tenantProvider.GetUser().EmailAddress;
+
             var newItem = _context.ThuChiRepository.Add(enity);
+            
+            // Tự động set TenantId cho entity
+            _context.SetTenantIdForEntities(_tenantProvider);
+            
             await _context.SaveChangesAsync();
 
             // Log Nhat ky

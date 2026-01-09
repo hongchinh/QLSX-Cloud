@@ -191,9 +191,9 @@ namespace SaleAPI.Controllers
         }
 
         [HttpGet("congno")]
-        public async Task<ActionResult<GetAllResponse<SoPhaiThuTongHop>>> TraCuuCongNo(TraCuuCongNoRequest request)
+        public async Task<ActionResult<GetAllResponse<TraCuuCongNo>>> TraCuuCongNo(TraCuuCongNoRequest request)
         {
-            GetAllResponse<SoPhaiThuTongHop> lstApi = new GetAllResponse<SoPhaiThuTongHop>();
+            GetAllResponse<TraCuuCongNo> lstApi = new GetAllResponse<TraCuuCongNo>();
             try
             {
                 string tungay = "";
@@ -217,10 +217,10 @@ namespace SaleAPI.Controllers
                     request.DiaChi,
                     request.DienThoai,
                     "ZZZTEMPABCZXY");
-                var items = await _context.SoPhaiThuTongHops.FromSqlRaw(storeExec).ToListAsync();
+                var items = await _context.TraCuuCongNos.FromSqlRaw(storeExec).ToListAsync();
                 if (request.SortDirection != QLSX.Shared.Enums.SortDirection.None)
                 {
-                    if (request.SortLable == "MaDonVi")
+                    if (request.SortLable == "MDonVi")
                     {
                         if (request.SortDirection == QLSX.Shared.Enums.SortDirection.Ascending) items = items.OrderBy(x => x.MaDonVi).ToList();
                         else items = items.OrderByDescending(x => x.MaDonVi).ToList();
@@ -254,7 +254,7 @@ namespace SaleAPI.Controllers
             catch (Exception ex)
             {
 
-                lstApi = new GetAllResponse<SoPhaiThuTongHop>()
+                lstApi = new GetAllResponse<TraCuuCongNo>()
                 {
                     StatusCode = (int)HttpStatusCode.InternalServerError,
                     Message = ex.Message,

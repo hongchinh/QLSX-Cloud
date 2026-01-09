@@ -28,14 +28,49 @@ namespace SaleAPI.Interfaces
         public TenantProvider(IHttpContextAccessor accessor, CRMDBContext context)
         {
             tenantContext = context;
-            StringValues  tenantId  = StringValues.Empty;
-            accessor?.HttpContext?.Request?.Headers?.TryGetValue(QLSX.Shared.Contansts.RequestHeaders.XTenantId, out tenantId);
-            TenantId = int.Parse( string.IsNullOrEmpty(tenantId.ToString()) ? "0" : tenantId.ToString());
+            
+            // Ưu tiên lấy TenantId từ JWT claims, fallback về header nếu không có
+            var httpContext = accessor?.HttpContext;
+            if (httpContext != null && httpContext.User != null)
+            {
+                var tenantIdClaim = httpContext.User.FindFirst("TenantId")?.Value;
+                if (!string.IsNullOrEmpty(tenantIdClaim) && int.TryParse(tenantIdClaim, out int tenantIdFromClaim))
+                {
+                    TenantId = tenantIdFromClaim;
+                }
+                else
+                {
+                    // Fallback về header
+                    StringValues tenantIdHeader = StringValues.Empty;
+                    httpContext.Request?.Headers?.TryGetValue(QLSX.Shared.Contansts.RequestHeaders.XTenantId, out tenantIdHeader);
+                    TenantId = int.Parse(string.IsNullOrEmpty(tenantIdHeader.ToString()) ? "0" : tenantIdHeader.ToString());
+                }
 
-            accessor?.HttpContext?.Request?.Headers?.TryGetValue(QLSX.Shared.Contansts.RequestHeaders.XUserId, out tenantId);
-            UserId = int.Parse(string.IsNullOrEmpty(tenantId.ToString()) ? "0" : tenantId.ToString());
+                // Ưu tiên lấy UserId từ JWT claims, fallback về header nếu không có
+                var userIdClaim = httpContext.User.FindFirst("UserId")?.Value;
+                if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out int userIdFromClaim))
+                {
+                    UserId = userIdFromClaim;
+                }
+                else
+                {
+                    // Fallback về header
+                    StringValues userIdHeader = StringValues.Empty;
+                    httpContext.Request?.Headers?.TryGetValue(QLSX.Shared.Contansts.RequestHeaders.XUserId, out userIdHeader);
+                    UserId = int.Parse(string.IsNullOrEmpty(userIdHeader.ToString()) ? "0" : userIdHeader.ToString());
+                }
+            }
+            else
+            {
+                // Nếu không có HttpContext, lấy từ header
+                StringValues tenantId = StringValues.Empty;
+                accessor?.HttpContext?.Request?.Headers?.TryGetValue(QLSX.Shared.Contansts.RequestHeaders.XTenantId, out tenantId);
+                TenantId = int.Parse(string.IsNullOrEmpty(tenantId.ToString()) ? "0" : tenantId.ToString());
 
-
+                StringValues userId = StringValues.Empty;
+                accessor?.HttpContext?.Request?.Headers?.TryGetValue(QLSX.Shared.Contansts.RequestHeaders.XUserId, out userId);
+                UserId = int.Parse(string.IsNullOrEmpty(userId.ToString()) ? "0" : userId.ToString());
+            }
         }
 
         public DMDonViSuDung GetTenant(bool ignoreStatus = false)
@@ -64,7 +99,7 @@ namespace SaleAPI.Interfaces
             else
             {
                 user = tenantContext.GeUserById(UserId, ignoreStatus);
-                if (tenant == null)
+                if (user == null)
                 {
                     return new User();
                 }

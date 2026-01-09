@@ -10,6 +10,7 @@ using QLSX.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using SaleAPI.Interfaces;
 using SaleAPI.Services;
+using SaleAPI.Extensions;
 
 namespace SaleAPI.Controllers
 {
@@ -210,6 +211,10 @@ namespace SaleAPI.Controllers
                 item.UpdatedDate = DateTime.Now;
             }
             _context.SoDuCongNos.AddRange(items);
+            
+            // Tự động set TenantId cho entities
+            _context.SetTenantIdForEntities(_tenantProvider);
+            
             await _context.SaveChangesAsync();
 
             // Log Nhat ky

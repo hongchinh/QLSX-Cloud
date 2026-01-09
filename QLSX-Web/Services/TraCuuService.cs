@@ -24,7 +24,7 @@ namespace QLSX.Web.Services
         Task<GetAllResponsePaged<SoTongHopHangHoa>> TraCuuTonKhoHangHoaAsync(TraCuuTonKhoRequest request);
         Task<GetAllResponsePaged<ViewNhapXuat>> ViewNhapXuatAsync(ViewNhapXuatRequest request);
 
-        Task<GetAllResponsePaged<SoPhaiThuTongHop>> SoPhaiThuTongHopAsync(TraCuuCongNoRequest request);
+        Task<GetAllResponsePaged<TraCuuCongNo>> TraCuuCongNoAsync(TraCuuCongNoRequest request);
 
         Task<GetAllResponsePaged<ViewNhapXuat>> ViewCongNoAsync(ViewCongNoRequest request);
         Task<GetAllResponsePaged<TraCuuNhapXuatAll>> TraCuuToanBoAsync(NhapXuatSearchRequest request);
@@ -122,7 +122,7 @@ namespace QLSX.Web.Services
             }
         }
 
-        public async Task<GetAllResponsePaged<SoPhaiThuTongHop>> SoPhaiThuTongHopAsync(TraCuuCongNoRequest request)
+        public async Task<GetAllResponsePaged<TraCuuCongNo>> TraCuuCongNoAsync(TraCuuCongNoRequest request)
         {
             try
             {
@@ -141,14 +141,14 @@ namespace QLSX.Web.Services
                 var response = await _httpClient.SendAsync(requestMessage);
 
                 var responseBody = await response.Content.ReadAsStringAsync();
-                var results = await Task.FromResult(JsonConvert.DeserializeObject<GetAllResponsePaged<SoPhaiThuTongHop>>(responseBody));
+                var results = await Task.FromResult(JsonConvert.DeserializeObject<GetAllResponsePaged<TraCuuCongNo>>(responseBody));
                 return results;
 
             }
             catch (Exception ex)
             {
 
-                return new GetAllResponsePaged<SoPhaiThuTongHop>
+                return new GetAllResponsePaged<TraCuuCongNo>
                 {
                     StatusCode = (int)HttpStatusCode.InternalServerError,
                     Message = ex.Message

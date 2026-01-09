@@ -21,7 +21,7 @@
 @inject IPhanQuyenSuDungService< QLSX.Shared.Models.QuyenSuDungModel> permisstionService
 @inject IDMKhoHangService<DanhMucKhoHangModel> dmkhohangService
 
-@namespace QLSX.Web.Pages.TraCuuCongNo
+@namespace QLSX.Web.Pages.TraCuuCongNoPage
 
 
 <div class="form-group">
@@ -66,7 +66,7 @@
         </MudPaper>
     </EditForm>
     <div class="form-group">
-        <MudTable ServerData="@(new Func<TableState, Task<TableData<SoPhaiThuTongHop>>>(ServerReload))"
+        <MudTable ServerData="@(new Func<TableState, Task<TableData<TraCuuCongNo>>>(ServerReload))"
                   Breakpoint="Breakpoint.Sm" Virtualize="true" FixedHeader="true"
                   RowClassFunc="@SelectedRowClassFunc"
                   Dense="true" Hover="true" Bordered="true"
@@ -83,22 +83,27 @@
                 <col />
             </ColGroup>
             <HeaderContent>
-                <MudTh><MudTableSortLabel SortLabel="MaDonVi" T="SoPhaiThuTongHop">Mã đơn vị</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortLabel="TenDonVi" T="SoPhaiThuTongHop">Tên đơn vị</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortLabel="DiaChi" T="SoPhaiThuTongHop">Địa chỉ</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortLabel="SoDuDau" T="SoPhaiThuTongHop">Số dư đầu</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortLabel="SoTienMua" T="SoPhaiThuTongHop">Số tiền mua</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortLabel="SoTienTra" T="SoPhaiThuTongHop">Số tiền trả</MudTableSortLabel></MudTh>
-                <MudTh><MudTableSortLabel SortLabel="SoConLai" T="SoPhaiThuTongHop">Số còn lại</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="MaDonVi" T="TraCuuCongNo">Mã đơn vị</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="TenDonVi" T="TraCuuCongNo">Tên đơn vị</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="DiaChi" T="TraCuuCongNo">Địa chỉ</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="SoPhaiThuDau" T="TraCuuCongNo">Phải thu đầu</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="SoPhaiTraDau" T="TraCuuCongNo">Phải trả đầu</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="SoPhaiThu" T="TraCuuCongNo">Phải thu</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="SoPhaiTra" T="TraCuuCongNo">Phải trả</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="SoPhaiThuCuoi" T="TraCuuCongNo">Phải thu cuối</MudTableSortLabel></MudTh>
+                <MudTh><MudTableSortLabel SortLabel="SoPhaiTraCuoi" T="TraCuuCongNo">Phải trả cuối</MudTableSortLabel></MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="MaDonVi"> @context.MaDonVi</MudTd>
                 <MudTd DataLabel="TenDonVi">@context.TenDonVi</MudTd>
                 <MudTd DataLabel="DiaChi">@context.DiaChi</MudTd>
-                <MudTd DataLabel="SoDuDau" Style="text-align:right"><MudButton OnClick="@(() => OpenShowSoDu1(context.MaDonVi))">@context.SoDuDau?.ToString("###,###")</MudButton></MudTd>
-                <MudTd DataLabel="SoTienMua" Style="text-align:right"><MudButton OnClick="@(() => OpenShowMua(context.MaDonVi))">@context.SoTienMua?.ToString("###,###")</MudButton></MudTd>
-                <MudTd DataLabel="SoTienTra" Style="text-align:right"><MudButton OnClick="@(() => OpenShowTra(context.MaDonVi))"> @context.SoTienTra?.ToString("###,###") </MudButton> </MudTd>
-                <MudTd DataLabel="SoConLai" Style="text-align:right"><MudButton OnClick="@(() => OpenShowSoDu2(context.MaDonVi))">@context.SoConLai?.ToString("###,###")</MudButton> </MudTd>
+                <MudTd DataLabel="SoPhaiThuDau" Style="text-align:right"><MudButton OnClick="@(() => OpenShowSoDu1(context.MaDonVi))">@context.SoPhaiThuDau?.ToString("###,###")</MudButton></MudTd>
+                <MudTd DataLabel="SoPhaiTraDau" Style="text-align:right"><MudButton OnClick="@(() => OpenShowMua(context.MaDonVi))">@context.SoPhaiTraDau?.ToString("###,###")</MudButton></MudTd>
+                <MudTd DataLabel="SoPhaiThu" Style="text-align:right"><MudButton OnClick="@(() => OpenShowTra(context.MaDonVi))"> @context.SoPhaiThu?.ToString("###,###") </MudButton> </MudTd>
+                <MudTd DataLabel="SoPhaiTra" Style="text-align:right"><MudButton OnClick="@(() => OpenShowSoDu2(context.MaDonVi))">@context.SoPhaiTra?.ToString("###,###")</MudButton> </MudTd>
+                <MudTd DataLabel="SoPhaiThuCuoi" Style="text-align:right"><MudButton OnClick="@(() => OpenShowTra(context.MaDonVi))"> @context.SoPhaiThuCuoi?.ToString("###,###") </MudButton> </MudTd>
+                <MudTd DataLabel="SoPhaiTraCuoi" Style="text-align:right"><MudButton OnClick="@(() => OpenShowSoDu2(context.MaDonVi))">@context.SoPhaiTraCuoi?.ToString("###,###")</MudButton> </MudTd>
+
             </RowTemplate>
             <NoRecordsContent>
                 <MudText>Không có bản ghi nào tìm thấy</MudText>
@@ -111,10 +116,12 @@
             </PagerContent>
             <FooterContent>
                 <MudTd colspan="3" Style=" font-weight:bold"> TỔNG CỘNG</MudTd>
-                <MudTd Style=" font-weight:bold;text-align:right">@pagedData?.Sum( x=> x.SoDuDau)?.ToString("###,###") </MudTd>
-                <MudTd Style=" font-weight:bold;text-align:right">@pagedData?.Sum( x=> x.SoTienMua)?.ToString("###,###")</MudTd>
-                <MudTd Style=" font-weight:bold;text-align:right">@pagedData?.Sum( x=> x.SoTienTra)?.ToString("###,###")</MudTd>
-                <MudTd Style=" font-weight:bold;text-align:right">@pagedData?.Sum( x=> x.SoConLai)?.ToString("###,###")</MudTd>
+                <MudTd Style=" font-weight:bold;text-align:right">@pagedData?.Sum(x => x.SoPhaiThuDau)?.ToString("###,###") </MudTd>
+                <MudTd Style=" font-weight:bold;text-align:right">@pagedData?.Sum(x => x.SoPhaiTraDau)?.ToString("###,###")</MudTd>
+                <MudTd Style=" font-weight:bold;text-align:right">@pagedData?.Sum(x => x.SoPhaiThu)?.ToString("###,###")</MudTd>
+                <MudTd Style=" font-weight:bold;text-align:right">@pagedData?.Sum(x => x.SoPhaiTra)?.ToString("###,###")</MudTd>
+                <MudTd Style=" font-weight:bold;text-align:right">@pagedData?.Sum(x => x.SoPhaiThuCuoi)?.ToString("###,###")</MudTd>
+                <MudTd Style=" font-weight:bold;text-align:right">@pagedData?.Sum(x => x.SoPhaiTraCuoi)?.ToString("###,###")</MudTd>
                 <MudTd></MudTd>
             </FooterContent>
         </MudTable>
@@ -128,14 +135,14 @@
         new QLSX.Shared.Models.QuyenSuDungModel() { Sua = false, Them = false, Xoa = false, XemIn = false, Selectted = false };
     public List<DanhMucKhoHangModel> lstKhoHang { get; set; }
 
-    public GetAllResponsePaged<SoPhaiThuTongHop> lsResponses { get; set; }
+    public GetAllResponsePaged<TraCuuCongNo> lsResponses { get; set; }
 
     public TraCuuCongNoRequest itemRequest { get; set; }
 
     bool isLoading = true;
 
-    private IEnumerable<SoPhaiThuTongHop> pagedData;
-    private MudTable<SoPhaiThuTongHop> table;
+    private IEnumerable<TraCuuCongNo> pagedData;
+    private MudTable<TraCuuCongNo> table;
     private int totalItems;
     private int selectedRowNumber = -1;
 
@@ -167,7 +174,7 @@
         itemRequest.TuNgay = DateTime.Today.AddMonths(-1);
         itemRequest.DenNgay = DateTime.Today;
         itemRequest.Loai = 0;
-        lsResponses = new GetAllResponsePaged<SoPhaiThuTongHop>();
+        lsResponses = new GetAllResponsePaged<TraCuuCongNo>();
         lstKhoHang = await dmkhohangService.GetAllAsync();
         await base.OnInitializedAsync();
     }
@@ -220,7 +227,7 @@
     /// <summary>
     /// Here we simulate getting the paged, filtered and ordered data from the server
     /// </summary>
-    private async Task<TableData<SoPhaiThuTongHop>> ServerReload(TableState state)
+    private async Task<TableData<TraCuuCongNo>> ServerReload(TableState state)
     {
         isLoading = true;
         itemRequest.SortLable = state.SortLabel;
@@ -228,35 +235,35 @@
         itemRequest.Page = state.Page;
         itemRequest.PageSize = state.PageSize;
 
-        lsResponses = new GetAllResponsePaged<SoPhaiThuTongHop>();
+        lsResponses = new GetAllResponsePaged<TraCuuCongNo>();
         var user = (await authenticationStateTask).User;
         var UserId = user.FindFirst(c => c.Type == "UserId")?.Value;
         UserId = string.IsNullOrEmpty(UserId) ? "0" : UserId;
-        quyenSuDung = await permisstionService.GetQuyenByUserIdAsync(int.Parse(UserId), "SoPhaiThuTongHop");
+        quyenSuDung = await permisstionService.GetQuyenByUserIdAsync(int.Parse(UserId), "TraCuuCongNo");
 
         if (quyenSuDung.Selectted)
         {
-            lsResponses = await listService.SoPhaiThuTongHopAsync(itemRequest);
+            lsResponses = await listService.TraCuuCongNoAsync(itemRequest);
         }
-        IEnumerable<SoPhaiThuTongHop> data = lsResponses.Items;
+        IEnumerable<TraCuuCongNo> data = lsResponses.Items;
 
         totalItems = lsResponses.TotalRecords;
 
         if (data == null)
         {
-            data = new List<SoPhaiThuTongHop>();
+            data = new List<TraCuuCongNo>();
         }
         pagedData = data;
         isLoading = false;
         StateHasChanged();
-        return new TableData<SoPhaiThuTongHop>() { TotalItems = totalItems, Items = pagedData };
+        return new TableData<TraCuuCongNo>() { TotalItems = totalItems, Items = pagedData };
     }
-    private void RowClickEvent(TableRowClickEventArgs<SoPhaiThuTongHop> tableRowClickEventArgs)
+    private void RowClickEvent(TableRowClickEventArgs<TraCuuCongNo> tableRowClickEventArgs)
     {
         //toastService.ShowInfo("HH: " + table.SelectedItem?.MaHangHoa);
     }
 
-    private string SelectedRowClassFunc(SoPhaiThuTongHop element, int rowNumber)
+    private string SelectedRowClassFunc(TraCuuCongNo element, int rowNumber)
     {
         if (selectedRowNumber == rowNumber)
         {

@@ -18,7 +18,7 @@ namespace QLSX.Shared.Models
         public Double? SoTienMua { get; set; }
         public Double? SoTienTra { get; set; }
         public Double? SoConLai { get; set; }
-        public int? DMDonViSuDungId { get; set; }
+        public int? MaDonViSuDung { get; set; }
         public string? TenDonViSuDung { get; set; }
 
         

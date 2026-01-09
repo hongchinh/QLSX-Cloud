@@ -398,6 +398,17 @@
         await form.Validate();
         if (errors.Count() == 0)
         {
+            // Validate MaDoiTuong tồn tại trong bảng DanhMucTenDonVI
+            if (!string.IsNullOrEmpty(thuchi.MaDoiTuong))
+            {
+                DanhMucKhachHangModel dmKH = await dmkhachhangService.GetByCodeAsync(thuchi.MaDoiTuong);
+                if (dmKH == null || dmKH.Id == 0)
+                {
+                    Snackbar.Add($"Mã đơn vị '{thuchi.MaDoiTuong}' không tồn tại trong danh mục đơn vị", Severity.Error);
+                    return;
+                }
+            }
+            
             await SaveStatus();
             await OnValidSubmit.InvokeAsync(saveAndCreate);
         }
@@ -549,6 +560,6 @@
         madonvi = thuchi.MaDoiTuong;
         var parameters = new DialogParameters { ["Loai"] = loai, ["SoDu"] = 1, ["TuNgay"] = tungay, ["DenNgay"] = denngay, ["MaDonVi"] = madonvi };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var dialog = DialogService.Show<QLSX.Web.Pages.TraCuuCongNo.DialogShowCongNo>("View danh sách", parameters, options);
+        var dialog = DialogService.Show<QLSX.Web.Pages.TraCuuCongNoPage.DialogShowCongNo>("View danh sách", parameters, options);
     }
 }

@@ -353,6 +353,7 @@ namespace SaleAPI.Controllers
                     //new Claim("IsTP", IsTP(user)),
                     //new Claim("IsNV", IsNV(user)),
                     new Claim("UserId", user.Id.ToString() ),
+                    new Claim("TenantId", (user.DMDonViSuDungId ?? 0).ToString() ),
                 }),
                 Expires = DateTime.UtcNow.AddDays(1),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key),
