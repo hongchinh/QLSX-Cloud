@@ -7,6 +7,8 @@
 @using System.Globalization
 @using Blazored.LocalStorage
 @using Blazored.Toast
+@using System.Linq
+@using System.Threading
 
 @inject IDMHangHoaService<DanhMucHangHoaModel> dmhanghoaService
 @inject IDMKhachHangService<DanhMucKhachHangModel> dmkhachhangService
@@ -194,14 +196,24 @@
                                 </div>
                                 <div class="fieldParam">
                                     <ValidationMessage For="(() => nhapxuat.MaDonVi)" />
-                                    <MudTextField ReadOnly="@IsReadOnly" Margin="Margin.Dense" @bind-Value="@nhapxuat.MaDonVi"
-                                                  TextChanged="@((input) => MaDonViTextChanged(input))"
-                                                  Adornment="Adornment.End"
-                                                  AdornmentIcon="@Icons.Material.Filled.Search"
-                                                  OnAdornmentClick="@(() => OpenDialogKhachHang())"
-                                                  Immediate="true"
-                                                  OnKeyDown="@(async (e) => await OnKeyDownMaDonVi(e))"
-                                                  Variant="Variant.Outlined" />
+                                    <MudAutocomplete T="DanhMucKhachHangModel" 
+                                                     ReadOnly="@IsReadOnly"
+                                                     Value="@GetSelectedKhachHang()"
+                                                     SearchFunc="@SearchKhachHangAsync"
+                                                     ToStringFunc="@((DanhMucKhachHangModel x) => x != null ? $"{x.MaDonVi} - {x.TenDonVi}" : string.Empty)"
+                                                     CoerceText="false"
+                                                     ResetValueOnEmpty="true"
+                                                     MaxItems="50"
+                                                     MinCharacters="0"
+                                                     DebounceInterval="300"
+                                                     Margin="Margin.Dense"
+                                                     Dense="true"
+                                                     Variant="Variant.Outlined"
+                                                     OnKeyDown="@(async (e) => await OnKeyDownKhachHang(e))"
+                                                     ValueChanged="@((DanhMucKhachHangModel value) => { _ = OnKhachHangSelectedAsync(value); })"
+                                                     Adornment="Adornment.End"
+                                                     AdornmentIcon="@Icons.Material.Filled.Search"
+                                                     OnAdornmentClick="@(() => OpenDialogKhachHang())" />
                                 </div>
                             </MudItem>
                             <MudItem xs="12" sm="3" lg="5" Class="d-flex flex-grow-1 gap-2">
@@ -389,11 +401,22 @@
                 </RowTemplate>
                 <RowEditingTemplate Context="ctx1">
                     <MudTd DataLabel="MaHangHoa">
-                        <MudTextField @bind-Value="@ctx1.MaHangHoa" OnKeyDown="@(async (e) => await OnKeyDownGrid(e, ctx1.Index, "MaHangHoa"))"
-                                      AutoFocus="@(IsMaHangHoaFocus)" Immediate="true" TextChanged="MaHangHoaTextChanged" OnInternalInputChanged="OnInternalInputChanged"
-                                      Adornment="Adornment.End"
-                                      AdornmentIcon="@Icons.Material.Filled.Search"
-                                      OnAdornmentClick="@(() => OpenDialogHangHoa())" />
+                        <MudAutocomplete T="DanhMucHangHoaModel" 
+                                         Value="@GetSelectedHangHoa(ctx1)"
+                                         SearchFunc="@SearchHangHoaAsync"
+                                         ToStringFunc="@((DanhMucHangHoaModel x) => x != null ? $"{x.MaHangHoa} - {x.TenHangHoa}" : string.Empty)"
+                                         CoerceText="false"
+                                         ResetValueOnEmpty="true"
+                                         MaxItems="50"
+                                         MinCharacters="0"
+                                         DebounceInterval="300"
+                                         Dense="true"
+                                         Variant="Variant.Outlined"
+                                         OnKeyDown="@(async (e) => await OnKeyDownAutocomplete(e, ctx1.Index, ctx1))"
+                                         ValueChanged="@((DanhMucHangHoaModel value) => { _ = OnHangHoaSelectedAsync(value, ctx1); })"
+                                         Adornment="Adornment.End"
+                                         AdornmentIcon="@Icons.Material.Filled.Search"
+                                         OnAdornmentClick="@(() => OpenDialogHangHoa())" />
                     </MudTd>
                     <MudTd DataLabel="TenHangHoa">
                         <MudTextField @bind-Value="@ctx1.TenHangHoa" Immediate="true" OnKeyDown="@(async (e) => await OnKeyDownGrid(e, ctx1.Index, "TenHangHoa"))" />
@@ -679,6 +702,12 @@
     private MudTable<NoiDungNhapXuatModel> table;
 
     private MudTable<NhatKyModel> tableNhatKy;
+    
+    // Dictionary để lưu mapping giữa NoiDungNhapXuatModel và DanhMucHangHoaModel cho autocomplete
+    private Dictionary<NoiDungNhapXuatModel, DanhMucHangHoaModel> hangHoaMapping = new Dictionary<NoiDungNhapXuatModel, DanhMucHangHoaModel>();
+    
+    // Biến để lưu selected khách hàng cho autocomplete MaDonVi
+    private DanhMucKhachHangModel selectedKhachHang;
 
     public HangHoaSearchRequest itemRequest { get; set; } =
     new HangHoaSearchRequest
@@ -731,6 +760,162 @@
         var row = (NoiDungNhapXuatModel)item;
         IsFirstEdit = 1;
     }
+    // Method để lấy selected hàng hóa từ NoiDungNhapXuatModel
+    private DanhMucHangHoaModel GetSelectedHangHoa(NoiDungNhapXuatModel noiDung)
+    {
+        if (hangHoaMapping.ContainsKey(noiDung))
+        {
+            return hangHoaMapping[noiDung];
+        }
+        
+        // Nếu có MaHangHoa, tìm trong mapping hoặc trả về null
+        if (!string.IsNullOrEmpty(noiDung.MaHangHoa))
+        {
+            // Tìm trong cache nếu có
+            var cached = hangHoaMapping.Values.FirstOrDefault(x => x.MaHangHoa == noiDung.MaHangHoa);
+            if (cached != null)
+            {
+                hangHoaMapping[noiDung] = cached;
+                return cached;
+            }
+        }
+        
+        return null;
+    }
+
+    // Method để search hàng hóa theo mã hoặc tên
+    private async Task<IEnumerable<DanhMucHangHoaModel>> SearchHangHoaAsync(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            // Nếu không có giá trị, trả về danh sách rỗng
+            return new List<DanhMucHangHoaModel>();
+        }
+
+        try
+        {
+            // Gọi API 2 lần: một lần tìm theo mã, một lần tìm theo tên
+            // Sau đó merge kết quả và loại bỏ trùng lặp
+            var tasks = new List<Task<GetAllResponsePaged<DanhMucHangHoaModel>>>();
+            
+            // Tìm theo mã hàng hóa
+            var searchRequestMa = new HangHoaSearchRequest
+            {
+                MaHangHoa = value,
+                Page = 0,
+                PageSize = 50,
+                DMDonViSuDungId = AppService.DMDonViSuDungId
+            };
+            tasks.Add(dmhanghoaService.GetAllPagedDialogAsync(searchRequestMa));
+            
+            // Tìm theo tên hàng hóa
+            var searchRequestTen = new HangHoaSearchRequest
+            {
+                TenHangHoa = value,
+                Page = 0,
+                PageSize = 50,
+                DMDonViSuDungId = AppService.DMDonViSuDungId
+            };
+            tasks.Add(dmhanghoaService.GetAllPagedDialogAsync(searchRequestTen));
+            
+            // Chờ cả 2 task hoàn thành
+            var results = await Task.WhenAll(tasks);
+            
+            // Merge kết quả và loại bỏ trùng lặp theo Id
+            var allItems = new List<DanhMucHangHoaModel>();
+            foreach (var result in results)
+            {
+                if (result != null && result.Items != null)
+                {
+                    allItems.AddRange(result.Items);
+                }
+            }
+            
+            // Loại bỏ trùng lặp và filter lại để đảm bảo chính xác
+            var uniqueItems = allItems
+                .GroupBy(x => x.Id)
+                .Select(g => g.First())
+                .Where(x => 
+                    (x.MaHangHoa != null && x.MaHangHoa.Contains(value, StringComparison.OrdinalIgnoreCase)) ||
+                    (x.TenHangHoa != null && x.TenHangHoa.Contains(value, StringComparison.OrdinalIgnoreCase))
+                )
+                .Take(50)
+                .ToList();
+            
+            return uniqueItems;
+        }
+        catch (Exception)
+        {
+            return new List<DanhMucHangHoaModel>();
+        }
+    }
+
+    // Method xử lý khi chọn hàng hóa từ autocomplete
+    private async Task OnHangHoaSelectedAsync(DanhMucHangHoaModel selectedHangHoa, NoiDungNhapXuatModel noiDung)
+    {
+        if (selectedHangHoa == null || noiDung == null)
+        {
+            return;
+        }
+
+        // Lưu mapping
+        hangHoaMapping[noiDung] = selectedHangHoa;
+
+        // Cập nhật thông tin vào NoiDungNhapXuatModel
+        noiDung.MaHangHoa = selectedHangHoa.MaHangHoa;
+        noiDung.TenHangHoa = selectedHangHoa.TenHangHoa;
+        noiDung.DonViTinh = selectedHangHoa.DonViTinh;
+        noiDung.DonGia = selectedHangHoa.GiaXuat;
+        noiDung.KhoRongTon = selectedHangHoa.KhoRongTon;
+        noiDung.ChieuDai = selectedHangHoa.ChieuDai;
+        noiDung.DMHangHoaId = selectedHangHoa.Id;
+        noiDung.DMDonViSuDungId = nhapxuat.DMDonViSuDungId;
+        noiDung.DMKhoHangId = nhapxuat?.DMKhoHangId ?? 0;
+        noiDung.MaNhom = selectedHangHoa.MaNhomHang;
+        noiDung.TenNhom = selectedHangHoa.TenNhomHang;
+
+        noiDung.KieuSong = selectedHangHoa.KieuSong;
+        noiDung.MaKieuSong = selectedHangHoa.MaKieuSong;
+        noiDung.LoaiTon = selectedHangHoa.LoaiTon;
+        noiDung.MaLoaiTon = selectedHangHoa.MaLoaiTon;
+        noiDung.DoDay = selectedHangHoa.DoDay;
+        noiDung.ChungLoai = selectedHangHoa.ChungLoai;
+        noiDung.MaChungLoai = selectedHangHoa.MaChungLoai;
+        noiDung.MauSac = selectedHangHoa.MauSac;
+        noiDung.MaMauSac = selectedHangHoa.MaMauSac;
+
+        noiDung.IsM2 = false;
+        noiDung.IsMD = false;
+        noiDung.IsSoLuong = false;
+
+        if (selectedHangHoa.MaNhomHang == "01")
+        {
+            noiDung.IsM2 = true;
+            noiDung.TongChieuDai = Math.Round(noiDung.SoLuong * noiDung.ChieuDai, 2);
+            noiDung.TongDienTich = Math.Round(noiDung.SoLuong * noiDung.KhoRongTon * noiDung.ChieuDai, 2);
+            noiDung.SoTien = selectedHangHoa.ChieuDai * selectedHangHoa.KhoRongTon * noiDung.SoLuong * noiDung.DonGia;
+        }
+        else if (selectedHangHoa.MaNhomHang == "02")
+        {
+            noiDung.IsMD = true;
+            noiDung.TongChieuDai = Math.Round(noiDung.SoLuong * noiDung.ChieuDai, 2);
+            noiDung.TongDienTich = 0;
+            noiDung.SoTien = selectedHangHoa.ChieuDai * noiDung.SoLuong * noiDung.DonGia;
+        }
+        else
+        {
+            noiDung.IsSoLuong = true;
+            noiDung.TongChieuDai = 0;
+            noiDung.TongDienTich = 0;
+            noiDung.SoTien = noiDung.SoLuong * noiDung.DonGia;
+        }
+
+        // Lấy số lượng tồn
+        noiDung.SoLuongTon = await GetSoLuongTonTheoCode(noiDung.MaHangHoa, nhapxuat.MaKho, nhapxuat.NgayCT ?? DateTime.Now);
+        
+        StateHasChanged();
+    }
+
     public async Task MaHangHoaTextChanged(string mahh)
     {
         if (IsFirstEdit == 1)
@@ -793,6 +978,136 @@
         }
         selectedNoiDung.SoLuongTon = await GetSoLuongTonTheoCode(selectedNoiDung.MaHangHoa, nhapxuat.MaKho, nhapxuat.NgayCT ?? DateTime.Now);
         StateHasChanged();
+    }
+
+    // Method để lấy selected khách hàng từ NhapXuatModel
+    private DanhMucKhachHangModel GetSelectedKhachHang()
+    {
+        if (selectedKhachHang != null && !string.IsNullOrEmpty(nhapxuat.MaDonVi))
+        {
+            // Nếu selected khách hàng có mã khớp với nhapxuat.MaDonVi, trả về
+            if (selectedKhachHang.MaDonVi == nhapxuat.MaDonVi)
+            {
+                return selectedKhachHang;
+            }
+        }
+        
+        return null;
+    }
+
+    // Method để search khách hàng theo mã hoặc tên
+    private async Task<IEnumerable<DanhMucKhachHangModel>> SearchKhachHangAsync(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            // Nếu không có giá trị, trả về danh sách rỗng
+            return new List<DanhMucKhachHangModel>();
+        }
+
+        try
+        {
+            // Gọi API 2 lần: một lần tìm theo mã, một lần tìm theo tên
+            // Sau đó merge kết quả và loại bỏ trùng lặp
+            var tasks = new List<Task<GetAllResponsePaged<DanhMucKhachHangModel>>>();
+            
+            // Tìm theo mã đơn vị
+            var searchRequestMa = new KhachHangSearchRequest
+            {
+                MaDonVi = value,
+                Page = 0,
+                PageSize = 50,
+                DMDonViSuDungId = AppService.DMDonViSuDungId
+            };
+            tasks.Add(dmkhachhangService.GetAllPagedDialogAsync(searchRequestMa));
+            
+            // Tìm theo tên đơn vị
+            var searchRequestTen = new KhachHangSearchRequest
+            {
+                TenDonVi = value,
+                Page = 0,
+                PageSize = 50,
+                DMDonViSuDungId = AppService.DMDonViSuDungId
+            };
+            tasks.Add(dmkhachhangService.GetAllPagedDialogAsync(searchRequestTen));
+            
+            // Chờ cả 2 task hoàn thành
+            var results = await Task.WhenAll(tasks);
+            
+            // Merge kết quả và loại bỏ trùng lặp theo Id
+            var allItems = new List<DanhMucKhachHangModel>();
+            foreach (var result in results)
+            {
+                if (result != null && result.Items != null)
+                {
+                    allItems.AddRange(result.Items);
+                }
+            }
+            
+            // Loại bỏ trùng lặp và filter lại để đảm bảo chính xác
+            var uniqueItems = allItems
+                .GroupBy(x => x.Id)
+                .Select(g => g.First())
+                .Where(x => 
+                    (x.MaDonVi != null && x.MaDonVi.Contains(value, StringComparison.OrdinalIgnoreCase)) ||
+                    (x.TenDonVi != null && x.TenDonVi.Contains(value, StringComparison.OrdinalIgnoreCase))
+                )
+                .Take(50)
+                .ToList();
+            
+            return uniqueItems;
+        }
+        catch (Exception)
+        {
+            return new List<DanhMucKhachHangModel>();
+        }
+    }
+
+    // Method xử lý khi chọn khách hàng từ autocomplete
+    private async Task OnKhachHangSelectedAsync(DanhMucKhachHangModel selectedKhachHangModel)
+    {
+        if (selectedKhachHangModel == null)
+        {
+            return;
+        }
+
+        // Lưu selected khách hàng
+        selectedKhachHang = selectedKhachHangModel;
+
+        // Cập nhật thông tin vào NhapXuatModel
+        nhapxuat.MaDonVi = selectedKhachHangModel.MaDonVi;
+        nhapxuat.TenDonVi = selectedKhachHangModel.TenDonVi;
+        nhapxuat.DiaChi = selectedKhachHangModel.DiaChi;
+        nhapxuat.DienThoai = selectedKhachHangModel.DienThoai;
+
+        // Lấy số dư công nợ
+        await GetSoDuCongNo();
+        
+        StateHasChanged();
+    }
+
+    // Method xử lý keyboard cho MudAutocomplete MaDonVi
+    private async Task OnKeyDownKhachHang(KeyboardEventArgs e)
+    {
+        if (IsReadOnly) return;
+        
+        // Xử lý Enter: confirm selection và di chuyển đến cột tiếp theo
+        if (e.Key == "Enter")
+        {
+            // Nếu đã có đơn vị được chọn, có thể di chuyển đến cột tiếp theo nếu cần
+            if (!string.IsNullOrEmpty(nhapxuat.MaDonVi))
+            {
+                StateHasChanged();
+            }
+        }
+        // Xử lý Tab: di chuyển đến cột tiếp theo (MudAutocomplete tự xử lý)
+        // Xử lý F3: mở dialog chọn khách hàng
+        else if (e.Key == "F3")
+        {
+            await OpenDialogKhachHang();
+            StateHasChanged();
+        }
+        // Up/Down: để MudAutocomplete tự xử lý navigation trong dropdown
+        // Không cần xử lý ở đây
     }
 
     public async Task MaDonViTextChanged(string madv)
@@ -1175,6 +1490,46 @@
             return "Kho hàng bắt buộc nhập!";
         return null;
     }
+    // Method xử lý keyboard cho MudAutocomplete (cột MaHangHoa)
+    private async Task OnKeyDownAutocomplete(KeyboardEventArgs e, int indexCurrentSelected, NoiDungNhapXuatModel noiDung)
+    {
+        if (IsReadOnly) return;
+        
+        // Xử lý Enter: confirm selection và di chuyển đến cột Số lượng
+        if (e.Key == "Enter")
+        {
+            // Nếu đã có hàng hóa được chọn, di chuyển đến cột Số lượng
+            if (!string.IsNullOrEmpty(noiDung.MaHangHoa))
+            {
+                IsSoLuongFocus = true;
+                await SetForcusInGrid("SoLuong");
+                StateHasChanged();
+            }
+        }
+        // Xử lý Tab: di chuyển đến cột tiếp theo
+        else if (e.Key == "Tab")
+        {
+            IsSoLuongFocus = true;
+            await SetForcusInGrid("SoLuong");
+            StateHasChanged();
+        }
+        // Xử lý F2: thêm dòng mới
+        else if (e.Key == "F2")
+        {
+            await AddRow();
+            await SetForcusInGrid("MaHangHoa");
+            StateHasChanged();
+        }
+        // Xử lý F3: mở dialog chọn hàng hóa
+        else if (e.Key == "F3")
+        {
+            await OpenDialogHangHoa();
+            StateHasChanged();
+        }
+        // Up/Down: để MudAutocomplete tự xử lý navigation trong dropdown
+        // Không cần xử lý ở đây
+    }
+
     private async Task OnKeyDownGrid(KeyboardEventArgs e, int indexCurrentSelected, string columnName)
     {
         if (IsReadOnly) return;

@@ -45,6 +45,9 @@
                 <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
                     <MudTextField Margin="Margin.Dense" @bind-Value="itemRequest.MaDonHang" Label="Mã đơn hàng" Variant="Variant.Outlined"></MudTextField>
                 </MudItem>
+                <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                    <MudTextField Margin="Margin.Dense" @bind-Value="itemRequest.DonViSearch" Label="Mã/Tên/Địa chỉ đơn vị" Variant="Variant.Outlined" Placeholder="Nhập mã, tên hoặc địa chỉ đơn vị"></MudTextField>
+                </MudItem>
 
                 <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
                     <MudSelect Margin="Margin.Dense" T="string" Label="Loại" AnchorOrigin="Origin.BottomCenter" @bind-Value="itemRequest.Loai" Variant="Variant.Outlined">

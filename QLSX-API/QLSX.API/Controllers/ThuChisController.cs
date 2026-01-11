@@ -338,6 +338,13 @@ namespace SaleAPI.Controllers
             {
                 filter = filter.And(x => x.DiaChi.Contains(request.DiaChi));
             }
+            // Tìm kiếm đơn vị (mã, tên hoặc địa chỉ)
+            if (!string.IsNullOrEmpty(request.DonViSearch))
+            {
+                filter = filter.And(x => (x.MaDoiTuong != null && x.MaDoiTuong.Contains(request.DonViSearch)) 
+                                   || (x.TenDoiTuong != null && x.TenDoiTuong.Contains(request.DonViSearch))
+                                   || (x.DiaChi != null && x.DiaChi.Contains(request.DonViSearch)));
+            }
 
             if (request.NgayLap_From.HasValue)
             {
@@ -444,6 +451,13 @@ namespace SaleAPI.Controllers
             if (!string.IsNullOrEmpty(request.DiaChi))
             {
                 filter = filter.And(x => x.DiaChi.Contains(request.DiaChi));
+            }
+            // Tìm kiếm đơn vị (mã, tên hoặc địa chỉ)
+            if (!string.IsNullOrEmpty(request.DonViSearch))
+            {
+                filter = filter.And(x => (x.MaDoiTuong != null && x.MaDoiTuong.Contains(request.DonViSearch)) 
+                                   || (x.TenDoiTuong != null && x.TenDoiTuong.Contains(request.DonViSearch))
+                                   || (x.DiaChi != null && x.DiaChi.Contains(request.DonViSearch)));
             }
 
             if (request.NgayLap_From.HasValue)

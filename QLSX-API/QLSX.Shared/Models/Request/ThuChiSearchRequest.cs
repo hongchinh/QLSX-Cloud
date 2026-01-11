@@ -19,6 +19,7 @@ namespace QLSX.Shared.Models
         public string TenDonVi { get; set; }
         public string DiaChi { get; set; }
         public string DienThoai { get; set; }
+        public string DonViSearch { get; set; }
 
         public int Index { get; set; }
         public string Loai { get; set; }
