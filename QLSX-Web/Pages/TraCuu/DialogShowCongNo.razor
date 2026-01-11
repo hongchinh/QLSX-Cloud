@@ -27,10 +27,10 @@
                       T="ViewNhapXuat">
                 <HeaderContent>
                     <MudTh><MudTableSortLabel SortLabel="NgayCT" T="ViewNhapXuat">Ngày CT</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortLabel="SoCT" T="ViewNhapXuat">Số Chứng từ</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="SoChungTu" T="ViewNhapXuat">Số Chứng từ</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortLabel="MaDonVi" T="ViewNhapXuat">Mã Đơn vị</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortLabel="TenDonVi" T="ViewNhapXuat">Tên Đơn vị</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortLabel="DiaChi" T="ViewNhapXuat">Địa chỉ</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="DiaChiDoiTuong" T="ViewNhapXuat">Địa chỉ</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortLabel="SoTien" T="ViewNhapXuat">Số tiền</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortLabel="DienGiai" T="ViewNhapXuat">Diễn giải</MudTableSortLabel></MudTh>
                 </HeaderContent>
@@ -41,21 +41,21 @@
                     <MudTd DataLabel="SoCT">
                         @if (context.Loai.StartsWith("nhap") || context.Loai.StartsWith("xuat"))
                         {
-                            <MudButton Color="Color.Primary" Size="Size.Small" OnClick="@(async ()=> await SuaNhapXuatClick( context.Id,context.Loai))">@context.SoCT</MudButton>
+                            <MudButton Color="Color.Primary" Size="Size.Small" OnClick="@(async ()=> await SuaNhapXuatClick( context.Id,context.Loai))">@context.SoChungTu</MudButton>
                         }
                         else
                         {
-                            <MudButton Color="Color.Primary" Size="Size.Small" OnClick="@(async ()=> await SuaThuChiClick(context.Id,context.Loai ))">@context.SoCT</MudButton>
+                            <MudButton Color="Color.Primary" Size="Size.Small" OnClick="@(async () => await SuaThuChiClick(context.Id, context.Loai))">@context.SoChungTu</MudButton>
                         }
                     </MudTd>
                     <MudTd DataLabel="MaDonVi">
-                        <MudText> @context.MaDonVi</MudText>
+                        <MudText> @context.MaDoiTuong</MudText>
                     </MudTd>
                     <MudTd DataLabel="TenDonVi">
-                        <MudText> @context.TenDonVi</MudText>
+                        <MudText> @context.TenDoiTuong</MudText>
                     </MudTd>
                     <MudTd DataLabel="DiaChi">
-                        <MudText> @context.DiaChi</MudText>
+                        <MudText> @context.DiaChiDoiTuong</MudText>
                     </MudTd>
                     <MudTd DataLabel="SoTien">
                         <MudText Style="text-align:right"> @context.SoTien.ToString("###,###") </MudText>

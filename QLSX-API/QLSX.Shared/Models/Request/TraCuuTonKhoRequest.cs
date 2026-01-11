@@ -16,7 +16,7 @@ namespace QLSX.Shared.Models
         public DateTime? DenNgay { get; set; }
         public string TempTable { get; set; } = "ZZZZTEMP";
 
-        public int DMKhoHangId { get; set; } = 0;
+        public string? MaKho { get; set; } = "";
         public string? MaHangHoa { get; set; }
         public string? TenHangHoa { get; set; }
         public string? DonViTinh { get; set; }

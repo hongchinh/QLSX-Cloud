@@ -30,7 +30,7 @@ namespace QLSX.Web.Services
         Task<GetAllResponsePaged<DanhMucHangHoaModel>> ExportToExcelAsync(QLSX.Shared.Models.HangHoaSearchRequest request);
         Task<GetAllResponsePaged<DanhMucHangHoaModel>> GetAllPagedAsync(QLSX.Shared.Models.HangHoaSearchRequest request);
         Task<GetAllResponsePaged<DanhMucHangHoaModel>> GetAllPagedDialogAsync(QLSX.Shared.Models.HangHoaSearchRequest request);
-        Task<bool> UpdateListPrintAsync(List<int> request);
+        Task<bool> UpdateListPrintAsync(List<string> request);
         Task<Stream> GetImage();
 
         Task<double> GetSoDuHangHoaByCodeAsync(QLSX.Shared.Models.GetSoDuHangHoaRequest request);
@@ -305,7 +305,7 @@ namespace QLSX.Web.Services
                 return new();
         }
 
-        public async Task<bool> UpdateListPrintAsync(List<int> request)
+        public async Task<bool> UpdateListPrintAsync(List<string> request)
         {
 
             string serializedUser = JsonConvert.SerializeObject(request);

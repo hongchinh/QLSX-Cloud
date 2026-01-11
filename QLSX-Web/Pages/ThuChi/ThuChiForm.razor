@@ -47,16 +47,23 @@
                         </MudItem>
 
                         <MudItem xs="12" sm="3" lg="2" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
-                            <MudTextField ReadOnly="@IsReadOnly" Label="Mã đơn vị" @bind-Value="@thuchi.MaDoiTuong" Variant="Variant.Outlined" Margin="Margin.Dense"
-                                          TextChanged="@( (input) => MaDonViTextChanged(input))"
-                                          Adornment="Adornment.End"
-                                          AdornmentIcon="@Icons.Material.Filled.Search"
-                                          OnKeyDown="@( async (e) => await OnKeyDownMaDonVi(e))"
-                                          OnAdornmentClick="@(() => OpenDialogKhachHang())"
-                                          Immediate="true" />
+                            <MudTooltip Text="@maDoiTuongError"
+                                        Placement="Placement.Top"
+                                        Color="Color.Error"
+                                        Arrow="true"
+                                        Disabled="@string.IsNullOrEmpty(maDoiTuongError)">
+                                <MudTextField ReadOnly="@IsReadOnly" Label="Mã đơn vị" @bind-Value="@thuchi.MaDoiTuong" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                              Error="@(!string.IsNullOrEmpty(maDoiTuongError))"
+                                              TextChanged="@((input) => MaDonViTextChanged(input))"
+                                              Adornment="Adornment.End"
+                                              AdornmentIcon="@Icons.Material.Filled.Search"
+                                              OnKeyDown="@(async (e) => await OnKeyDownMaDonVi(e))"
+                                              OnAdornmentClick="@(() => OpenDialogKhachHang())"
+                                              Immediate="true" />
+                            </MudTooltip>
                         </MudItem>
                         <MudItem xs="12" sm="3" lg="5" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
-                            <MudTextField ReadOnly="@IsReadOnly" Label="Tên đơn vị"  @bind-Value="@thuchi.TenDoiTuong" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudTextField ReadOnly="@IsReadOnly" Label="Tên đơn vị" @bind-Value="@thuchi.TenDoiTuong" Variant="Variant.Outlined" Margin="Margin.Dense" />
                         </MudItem>
 
                         <MudItem xs="12" sm="3" lg="3" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
@@ -67,7 +74,7 @@
                         </MudItem>
                         <MudItem xs="12" sm="3" lg="3" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
                             @if (thuchi.Loai == "thutm")
-                            {  
+                            {
                                 <MudSelect ReadOnly="@IsReadOnly" Label="Khoản thu" AnchorOrigin="Origin.BottomCenter" @bind-Value="@thuchi.MaKhoanThu" Variant="Variant.Outlined" Margin="Margin.Dense">
                                     <MudSelectItem Value="@("")">Chọn khoản thu</MudSelectItem>
                                     @if (lstKhoanThu != null)
@@ -111,14 +118,14 @@
 
                         <MudItem xs="12" sm="3" lg="7" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
                             <div class="mt-5 ml-3">Số dư công nợ: <MudButton Color="Color.Success" OnClick="@(() => ShowCongNo())"> @SoDuCN.ToString("##0,###")</MudButton></div>
-                            </MudItem>
+                        </MudItem>
 
-                            <MudItem xs="12" sm="3" lg="3" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
-                                <MudNumericField ReadOnly="@IsReadOnly" Immediate ="true" Label="Số tiền thanh toán" HideSpinButtons="true" @bind-Value="@thuchi.SoTien" Format="###,###" Variant="Variant.Outlined" OnBlur="ChangeSoTien" Margin="Margin.Dense" Required="true" RequiredError="Số tiền bắt buộc nhập!" />
-                                <ValidationMessage For="@(() => thuchi.SoTien)" />
-                            </MudItem>
-                            <MudItem xs="12" sm="9" lg="9" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
-                                <div class="mt-5 ml-3"> @bangchu </div>
+                        <MudItem xs="12" sm="3" lg="3" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                            <MudNumericField ReadOnly="@IsReadOnly" Immediate="true" Label="Số tiền thanh toán" HideSpinButtons="true" @bind-Value="@thuchi.SoTien" Format="###,###" Variant="Variant.Outlined" OnBlur="ChangeSoTien" Margin="Margin.Dense" Required="true" RequiredError="Số tiền bắt buộc nhập!" />
+                            <ValidationMessage For="@(() => thuchi.SoTien)" />
+                        </MudItem>
+                        <MudItem xs="12" sm="9" lg="9" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
+                            <div class="mt-5 ml-3"> @bangchu </div>
                         </MudItem>
                         <MudItem xs="12" sm="6" lg="6" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
 
@@ -150,7 +157,7 @@
     <ToolBarContent>
         <MudText Typo="Typo.h6">Lịch sử giao dịch</MudText>
         <MudSpacer />
-        <MudTextField T="string" ValueChanged="@((s)=>OnSearch(s))" Placeholder="Tìm kiếm" Adornment="Adornment.Start"
+        <MudTextField T="string" ValueChanged="@((s) => OnSearch(s))" Placeholder="Tìm kiếm" Adornment="Adornment.Start"
                       AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
     </ToolBarContent>
     <HeaderContent>
@@ -165,29 +172,29 @@
     </HeaderContent>
     <RowTemplate>
         <MudTd DataLabel="Loai">@context.Loai</MudTd>
-            <MudTd DataLabel="NgayCT">@context.NgayCT.ToString("yyyy/MM/dd")</MudTd>
-            <MudTd DataLabel="SoChungTu">@context.SoChungTu  </MudTd>
+        <MudTd DataLabel="NgayCT">@context.NgayCT.ToString("yyyy/MM/dd")</MudTd>
+        <MudTd DataLabel="SoChungTu">@context.SoChungTu  </MudTd>
         @* <MudButton Color="Color.Primary" Size="Size.Small" OnClick="@(async ()=> await SuaClickThuChi(context.Loai, context.Id))">@context.SoChungTu</MudButton> *@
         <MudTd DataLabel="MaDoiTuong">@context.MaDoiTuong</MudTd>
-            <MudTd DataLabel="TenDoiTuong">@context.TenDoiTuong</MudTd>
-            <MudTd DataLabel="DiaChiDoiTuong">@context.DiaChiDoiTuong</MudTd>
-            <MudTd DataLabel="MaDonHang">@context.MaDonHang</MudTd>
-            <MudTd DataLabel="SoTien">@context.SoTien.ToString("###,###")</MudTd>
-        </RowTemplate>
-        <NoRecordsContent>
-            <MudText>Không có dữ liệu nào được hiển thị</MudText>
-        </NoRecordsContent>
-        <LoadingContent>
-            <MudText>Loading...</MudText>
-        </LoadingContent>
-        <PagerContent>
-            <MudTablePager />
-        </PagerContent>
-    </MudTable>
+        <MudTd DataLabel="TenDoiTuong">@context.TenDoiTuong</MudTd>
+        <MudTd DataLabel="DiaChiDoiTuong">@context.DiaChiDoiTuong</MudTd>
+        <MudTd DataLabel="MaDonHang">@context.MaDonHang</MudTd>
+        <MudTd DataLabel="SoTien">@context.SoTien.ToString("###,###")</MudTd>
+    </RowTemplate>
+    <NoRecordsContent>
+        <MudText>Không có dữ liệu nào được hiển thị</MudText>
+    </NoRecordsContent>
+    <LoadingContent>
+        <MudText>Loading...</MudText>
+    </LoadingContent>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
 
 
 
-    @code {
+@code {
     [CascadingParameter] private Task<AuthenticationState> authenticationStateTask { get; set; }
     [Parameter] public ThuChiModel thuchi { get; set; } = new ThuChiModel();
     [Parameter] public string loaiThuChi { get; set; }
@@ -229,6 +236,7 @@
     MudTextField<string> pwField1;
     MudForm form;
     MudSelect<int> mySwitch;
+    private string maDoiTuongError = string.Empty;
     /// <summary>
     /// Here we simulate getting the paged, filtered and ordered data from the server
     /// </summary>
@@ -266,15 +274,15 @@
 
     public QLSX.Shared.Models.KhachHangSearchRequest itemKHRequest { get; set; } =
     new QLSX.Shared.Models.KhachHangSearchRequest
-        {
-            MaDonVi = "",
-            TenDonVi = "",
-            DiaChi = "",
-            DienThoai = "",
-            Page = 0,
-            PageSize = 20,
-            TotalPages = 0
-        };
+    {
+        MaDonVi = "",
+        TenDonVi = "",
+        DiaChi = "",
+        DienThoai = "",
+        Page = 0,
+        PageSize = 20,
+        TotalPages = 0
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -285,25 +293,25 @@
         if (firstRender)
         {
             itemKHRequest = new QLSX.Shared.Models.KhachHangSearchRequest
-                {
-                    DMDonViSuDungId = AppService.DMDonViSuDungId,
-                    MaDonVi = "",
-                    TenDonVi = "",
-                    DiaChi = "",
-                    DienThoai = "",
-                    Page = 0,
-                    PageSize = 10,
-                    TotalPages = 0
-                };
+            {
+                DMDonViSuDungId = AppService.DMDonViSuDungId,
+                MaDonVi = "",
+                TenDonVi = "",
+                DiaChi = "",
+                DienThoai = "",
+                Page = 0,
+                PageSize = 10,
+                TotalPages = 0
+            };
 
             itemRequest = new ThuChiSearchRequest()
-                {
-                    DMDonViSuDungId = AppService.DMDonViSuDungId,
-                    PageSize = 10,
-                    Page = 0,
-                    TotalPages = 0
+            {
+                DMDonViSuDungId = AppService.DMDonViSuDungId,
+                PageSize = 10,
+                Page = 0,
+                TotalPages = 0
 
-                };
+            };
             hostReport = configuration.GetValue<string>("AppSettings:ReportUrl");
             saveAndCreate = await localStorageService.GetItemAsync<bool>($"{thuchi.Loai}-SaveStatus");
             StateHasChanged();
@@ -315,6 +323,9 @@
     private readonly Random _random = new Random();
     public async Task MaDonViTextChanged(string madv)
     {
+        // Clear error khi user thay đổi giá trị
+        maDoiTuongError = string.Empty;
+
         await table.ReloadServerData();
         if (IsReadOnly) return;
         DanhMucKhachHangModel dmKH = await dmkhachhangService.GetByCodeAsync(madv);
@@ -347,16 +358,16 @@
     {
         QLSX.Shared.Models.KhachHangSearchRequest request =
         new QLSX.Shared.Models.KhachHangSearchRequest
-            {
-                DMDonViSuDungId = AppService.DMDonViSuDungId,
-                MaDonVi = "",
-                TenDonVi = "",
-                DiaChi = "",
-                DienThoai = "",
-                Page = 0,
-                PageSize = 10,
-                TotalPages = 0
-            };
+        {
+            DMDonViSuDungId = AppService.DMDonViSuDungId,
+            MaDonVi = "",
+            TenDonVi = "",
+            DiaChi = "",
+            DienThoai = "",
+            Page = 0,
+            PageSize = 10,
+            TotalPages = 0
+        };
         var lstitems = await dmkhachhangService.GetAllPagedAsync(request);
         var items = lstitems.Items;
 
@@ -398,17 +409,23 @@
         await form.Validate();
         if (errors.Count() == 0)
         {
+            // Clear error trước khi validate
+            maDoiTuongError = string.Empty;
+
             // Validate MaDoiTuong tồn tại trong bảng DanhMucTenDonVI
-            if (!string.IsNullOrEmpty(thuchi.MaDoiTuong))
+            // if (!string.IsNullOrEmpty(thuchi.MaDoiTuong))
+            //{
+            DanhMucKhachHangModel dmKH = await dmkhachhangService.GetByCodeAsync(thuchi.MaDoiTuong);
+            if (dmKH == null || dmKH.Id == 0)
             {
-                DanhMucKhachHangModel dmKH = await dmkhachhangService.GetByCodeAsync(thuchi.MaDoiTuong);
-                if (dmKH == null || dmKH.Id == 0)
-                {
-                    Snackbar.Add($"Mã đơn vị '{thuchi.MaDoiTuong}' không tồn tại trong danh mục đơn vị", Severity.Error);
-                    return;
-                }
+                maDoiTuongError = $"Mã đơn vị '{thuchi.MaDoiTuong}' không tồn tại trong danh mục đơn vị";
+                Snackbar.Add(maDoiTuongError, Severity.Error);
+                await Task.Delay(10); // Đảm bảo state được cập nhật
+                StateHasChanged(); // Force UI update để hiển thị border đỏ và tooltip
+                return;
             }
-            
+            //}
+
             await SaveStatus();
             await OnValidSubmit.InvokeAsync(saveAndCreate);
         }
@@ -480,6 +497,9 @@
             var itemSelected = (DanhMucKhachHangModel)(result.Data ?? null);
             if (itemSelected != null)
             {
+                // Clear error khi chọn khách hàng từ dialog
+                maDoiTuongError = string.Empty;
+
                 thuchi.DMKhachHangId = itemSelected.Id;
                 thuchi.MaDoiTuong = itemSelected.MaDonVi;
                 thuchi.TenDoiTuong = itemSelected.TenDonVi;

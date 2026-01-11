@@ -50,11 +50,11 @@ namespace SaleAPI.Controllers
             GetAllResponse<SoTongHopHangHoa> lstApi = new GetAllResponse<SoTongHopHangHoa>();
             try
             {
-                var storeExec = string.Format("EXEC dbo.TraCuuHangTonKho @hien={0} ,@date1='{1}', @date2='{2}', @mk={3} , @mdvsd={4} , @tmptblOK='{5}'",
+                var storeExec = string.Format("EXEC dbo.TraCuuHangTonKho @hien={0} ,@date1='{1}', @date2='{2}', @mk='{3}' , @mdvsd={4} , @tmptblOK='{5}'",
                                                request.Hien,
                                                String.Format("{0:MM/dd/yyyy}", request.TuNgay ?? DateTime.Now),
                                                String.Format("{0:MM/dd/yyyy}", request.DenNgay ?? DateTime.Now),
-                                               request.DMKhoHangId,
+                                               request.MaKho,
                                                _tenantProvider.TenantId,
                                                "ZZZTEMPABCZXY");
                 //var storeExec = string.Format("EXEC dbo.TraCuuHangTonKho @hien={0}, @date1='{1}', @date2='{2}', @mdvsd={3},@makho ={4},@mahanghoa='{5}',@tenhanghoa='{6}', @donvitinh='{7}', @tmptblOK='{8}'",
@@ -86,7 +86,18 @@ namespace SaleAPI.Controllers
                         else items = items.OrderByDescending(x => x.DonViTinh).ToList();
                     }
                 }
-
+                if (!string.IsNullOrEmpty(request.MaHangHoa))
+                {
+                    items= items.Where (x=>  x.MaHangHoa.Contains(request.MaHangHoa)).ToList();
+                }
+                if (!string.IsNullOrEmpty(request.TenHangHoa))
+                {
+                    items = items.Where(x => x.TenHangHoa.ToLower().Contains(request.TenHangHoa.ToLower())).ToList();
+                }
+                if (!string.IsNullOrEmpty(request.DonViTinh))
+                {
+                    items = items.Where(x => x.DonViTinh.ToLower().Contains(request.DonViTinh.ToLower())).ToList();
+                }
 
                 lstApi.StatusCode = (int)HttpStatusCode.OK;
                 lstApi.Message = ApiResponseMessages.Success;
@@ -118,13 +129,13 @@ namespace SaleAPI.Controllers
             GetAllResponse<ViewNhapXuat> lstApi = new GetAllResponse<ViewNhapXuat>();
             try
             {
-                var storeExec = string.Format("EXEC dbo.GetViewDanhSachNhapXuat @loai='{0}', @date1='{1}', @date2='{2}', @mdvsd={3},@makho ={4},@mahanghoaid='{5}',@tenhanghoa='{6}', @donvitinh='{7}', @tmptblOK='{8}'",
+                var storeExec = string.Format("EXEC dbo.GetViewDanhSachNhapXuat @loai='{0}', @date1='{1}', @date2='{2}', @mdvsd={3},@makho ='{4}',@mahanghoa='{5}',@tenhanghoa='{6}', @donvitinh='{7}', @tmptblOK='{8}'",
                     request.Loai,
                     request.TuNgay,
                     request.DenNgay,
                     _tenantProvider.TenantId,
-                    request.DMKhoHangId,
-                    request.DMHangHoaId,
+                    request.MaKho,
+                    request.MaHangHoa,
                     request.TenHangHoa,
                     request.DonViTinh,
                     "ZZZTEMPABCZXY");
@@ -133,8 +144,8 @@ namespace SaleAPI.Controllers
                 {
                     if (request.SortLable == "SoCT")
                     {
-                        if (request.SortDirection == QLSX.Shared.Enums.SortDirection.Ascending) items = items.OrderBy(x => x.SoCT).ToList();
-                        else items = items.OrderByDescending(x => x.SoCT).ToList();
+                        if (request.SortDirection == QLSX.Shared.Enums.SortDirection.Ascending) items = items.OrderBy(x => x.SoChungTu).ToList();
+                        else items = items.OrderByDescending(x => x.SoChungTu).ToList();
                     }
                     else if (request.SortLable == "NgayCT")
                     {
@@ -143,18 +154,18 @@ namespace SaleAPI.Controllers
                     }
                     else if (request.SortLable == "MaDonVi")
                     {
-                        if (request.SortDirection == QLSX.Shared.Enums.SortDirection.Ascending) items = items.OrderBy(x => x.MaDonVi).ToList();
-                        else items = items.OrderByDescending(x => x.MaDonVi).ToList();
+                        if (request.SortDirection == QLSX.Shared.Enums.SortDirection.Ascending) items = items.OrderBy(x => x.MaDoiTuong).ToList();
+                        else items = items.OrderByDescending(x => x.MaDoiTuong).ToList();
                     }
                     else if (request.SortLable == "TenDonVi")
                     {
-                        if (request.SortDirection == QLSX.Shared.Enums.SortDirection.Ascending) items = items.OrderBy(x => x.TenDonVi).ToList();
-                        else items = items.OrderByDescending(x => x.TenDonVi).ToList();
+                        if (request.SortDirection == QLSX.Shared.Enums.SortDirection.Ascending) items = items.OrderBy(x => x.TenDoiTuong).ToList();
+                        else items = items.OrderByDescending(x => x.TenDoiTuong).ToList();
                     }
                     else if (request.SortLable == "DiaChi")
                     {
-                        if (request.SortDirection == QLSX.Shared.Enums.SortDirection.Ascending) items = items.OrderBy(x => x.DiaChi).ToList();
-                        else items = items.OrderByDescending(x => x.DiaChi).ToList();
+                        if (request.SortDirection == QLSX.Shared.Enums.SortDirection.Ascending) items = items.OrderBy(x => x.DiaChiDoiTuong).ToList();
+                        else items = items.OrderByDescending(x => x.DiaChiDoiTuong).ToList();
                     }
                     else if (request.SortLable == "SoTien")
                     {
@@ -283,8 +294,8 @@ namespace SaleAPI.Controllers
                 {
                     if (request.SortLable == "SoCT")
                     {
-                        if (request.SortDirection == QLSX.Shared.Enums.SortDirection.Ascending) items = items.OrderBy(x => x.SoCT).ToList();
-                        else items = items.OrderByDescending(x => x.SoCT).ToList();
+                        if (request.SortDirection == QLSX.Shared.Enums.SortDirection.Ascending) items = items.OrderBy(x => x.SoChungTu).ToList();
+                        else items = items.OrderByDescending(x => x.SoChungTu).ToList();
                     }
                     else if (request.SortLable == "NgayCT")
                     {
@@ -293,18 +304,18 @@ namespace SaleAPI.Controllers
                     }
                     else if (request.SortLable == "MaDonVi")
                     {
-                        if (request.SortDirection == QLSX.Shared.Enums.SortDirection.Ascending) items = items.OrderBy(x => x.MaDonVi).ToList();
-                        else items = items.OrderByDescending(x => x.MaDonVi).ToList();
+                        if (request.SortDirection == QLSX.Shared.Enums.SortDirection.Ascending) items = items.OrderBy(x => x.MaDoiTuong).ToList();
+                        else items = items.OrderByDescending(x => x.MaDoiTuong).ToList();
                     }
                     else if (request.SortLable == "TenDonVi")
                     {
-                        if (request.SortDirection == QLSX.Shared.Enums.SortDirection.Ascending) items = items.OrderBy(x => x.TenDonVi).ToList();
-                        else items = items.OrderByDescending(x => x.TenDonVi).ToList();
+                        if (request.SortDirection == QLSX.Shared.Enums.SortDirection.Ascending) items = items.OrderBy(x => x.TenDoiTuong).ToList();
+                        else items = items.OrderByDescending(x => x.TenDoiTuong).ToList();
                     }
                     else if (request.SortLable == "DiaChi")
                     {
-                        if (request.SortDirection == QLSX.Shared.Enums.SortDirection.Ascending) items = items.OrderBy(x => x.DiaChi).ToList();
-                        else items = items.OrderByDescending(x => x.DiaChi).ToList();
+                        if (request.SortDirection == QLSX.Shared.Enums.SortDirection.Ascending) items = items.OrderBy(x => x.DiaChiDoiTuong).ToList();
+                        else items = items.OrderByDescending(x => x.DiaChiDoiTuong).ToList();
                     }
                     else if (request.SortLable == "SoTien")
                     {

@@ -36,9 +36,9 @@
                     </MudTd>
                     <MudTd DataLabel="MaDonVi">
                         <MudText> @context.MaDonVi</MudText>
-                    </MudTd>
+   iTuong              </MudTd>
                     <MudTd DataLabel="TenDonVi">
-                        <MudText> @context.TenDonVi</MudText>
+                        <MudText> @context.TenDoiTuong</MudText>
                     </MudTd>
                     <MudTd DataLabel="DiaChi">
                         <MudText> @context.DiaChi</MudText>
@@ -74,8 +74,8 @@
     [Parameter] public string Loai { get; set; }
     [Parameter] public string TuNgay { get; set; }
     [Parameter] public string DenNgay { get; set; }
-    [Parameter] public int DMHangHoaId { get; set; }
-    [Parameter] public int MaKhoId { get; set; }
+    [Parameter] public string mahanghoa { get; set; }
+    [Parameter] public string makho { get; set; }
 
     public GetAllResponsePaged<ViewNhapXuat> lsResponses { get; set; }
 
@@ -121,8 +121,8 @@
         itemRequest.Loai = Loai;
         itemRequest.TuNgay = TuNgay;
         itemRequest.DenNgay = DenNgay;
-        itemRequest.DMHangHoaId = DMHangHoaId;
-        itemRequest.DMKhoHangId = MaKhoId;
+        itemRequest.MaHangHoa = mahanghoa;
+        itemRequest.MaKho = makho;
 
         itemRequest.Page = state.Page;
         itemRequest.PageSize = state.PageSize;

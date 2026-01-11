@@ -56,13 +56,13 @@
                 <MudItem xs="12" sm="3" lg="3">
                 </MudItem>
                 <MudItem xs="12" sm="3" lg="3">
-                    <MudSelect T="int" Margin="Margin.Dense" Label="Kho hàng" AnchorOrigin="Origin.BottomCenter" @bind-Value="itemRequest.DMKhoHangId" Variant="Variant.Outlined">
-                        <MudSelectItem T="int" Value="0"> Tất cả</MudSelectItem>
+                    <MudSelect T="string" Margin="Margin.Dense" Label="Kho hàng" AnchorOrigin="Origin.BottomCenter" @bind-Value="itemRequest.MaKho" Variant="Variant.Outlined">
+                        <MudSelectItem T="string" Value="@("")"> Tất cả</MudSelectItem>
                         @if (lstKhoHang != null)
                         {
                             @foreach (var cnt in lstKhoHang)
                             {
-                                <MudSelectItem T="int" Value="@(cnt.Id)"> @cnt.TenKho </MudSelectItem>
+                                <MudSelectItem T="string" Value="@(cnt.MaKho)"> @cnt.TenKho </MudSelectItem>
                             }
                         }
                     </MudSelect>
@@ -115,18 +115,18 @@
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="MaHangHoa">
-                    <MudButton Variant="Variant.Text" ButtonType="ButtonType.Button" OnClick="async ()=> await PrintSoChiTiet(context.DMHangHoaId)" Color="Color.Success">@context.MaHangHoa</MudButton>
+                    <MudButton Variant="Variant.Text" ButtonType="ButtonType.Button" OnClick="async () => await PrintSoChiTiet(context.MaHangHoa)" Color="Color.Success">@context.MaHangHoa</MudButton>
                 </MudTd>
                 <MudTd DataLabel="TenHangHoa">@context.TenHangHoa</MudTd>
                 <MudTd DataLabel="DonViTinh">@context.DonViTinh</MudTd>
-                <MudTd DataLabel="SoLuongDau" Style="text-align:right"><MudButton OnClick="@(() => OpenShowSoDu(context.DMHangHoaId))">@context.SoLuongDau?.ToString("###,##0.##")</MudButton></MudTd>
-                <MudTd DataLabel="SoTienDau" Style="text-align:right"><MudButton OnClick="@(() => OpenShowSoDu(context.DMHangHoaId))">@context.SoTienDau?.ToString("###,###")</MudButton></MudTd>
-                <MudTd DataLabel="SoLuongNhap" Style="text-align:right"><MudButton OnClick="@(() => OpenShowNhap(context.DMHangHoaId))"> @context.SoLuongNhap?.ToString("###,##0.##") </MudButton> </MudTd>
-                <MudTd DataLabel="SoTienNhap" Style="text-align:right"><MudButton OnClick="@(() => OpenShowNhap(context.DMHangHoaId))">@context.SoTienNhap?.ToString("###,###")</MudButton> </MudTd>
-                <MudTd DataLabel="SoLuongXuat" Style="text-align:right"><MudButton OnClick="@(() => OpenShowXuat(context.DMHangHoaId))">@context.SoLuongXuat?.ToString("###,##0.##")</MudButton> </MudTd>
-                <MudTd DataLabel="SoTienXuat" Style="text-align:right"><MudButton OnClick="@(() => OpenShowXuat(context.DMHangHoaId))">@context.SoTienXuat?.ToString("###,###")</MudButton> </MudTd>
-                <MudTd DataLabel="SoLuongTon" Style="text-align:right"><MudButton OnClick="@(() => OpenShowTon(context.DMHangHoaId))">@context.SoLuongTon?.ToString("###,##0.##")</MudButton></MudTd>
-                <MudTd DataLabel="SoTienTon" Style="text-align:right"><MudButton OnClick="@(() => OpenShowTon(context.DMHangHoaId))">@context.SoTienTon?.ToString("###,###")</MudButton></MudTd>
+                <MudTd DataLabel="SoLuongDau" Style="text-align:right"><MudButton OnClick="@(() => OpenShowSoDu(context.MaHangHoa))">@context.SoLuongDau?.ToString("###,##0.##")</MudButton></MudTd>
+                <MudTd DataLabel="SoTienDau" Style="text-align:right"><MudButton OnClick="@(() => OpenShowSoDu(context.MaHangHoa))">@context.SoTienDau?.ToString("###,###")</MudButton></MudTd>
+                <MudTd DataLabel="SoLuongNhap" Style="text-align:right"><MudButton OnClick="@(() => OpenShowNhap(context.MaHangHoa))"> @context.SoLuongNhap?.ToString("###,##0.##") </MudButton> </MudTd>
+                <MudTd DataLabel="SoTienNhap" Style="text-align:right"><MudButton OnClick="@(() => OpenShowNhap(context.MaHangHoa))">@context.SoTienNhap?.ToString("###,###")</MudButton> </MudTd>
+                <MudTd DataLabel="SoLuongXuat" Style="text-align:right"><MudButton OnClick="@(() => OpenShowXuat(context.MaHangHoa))">@context.SoLuongXuat?.ToString("###,##0.##")</MudButton> </MudTd>
+                <MudTd DataLabel="SoTienXuat" Style="text-align:right"><MudButton OnClick="@(() => OpenShowXuat(context.MaHangHoa))">@context.SoTienXuat?.ToString("###,###")</MudButton> </MudTd>
+                <MudTd DataLabel="SoLuongTon" Style="text-align:right"><MudButton OnClick="@(() => OpenShowTon(context.MaHangHoa))">@context.SoLuongTon?.ToString("###,##0.##")</MudButton></MudTd>
+                <MudTd DataLabel="SoTienTon" Style="text-align:right"><MudButton OnClick="@(() => OpenShowTon(context.MaHangHoa))">@context.SoTienTon?.ToString("###,###")</MudButton></MudTd>
                 <MudTd DataLabel="TenKho">@context.TenKho</MudTd>
 
             </RowTemplate>
@@ -250,11 +250,11 @@
 
     public void Dispose() { }
     [JSInvokable]
-    private async Task PrintSoChiTiet(int? id)
+    private async Task PrintSoChiTiet(string? id)
     {
         if (id == null) return;
-        List<int> lstId = new List<int>();
-        lstId.Add(id ?? 0);
+        List<string> lstId = new List<string>();
+        lstId.Add(id);
         await baocaoService.ClearDataInAsync();
         var result = await productServicece.UpdateListPrintAsync(lstId);
 
@@ -330,54 +330,54 @@
             return string.Empty;
         }
     }
-    private void OpenShowSoDu(int? mahh)
+    private void OpenShowSoDu(string? mahh)
     {
         string loai = "";
         string tungay = "";
         string denngay = string.Format("{0:MM/dd/yyyy}", itemRequest.TuNgay, DateTime.Now);
-        int mahanghoa;
-        int makhoid = itemRequest.DMKhoHangId;
+        string mahanghoa;
+        string makho = itemRequest.MaKho;
         var item = table.SelectedItem;
-        mahanghoa = mahh ?? 0;
-        var parameters = new DialogParameters { ["Loai"] = loai, ["TuNgay"] = tungay, ["DenNgay"] = denngay, ["DMHangHoaId"] = mahanghoa, ["MaKhoId"] = makhoid };
+        mahanghoa = mahh ?? "";
+        var parameters = new DialogParameters { ["Loai"] = loai, ["TuNgay"] = tungay, ["DenNgay"] = denngay, ["MaHangHoa"] = mahanghoa, ["MaKho"] = makho };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
         var dialog = DialogService.Show<DialogShowNhapXuat>("View danh sách", parameters, options);
     }
-    private void OpenShowNhap(int? mahh)
+    private void OpenShowNhap(string? mahh)
     {
         string loai = "nhap";
         string tungay = string.Format("{0:MM/dd/yyyy}", itemRequest.TuNgay ?? DateTime.Now.AddMonths(-1));
         string denngay = string.Format("{0:MM/dd/yyyy}", itemRequest.DenNgay, DateTime.Now);
-        int mahanghoa;
-        int makhoid = itemRequest.DMKhoHangId;
-        mahanghoa = mahh ?? 0;
-        var parameters = new DialogParameters { ["Loai"] = loai, ["TuNgay"] = tungay, ["DenNgay"] = denngay, ["DMHangHoaId"] = mahanghoa, ["MaKhoId"] = makhoid };
+        string mahanghoa;
+        string makho = itemRequest.MaKho;
+        mahanghoa = mahh ?? "";
+        var parameters = new DialogParameters { ["Loai"] = loai, ["TuNgay"] = tungay, ["DenNgay"] = denngay, ["mahanghoa"] = mahanghoa, ["makho"] = makho };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
         var dialog = DialogService.Show<DialogShowNhapXuat>("View danh sách", parameters, options);
     }
-    private void OpenShowXuat(int? mahh)
+    private void OpenShowXuat(string? mahh)
     {
         string loai = "xuat";
         string tungay = string.Format("{0:MM/dd/yyyy}", itemRequest.TuNgay ?? DateTime.Now.AddMonths(-1));
         string denngay = string.Format("{0:MM/dd/yyyy}", itemRequest.DenNgay, DateTime.Now);
-        int mahanghoa;
-        int makhoid = itemRequest.DMKhoHangId;
-        mahanghoa = mahh ?? 0;
-        var parameters = new DialogParameters { ["Loai"] = loai, ["TuNgay"] = tungay, ["DenNgay"] = denngay, ["DMHangHoaId"] = mahanghoa, ["MaKhoId"] = makhoid };
+        string mahanghoa;
+        string makho = itemRequest.MaKho;
+        mahanghoa = mahh ?? "";
+        var parameters = new DialogParameters { ["Loai"] = loai, ["TuNgay"] = tungay, ["DenNgay"] = denngay, ["MaHangHoa"] = mahanghoa, ["MaKho"] = makho };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
         var dialog = DialogService.Show<DialogShowNhapXuat>("View danh sách", parameters, options);
     }
 
-    private void OpenShowTon(int? mahh)
+    private void OpenShowTon(string? mahh)
     {
         string loai = "";
         string tungay = "";
         string denngay = string.Format("{0:MM/dd/yyyy}", itemRequest.DenNgay, DateTime.Now);
-        int mahanghoa;
-        int makhoid = itemRequest.DMKhoHangId;
+        string mahanghoa;
+        string makho = itemRequest.MaKho;
         var item = table.SelectedItem;
-        mahanghoa = mahh ?? 0;
-        var parameters = new DialogParameters { ["Loai"] = loai, ["TuNgay"] = tungay, ["DenNgay"] = denngay, ["DMHangHoaId"] = mahanghoa, ["MaKhoId"] = makhoid };
+        mahanghoa = mahh ?? "";
+        var parameters = new DialogParameters { ["Loai"] = loai, ["TuNgay"] = tungay, ["DenNgay"] = denngay, ["MaHangHoa"] = mahanghoa, ["MaKho"] = makho };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
         var dialog = DialogService.Show<DialogShowNhapXuat>("View danh sách", parameters, options);
     }

@@ -112,7 +112,7 @@
 
     private async Task Ok()
     {
-        var result = await productServicece.UpdateListPrintAsync(selectedItems.Select(x => x.Id).ToList());
+        var result = await productServicece.UpdateListPrintAsync(selectedItems.Select(x => x.MaHangHoa).ToList());
         MudDialog.Close(DialogResult.Ok<bool>(result));
     }
 
