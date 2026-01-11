@@ -138,6 +138,7 @@ namespace QLSX.Web
             //services.AddBlazoredLocalStorageAsSingleton();
             services.AddHttpClient<INhapXuatsService<TraCuuNhapXuatAll>, NhapXuatsService<TraCuuNhapXuatAll>>();
             services.AddHttpClient<INhapXuatsService<NhapXuatModel>, NhapXuatsService<NhapXuatModel>>().AddHttpMessageHandler<ValidateHeaderHandler>();
+            services.AddHttpClient<INhapXuatsService<PhieuNhapXuatAllModel>, NhapXuatsService<PhieuNhapXuatAllModel>>().AddHttpMessageHandler<ValidateHeaderHandler>();
             services.AddHttpClient<INhapXuatTonCuonsService<NhapXuatTonCuonModel>, NhapXuatTonCuonsService<NhapXuatTonCuonModel>>();
             services.AddHttpClient<IDieuChuyensService<DieuChuyen>, DieuChuyensService<DieuChuyen>>().AddHttpMessageHandler<ValidateHeaderHandler>();
             services.AddHttpClient<IDieuChuyensService<NhapXuatModel>, DieuChuyensService<NhapXuatModel>>().AddHttpMessageHandler<ValidateHeaderHandler>();

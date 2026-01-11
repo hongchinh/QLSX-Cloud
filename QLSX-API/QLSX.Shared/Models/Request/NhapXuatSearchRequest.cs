@@ -47,6 +47,6 @@ namespace QLSX.Shared.Models
         /// </summary>
         public int QueryType { get; set; }
 
-        public ICollection<FilterDefinition<NhapXuat>> Filter { get; set; }
+        public ICollection<FilterDefinition<PhieuNhapXuatAll>> Filter { get; set; }
     }
 }

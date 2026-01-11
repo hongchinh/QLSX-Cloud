@@ -33,13 +33,6 @@ namespace QLSX.Shared.Models
         public string DiaChiDoiTuong { get; set; }
         public string DienGiai { get; set; }
         public Double SoTien { get; set; }
-        public string MaHangHoa { get; set; }
-        public string TenHangHoa { get; set; }
-        public string DonViTinh { get; set; }
-        public float SoLuong { get; set; }
-        public float DonGia { get; set; }
-        public float SoTienHang { get; set; }
-
-
+       
     }
 }

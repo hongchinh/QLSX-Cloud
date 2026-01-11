@@ -461,9 +461,9 @@ public class NhapXuatsController : ControllerBase
     }
 
     [HttpGet("ExportToExcel")]
-    public async Task<ActionResult<GetAllResponse<NhapXuatModel>>> ExportToExcel([FromBody] NhapXuatSearchRequest request)
+    public async Task<ActionResult<GetAllResponse<PhieuNhapXuatAllModel>>> ExportToExcel([FromBody] NhapXuatSearchRequest request)
     {
-        GetAllResponse<NhapXuatModel> outputs = await GetData(request, false);
+        GetAllResponse<PhieuNhapXuatAllModel> outputs = await GetData(request, false);
 
         // Log Nhat ky
         await _nhatKyService.LogExportExcel("NhapXuat");
@@ -471,18 +471,18 @@ public class NhapXuatsController : ControllerBase
     }
 
     [HttpGet("GetAllPaged")]
-    public async Task<ActionResult<GetAllResponse<NhapXuatModel>>> GetAllPaged([FromBody] NhapXuatSearchRequest request)
+    public async Task<ActionResult<GetAllResponse<PhieuNhapXuatAllModel>>> GetAllPaged([FromBody] NhapXuatSearchRequest request)
     {
-        GetAllResponse<NhapXuatModel> outputs = await GetData(request, true);
+        GetAllResponse<PhieuNhapXuatAllModel> outputs = await GetData(request, true);
         return outputs;
     }
 
-    private async Task<GetAllResponse<NhapXuatModel>> GetData(NhapXuatSearchRequest request, bool isPaging)
+    private async Task<GetAllResponse<PhieuNhapXuatAllModel>> GetData(NhapXuatSearchRequest request, bool isPaging)
     {
-        GetAllResponse<NhapXuatModel> outputs = new GetAllResponse<NhapXuatModel>();
-        ICollection<FilterDefinition<NhapXuat>> filter1 = request.Filter;
+        GetAllResponse<PhieuNhapXuatAllModel> outputs = new GetAllResponse<PhieuNhapXuatAllModel>();
+        ICollection<FilterDefinition<PhieuNhapXuatAll>> filter1 = request.Filter;
 
-        Expression<Func<NhapXuat, bool>> filter = m => (1 == 1);
+        Expression<Func<PhieuNhapXuatAll, bool>> filter = m => (1 == 1);
         if (!string.IsNullOrEmpty(request.MaKhoHang))
         {
             filter = filter.And(x => x.MaKho == request.MaKhoHang);
@@ -511,123 +511,96 @@ public class NhapXuatsController : ControllerBase
         //đơn vị
         if (!string.IsNullOrEmpty(request.MaDonVi))
         {
-            filter = filter.And(x => x.MaDoiTuong.Contains(request.MaDonVi));
+            filter = filter.And(x => x.MaDoiTuong != null && x.MaDoiTuong.Contains(request.MaDonVi));
         }
         if (!string.IsNullOrEmpty(request.TenDonVi))
         {
-            filter = filter.And(x => x.TenDoiTuong.Contains(request.TenDonVi));
+            filter = filter.And(x => x.TenDoiTuong != null && x.TenDoiTuong.Contains(request.TenDonVi));
         }
         if (!string.IsNullOrEmpty(request.DiaChi))
         {
-            filter = filter.And(x => x.DiaChiDoiTuong.Contains(request.DiaChi));
+            filter = filter.And(x => x.DiaChiDoiTuong != null && x.DiaChiDoiTuong.Contains(request.DiaChi));
         }
-        //if (!string.IsNullOrEmpty(request.DienThoai))
-        //{
-        //    filter = filter.And(x => x.DienThoai.Contains(request.DienThoai));
-        //}
         if (!string.IsNullOrEmpty(request.TenKho))
         {
-            var maKhoList = _context.DanhMucKhoHangRepository.Where(item => item.DeletedDate == null && item.TenKho.Contains(request.TenKho)).Select(item => item.MaKho).Distinct().ToList();
-            if (maKhoList.Any())
-            {
-                filter = filter.And(x => maKhoList.Contains(x.MaKho));
-            }
+            filter = filter.And(x => x.TenKho != null && x.TenKho.Contains(request.TenKho));
         }
 
         // hàng hóa
         if (!string.IsNullOrEmpty(request.MaHangHoa))
         {
-            var loaiPhieuList = _context.NoiDungNhapXuatRepository.Where(item => item.MaHangHoa.Contains(request.MaHangHoa) && item.DeletedDate == null).Select(item => item.LoaiPhieu).Distinct().ToList();
-            if (loaiPhieuList.Any())
-            {
-                filter = filter.And(x => loaiPhieuList.Contains(x.LoaiPhieu));
-            }
+            filter = filter.And(x => x.MaHangHoa != null && x.MaHangHoa.Contains(request.MaHangHoa));
         }
         if (!string.IsNullOrEmpty(request.TenHangHoa))
         {
-            var loaiPhieuList = _context.NoiDungNhapXuatRepository.Where(item => item.TenHangHoa.Contains(request.TenHangHoa) && item.DeletedDate == null).Select(item => item.LoaiPhieu).Distinct().ToList();
-            if (loaiPhieuList.Any())
-            {
-                filter = filter.And(x => loaiPhieuList.Contains(x.LoaiPhieu));
-            }
+            filter = filter.And(x => x.TenHangHoa != null && x.TenHangHoa.Contains(request.TenHangHoa));
         }
         if (!string.IsNullOrEmpty(request.DonViTinh))
         {
-            var loaiPhieuList = _context.NoiDungNhapXuatRepository.Where(item => item.DonViTinh.Contains(request.DonViTinh) && item.DeletedDate == null).Select(item => item.LoaiPhieu).Distinct().ToList();
-            if (loaiPhieuList.Any())
-            {
-                filter = filter.And(x => loaiPhieuList.Contains(x.LoaiPhieu));
-            }
+            filter = filter.And(x => x.DonViTinh != null && x.DonViTinh.Contains(request.DonViTinh));
         }
 
         if (request.SoTienTT_From != null && request.SoTienTT_From > 0)
         {
-            filter = filter.And(x => x.SoTienTT >= request.SoTienTT_From);
+            filter = filter.And(x => x.SoTienTT != null && x.SoTienTT >= request.SoTienTT_From);
         }
         if (request.SoTienTT_To != null && request.SoTienTT_To > 0)
         {
-            filter = filter.And(x => x.SoTienTT <= request.SoTienTT_To);
+            filter = filter.And(x => x.SoTienTT != null && x.SoTienTT <= request.SoTienTT_To);
         }
 
         if ((request.SoTien_From != null && request.SoTien_From > 0) || (request.SoTien_To != null && request.SoTien_To > 0))
         {
-            var groupSoTien = _context.NoiDungNhapXuatRepository.Where(item => item.DeletedDate == null)
-                              .GroupBy(item => item.LoaiPhieu)
-                              .Select(item => new { item.Key, item.Sum(x => x.SoTien).Value })
-                              .ToList();
-
             if (request.SoTien_From != null && request.SoTien_From > 0)
             {
-                groupSoTien = groupSoTien.Where(item => item.Value >= request.SoTien_From).ToList();
+                filter = filter.And(x => x.SoTien != null && x.SoTien >= request.SoTien_From);
             }
-
             if (request.SoTien_To != null && request.SoTien_To > 0)
             {
-                groupSoTien = groupSoTien.Where(item => item.Value <= request.SoTien_To).ToList();
+                filter = filter.And(x => x.SoTien != null && x.SoTien <= request.SoTien_To);
             }
-            var loaiPhieuList = groupSoTien.Select(item => item.Key).Distinct().ToList();
-
-            filter = filter.And(x => loaiPhieuList.Contains(x.LoaiPhieu));
         }
 
-        Func<IQueryable<NhapXuat>, IOrderedQueryable<NhapXuat>> order = null;
+        Func<IQueryable<PhieuNhapXuatAll>, IOrderedQueryable<PhieuNhapXuatAll>> order = null;
         if (request.SortDirection != QLSX.Shared.Enums.SortDirection.None)
         {
-            order = await OrderBy(request.SortLable, request.SortDirection == QLSX.Shared.Enums.SortDirection.Ascending);
+            order = await OrderByPhieuNhapXuatAll(request.SortLable, request.SortDirection == QLSX.Shared.Enums.SortDirection.Ascending);
         }
-        Expression<Func<NhapXuat, bool>> expression;
 
-        IQueryable<NhapXuat> query = _context.NhapXuatRepository.Where(x => x.DeletedDate == null);
+        IQueryable<PhieuNhapXuatAll> query = _context.PhieuNhapXuatAllRepository.Where(x => x.DeletedDate == null);
 
         switch (request.QueryType)
         {
             case 2:
-                query = query.Where(item => item.Loai.ToLower() == "dieuchuyen");
+                query = query.Where(item => item.Loai != null && item.Loai.ToLower() == "dieuchuyen");
                 break;
         }
-        FilterBuider<NhapXuat> filterBuider;
+        FilterBuider<PhieuNhapXuatAll> filterBuider;
         if (filter1 != null)
         {
             foreach (var f in filter1)
             {
-                var dataType = typeof(NhapXuat).GetProperty(f.Field).PropertyType;
-                if (dataType == typeof(DateTime?) || dataType == typeof(DateTime))
+                var property = typeof(PhieuNhapXuatAll).GetProperty(f.Field);
+                if (property != null)
                 {
-                    var fter = GetFilterDateTime(filter, f.Operator, (DateTime)f.Value);
-                    query = (IQueryable<NhapXuat>)query.Where(fter);
-
+                    var dataType = property.PropertyType;
+                    if (dataType == typeof(DateTime?) || dataType == typeof(DateTime))
+                    {
+                        var fter = GetFilterDateTimePhieuNhapXuatAll(filter, f.Operator, (DateTime)f.Value);
+                        query = query.Where(fter);
+                    }
+                    else
+                    {
+                        filterBuider = new FilterBuider<PhieuNhapXuatAll>(f);
+                        var filterFunc = filterBuider.GetFilter;
+                        query = query.Where(filterFunc);
+                    }
                 }
-                else
-                {
-                    filterBuider = new FilterBuider<NhapXuat>(f);
-                    var filterFunc = filterBuider.GetFilter;
-                    query = (IQueryable<NhapXuat>)query.Where(filterFunc);
-                }
-
             }
         }
         if (filter != null) query = query.Where(filter);
         if (order != null) query = order(query);
+        
         outputs.SumSoTien2 = await query.SumAsync(x => x.SoTienTT) ?? 0;
         outputs.TotalRecords = await query.CountAsync();
         outputs.TotalPages = (int)Math.Ceiling(outputs.TotalRecords / (double)request.PageSize);
@@ -643,42 +616,12 @@ public class NhapXuatsController : ControllerBase
         }
         try
         {
-            var joinQuery = (from nhapXuat in query
-                             join noiDung in _context.NoiDungNhapXuatRepository.Where(item => item.DeletedDate == null)
-                             on nhapXuat.LoaiPhieu equals noiDung.LoaiPhieu into noiDungQueryLeft
-                             from noiDungLeft in noiDungQueryLeft.DefaultIfEmpty()
-                             join khoHang in _context.DanhMucKhoHangRepository.Where(item => item.DeletedDate == null)
-                             on nhapXuat.MaKho equals khoHang.MaKho into khoHangQueryLeft
-                             from khoHangLeft in khoHangQueryLeft.DefaultIfEmpty()
-                             join loaiTien in _context.DanhMucLoaiTienRepository.Where(item => item.DeletedDate == null)
-                             on nhapXuat.LoaiTien equals loaiTien.Id.ToString() into loaiTienQueryLeft
-                             from loaiTienLeft in loaiTienQueryLeft.DefaultIfEmpty()
-                             select new
-                             {
-                                 nhapXuat,
-                                 noiDungLeft,
-                                 khoHangLeft,
-                                 loaiTienLeft
-                             }).ToList();
-            var resultData = joinQuery.GroupBy(item => new { item.nhapXuat })
-                                      .Select(item => new NhapXuatModel(
-                                             item.Key.nhapXuat,
-                                             item.Where(item => item.noiDungLeft != null).Select(item => item.noiDungLeft).ToList(),
-                                             item.Select(item => item.khoHangLeft)?.FirstOrDefault(),
-                                             item.Select(item => item.loaiTienLeft)?.FirstOrDefault()))
-                                      .ToList();
-
-            List<NoiDungNhapXuatModel> noiDungNhapXuatList = new();
-            foreach (var item in resultData)
-            {
-                noiDungNhapXuatList.AddRange(item.NoiDungNhapXuats);
-            }
+            var resultData = await query.Select(item => new PhieuNhapXuatAllModel(item)).ToListAsync();
             outputs.Items = resultData;
-            outputs.SumSoTien1 = (double)noiDungNhapXuatList.Sum(x => x.SoTien);
+            outputs.SumSoTien1 = resultData.Sum(x => x.SoTien) ?? 0;
         }
         catch (Exception ex)
         {
-
             throw;
         }
         return outputs;
@@ -712,6 +655,36 @@ public class NhapXuatsController : ControllerBase
         };
 
 
+
+        return filter;
+    }
+
+    private Expression<Func<PhieuNhapXuatAll, bool>> GetFilterDateTimePhieuNhapXuatAll(Expression<Func<PhieuNhapXuatAll, bool>> filter, string Operator, DateTime Value)
+    {
+        return Operator switch
+        {
+            FilterOperator.DateTime.Is when null != Value =>
+                filter = filter.And(x => x.NgayCT == Value),
+            FilterOperator.DateTime.IsNot when null != Value =>
+               filter = filter.And(x => x.NgayCT != Value),
+
+            FilterOperator.DateTime.After when null != Value =>
+               filter = filter.And(x => x.NgayCT > Value),
+
+            FilterOperator.DateTime.OnOrAfter when null != Value =>
+               filter = filter.And(x => x.NgayCT >= Value),
+
+            FilterOperator.DateTime.Before when null != Value =>
+                filter = filter.And(x => x.NgayCT < Value),
+
+            FilterOperator.DateTime.OnOrBefore when null != Value =>
+                filter = filter.And(x => x.NgayCT <= Value),
+
+            FilterOperator.DateTime.Empty => filter = filter.And(x => x.NgayCT == null),
+            FilterOperator.DateTime.NotEmpty => filter = filter.And(x => x.NgayCT != null),
+
+            _ => filter = filter.And(x => 1 == 1)
+        };
 
         return filter;
     }
@@ -866,6 +839,66 @@ public class NhapXuatsController : ControllerBase
         }
         return null;
 
+    }
+
+    private async Task<Func<IQueryable<PhieuNhapXuatAll>, IOrderedQueryable<PhieuNhapXuatAll>>> OrderByPhieuNhapXuatAll(string sortBy, bool sortType)
+    {
+        Func<IQueryable<PhieuNhapXuatAll>, IOrderedQueryable<PhieuNhapXuatAll>> myFunc;
+        if (sortBy == "Loai")
+        {
+            if (sortType) myFunc = source => source.OrderBy(x => x.Loai);
+            else myFunc = source => source.OrderByDescending(x => x.Loai);
+            return myFunc;
+        }
+        if (sortBy == "NgayCT")
+        {
+            if (sortType) myFunc = source => source.OrderBy(x => x.NgayCT);
+            else myFunc = source => source.OrderByDescending(x => x.NgayCT);
+            return myFunc;
+        }
+        if (sortBy == "SoChungTu")
+        {
+            if (sortType) myFunc = source => source.OrderBy(x => x.SoChungTu);
+            else myFunc = source => source.OrderByDescending(x => x.SoChungTu);
+            return myFunc;
+        }
+        if (sortBy == "MaDonVi")
+        {
+            if (sortType) myFunc = source => source.OrderBy(x => x.MaDoiTuong);
+            else myFunc = source => source.OrderByDescending(x => x.MaDoiTuong);
+            return myFunc;
+        }
+        if (sortBy == "TenDonVi")
+        {
+            if (sortType) myFunc = source => source.OrderBy(x => x.TenDoiTuong);
+            else myFunc = source => source.OrderByDescending(x => x.TenDoiTuong);
+            return myFunc;
+        }
+        if (sortBy == "DiaChi")
+        {
+            if (sortType) myFunc = source => source.OrderBy(x => x.DiaChiDoiTuong);
+            else myFunc = source => source.OrderByDescending(x => x.DiaChiDoiTuong);
+            return myFunc;
+        }
+        if (sortBy == "TongCong")
+        {
+            if (sortType) myFunc = source => source.OrderBy(x => x.TongCong);
+            else myFunc = source => source.OrderByDescending(x => x.TongCong);
+            return myFunc;
+        }
+        if (sortBy == "SoTienTT")
+        {
+            if (sortType) myFunc = source => source.OrderBy(x => x.SoTienTT);
+            else myFunc = source => source.OrderByDescending(x => x.SoTienTT);
+            return myFunc;
+        }
+        if (sortBy == "TenKho")
+        {
+            if (sortType) myFunc = source => source.OrderBy(x => x.TenKho);
+            else myFunc = source => source.OrderByDescending(x => x.TenKho);
+            return myFunc;
+        }
+        return null;
     }
 
     [HttpDelete("Delete/{id}")]

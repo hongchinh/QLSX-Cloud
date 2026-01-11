@@ -9,7 +9,7 @@
 @using Microsoft.Extensions.Configuration;
 @using AutoMapper
 
-@inject INhapXuatsService<NhapXuatModel> nhapxuatService
+@inject INhapXuatsService<PhieuNhapXuatAllModel> nhapxuatService
 @inject IUserService userService
 @inject IDMTinhTrangService<QLSX.Shared.Models.DMTinhTrangModel> dmTinhTrangService
 @inject IDMKhoHangService<DanhMucKhoHangModel> dmkhohangService
@@ -109,8 +109,8 @@
         </MudMenu>
         <MudButton Class="ml-1" Variant="Variant.Filled" @onclick="@(async() => await ExportExcel())" StartIcon="@Icons.Material.Filled.ImportExport" Color="MudBlazor.Color.Secondary">Excel</MudButton>
     </MudToolBar>
-    <MudDataGrid @ref="table" FixedHeader="true" T="NhapXuatModel"
-                 ServerData="@(new Func<GridState<NhapXuatModel>, Task<GridData<NhapXuatModel>>>(ServerReloadNew))"
+    <MudDataGrid @ref="table" FixedHeader="true" T="PhieuNhapXuatAllModel"
+                 ServerData="@(new Func<GridState<PhieuNhapXuatAllModel>, Task<GridData<PhieuNhapXuatAllModel>>>(ServerReloadNew))"
                  Filterable="true"
                  Dense="true"
                  Height="@(HeightGrid ==0 ? "": HeightGrid.ToString () + "px" )"
@@ -120,7 +120,23 @@
                  HorizontalScrollbar="true"
                  FilterCaseSensitivity="DataGridFilterCaseSensitivity.Default">
         <Columns>
-            <PropertyColumn Property="x => x.LoaiDisplay" Title="Loại" Style="width: 50px" />
+            <TemplateColumn Title="Loại" Style="width: 50px">
+                <CellTemplate>
+                    @{
+                        var loaiDisplay = context.Item.Loai?.ToLower() switch
+                        {
+                            "nhap" => "Phiếu nhập",
+                            "xuat" => "Phiếu xuất",
+                            "nhaptra" => "Phiếu nhập trả",
+                            "xuattra" => "Phiếu xuất trả",
+                            "dieuchuyen" => "Điều chuyển",
+                            "donhang" => "Đơn hàng",
+                            _ => context.Item.Loai ?? ""
+                        };
+                    }
+                    <MudText>@loaiDisplay</MudText>
+                </CellTemplate>
+            </TemplateColumn>
             <PropertyColumn Property="x => x.NgayCT" Title="Ngày CT">
                 <CellTemplate>
                     <MudText>@context.Item.NgayCT?.ToString("dd/MM/yyyy")</MudText>
@@ -128,35 +144,35 @@
             </PropertyColumn>
             <PropertyColumn Property="x => x.SoChungTu" Title="Số CT">
                 <CellTemplate>
-                    @if (context.Item.Loai.ToLower() == "nhap")
+                    @if (context.Item.Loai?.ToLower() == "nhap")
                     {
-                        <MudButton Disabled="@(!quyenSuDungNhap.Sua)" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Small" OnClick="@(async ()=> await SuaClick(context.Item .Loai, context.Item .Id))">@context.Item.SoChungTu</MudButton>
+                        <MudButton Disabled="@(!quyenSuDungNhap.Sua)" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Small" OnClick="@(async ()=> await SuaClick(context.Item.Loai, context.Item.Id))">@context.Item.SoChungTu</MudButton>
                     }
-                    else @if (context.Item.Loai.ToLower() == "xuat")
+                    else @if (context.Item.Loai?.ToLower() == "xuat")
                     {
-                        <MudButton Disabled="@(!quyenSuDungXuat.Sua)" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Small" OnClick="@(async ()=> await SuaClick(context.Item .Loai, context.Item .Id))">@context.Item.SoChungTu</MudButton>
+                        <MudButton Disabled="@(!quyenSuDungXuat.Sua)" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Small" OnClick="@(async ()=> await SuaClick(context.Item.Loai, context.Item.Id))">@context.Item.SoChungTu</MudButton>
                     }
-                    else @if (context.Item.Loai.ToLower() == "donhang")
+                    else @if (context.Item.Loai?.ToLower() == "donhang")
                     {
-                        <MudButton Disabled="@(!quyenSuDungXuat.Sua)" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Small" OnClick="@(async ()=> await SuaClick(context.Item .Loai, context.Item .Id))">@context.Item.SoChungTu</MudButton>
+                        <MudButton Disabled="@(!quyenSuDungXuat.Sua)" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Small" OnClick="@(async ()=> await SuaClick(context.Item.Loai, context.Item.Id))">@context.Item.SoChungTu</MudButton>
                     }
-                    else @if (context.Item.Loai.ToLower() == "nhaptra")
+                    else @if (context.Item.Loai?.ToLower() == "nhaptra")
                     {
-                        <MudButton Disabled="@(!quyenSuDungNhapTra.Sua)" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Small" OnClick="@(async ()=> await SuaClick(context.Item .Loai, context.Item .Id))">@context.Item.SoChungTu</MudButton>
+                        <MudButton Disabled="@(!quyenSuDungNhapTra.Sua)" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Small" OnClick="@(async ()=> await SuaClick(context.Item.Loai, context.Item.Id))">@context.Item.SoChungTu</MudButton>
                     }
-                    else @if (context.Item.Loai.ToLower() == "xuattra")
+                    else @if (context.Item.Loai?.ToLower() == "xuattra")
                     {
-                        <MudButton Disabled="@(!quyenSuDungXuatTra.Sua)" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Small" OnClick="@(async ()=> await SuaClick(context.Item .Loai, context.Item .Id))">@context.Item.SoChungTu</MudButton>
+                        <MudButton Disabled="@(!quyenSuDungXuatTra.Sua)" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Small" OnClick="@(async ()=> await SuaClick(context.Item.Loai, context.Item.Id))">@context.Item.SoChungTu</MudButton>
                     }
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.MaDonVi" Title="Mã đơn vị" />
-            <PropertyColumn Property="x => x.TenDonVi" Title="Tên đơn vị" />
-            <PropertyColumn Property="x => x.DiaChi" Title="Địa chỉ" />
+            <PropertyColumn Property="x => x.MaDoiTuong" Title="Mã đơn vị" />
+            <PropertyColumn Property="x => x.TenDoiTuong" Title="Tên đơn vị" />
+            <PropertyColumn Property="x => x.DiaChiDoiTuong" Title="Địa chỉ" />
             <PropertyColumn Property="x => x.DienGiai" Title="Ghi chú" />
-            <PropertyColumn Property="x => x.TongCong" Title="Tổng tiền hàng" CellStyleFunc="@_cellNumberStyleFunc">
+            <PropertyColumn Property="x => x.SoTien" Title="Số tiền" CellStyleFunc="@_cellNumberStyleFunc">
                 <CellTemplate>
-                    <MudText>@context.Item.TongCong.ToString("###,###")</MudText>
+                    <MudText>@(context.Item.SoTien?.ToString("###,###") ?? "0")</MudText>
                 </CellTemplate>
                 <FooterTemplate>
                     <MudText Style="font-weight: bold;text-align: end;"> @SumSoTien.ToString("###,###") </MudText>
@@ -166,7 +182,7 @@
             <PropertyColumn Property="x => x.TenKho" Title="Tên kho" />
             <TemplateColumn StickyRight="true">
                 <CellTemplate>
-                    @if (context.Item.Loai.ToLower() == "nhap")
+                    @if (context.Item.Loai?.ToLower() == "nhap")
                     {
                         @if (quyenSuDungNhap.XemIn)
                         {
@@ -174,7 +190,7 @@
                                            Target="_blank"
                                            Variant="Variant.Text"
                                            Color="MudBlazor.Color.Success"
-                                           OnClick="@(async ()=> await PrintClick(@context.Item.Id, context.Item.Loai))"
+                                           OnClick="@(async ()=> await PrintClick(@context.Item.Id, context.Item.Loai ?? ""))"
                                            Icon="@Icons.Material.Filled.Print" Size="MudBlazor.Size.Small">
                             </MudIconButton>
                         }
@@ -188,7 +204,7 @@
                             </MudIconButton>
                         }
                     }
-                    @if (context.Item.Loai.ToLower() == "xuat")
+                    @if (context.Item.Loai?.ToLower() == "xuat")
                     {
                         @if (quyenSuDungXuat.XemIn)
                         {
@@ -196,7 +212,7 @@
                                            Target="_blank"
                                            Variant="Variant.Text"
                                            Color="MudBlazor.Color.Success"
-                                           OnClick="@(async ()=> await PrintClick(@context.Item.Id, context.Item.Loai))"
+                                           OnClick="@(async ()=> await PrintClick(@context.Item.Id, context.Item.Loai ?? ""))"
                                            Icon="@Icons.Material.Filled.Print" Size="MudBlazor.Size.Small">
                             </MudIconButton>
                         }
@@ -210,7 +226,7 @@
                             </MudIconButton>
                         }
                     }
-                    @if (context.Item.Loai.ToLower() == "nhaptra")
+                    @if (context.Item.Loai?.ToLower() == "nhaptra")
                     {
                         @if (quyenSuDungNhapTra.XemIn)
                         {
@@ -218,7 +234,7 @@
                                            Target="_blank"
                                            Variant="Variant.Text"
                                            Color="MudBlazor.Color.Success"
-                                           OnClick="@(async ()=> await PrintClick(@context.Item.Id, context.Item.Loai))"
+                                           OnClick="@(async ()=> await PrintClick(@context.Item.Id, context.Item.Loai ?? ""))"
                                            Icon="@Icons.Material.Filled.Print" Size="MudBlazor.Size.Small">
                             </MudIconButton>
                         }
@@ -232,7 +248,7 @@
                             </MudIconButton>
                         }
                     }
-                    @if (context.Item.Loai.ToLower() == "xuattra")
+                    @if (context.Item.Loai?.ToLower() == "xuattra")
                     {
                         @if (quyenSuDungXuatTra.XemIn)
                         {
@@ -240,7 +256,7 @@
                                            Target="_blank"
                                            Variant="Variant.Text"
                                            Color="MudBlazor.Color.Success"
-                                           OnClick="@(async ()=> await PrintClick(@context.Item.Id, context.Item.Loai))"
+                                           OnClick="@(async ()=> await PrintClick(@context.Item.Id, context.Item.Loai ?? ""))"
                                            Icon="@Icons.Material.Filled.Print" Size="MudBlazor.Size.Small">
                             </MudIconButton>
                         }
@@ -265,7 +281,7 @@
             <MudText>Đang tải dữ liệu</MudText>
         </LoadingContent>
         <PagerContent>
-            <MudDataGridPager T="NhapXuatModel" RowsPerPageString="Số dòng mỗi trang" />
+            <MudDataGridPager T="PhieuNhapXuatAllModel" RowsPerPageString="Số dòng mỗi trang" />
         </PagerContent>
 
     </MudDataGrid>
@@ -294,11 +310,11 @@
         new QLSX.Shared.Models.QuyenSuDungModel() { Sua = false, Them = false, Xoa = false, XemIn = false, Selectted = false };
 
 
-    public NhapXuatModel nhapxuat { get; set; }
-    public List<NhapXuatModel> nhapxuatList { get; set; }
-    public List<NhapXuatModel> filterednhapxuatList { get; set; }
+    public PhieuNhapXuatAllModel nhapxuat { get; set; }
+    public List<PhieuNhapXuatAllModel> nhapxuatList { get; set; }
+    public List<PhieuNhapXuatAllModel> filterednhapxuatList { get; set; }
 
-    public GetAllResponsePaged<NhapXuatModel> lsResponses { get; set; }
+    public GetAllResponsePaged<PhieuNhapXuatAllModel> lsResponses { get; set; }
     public NhapXuatSearchRequest itemRequest { get; set; }
     public bool IsVisible { get; set; }
     public bool IsGridViewFiltered { get; set; }
@@ -315,8 +331,8 @@
     public int selecttedLoaiTien { get; set; }
     public string selecttedLoai { get; set; }
 
-    private IEnumerable<NhapXuatModel> pagedData;
-    private MudDataGrid<NhapXuatModel> table;
+    private IEnumerable<PhieuNhapXuatAllModel> pagedData;
+    private MudDataGrid<PhieuNhapXuatAllModel> table;
     public double SumSoTien { get; set; }
     public double SumSoTienTT { get; set; }
 
@@ -337,7 +353,7 @@
     }
     async Task LoadData()
     {
-        lsResponses = new GetAllResponsePaged<NhapXuatModel>();
+        lsResponses = new GetAllResponsePaged<PhieuNhapXuatAllModel>();
 
         var user = (await authenticationStateTask).User;
         var UserId = user.FindFirst(c => c.Type == "UserId")?.Value;
@@ -352,12 +368,12 @@
         {
             lsResponses = await nhapxuatService.GetAllPagedAsync(itemRequest);
         }
-        IEnumerable<NhapXuatModel> data = lsResponses.Items;
+        IEnumerable<PhieuNhapXuatAllModel> data = lsResponses.Items;
 
         totalItems = lsResponses.TotalRecords;
         SumSoTien = lsResponses.SumSoTien1;
         SumSoTienTT = lsResponses.SumSoTien2;
-        pagedData = data ?? new List<NhapXuatModel>();
+        pagedData = data ?? new List<PhieuNhapXuatAllModel>();
         totalCount = lsResponses.TotalRecords;
 
 
@@ -367,9 +383,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        lsResponses = new GetAllResponsePaged<NhapXuatModel>();
-        nhapxuat = new NhapXuatModel();
-        nhapxuatList = filterednhapxuatList = new List<NhapXuatModel>();
+        lsResponses = new GetAllResponsePaged<PhieuNhapXuatAllModel>();
+        nhapxuat = new PhieuNhapXuatAllModel();
+        nhapxuatList = filterednhapxuatList = new List<PhieuNhapXuatAllModel>();
         itemRequest = new NhapXuatSearchRequest()
             {
                 DMDonViSuDungId = AppService.DMDonViSuDungId,
@@ -409,7 +425,7 @@
     /// <summary>
     /// Here we simulate getting the paged, filtered and ordered data from the server
     /// </summary>
-    private async Task<GridData<NhapXuatModel>> ServerReloadNew(GridState<NhapXuatModel> state)
+    private async Task<GridData<PhieuNhapXuatAllModel>> ServerReloadNew(GridState<PhieuNhapXuatAllModel> state)
     {
         var sort = state.SortDefinitions.ToList();
         itemRequest.Page = state.Page;
@@ -425,7 +441,7 @@
         itemRequest.PageSize = state.PageSize;
         await LoadData();
         StateHasChanged();
-        return new GridData<NhapXuatModel>() { TotalItems = totalItems, Items = pagedData };
+        return new GridData<PhieuNhapXuatAllModel>() { TotalItems = totalItems, Items = pagedData };
     }
 
 
@@ -490,7 +506,7 @@
         await JSRuntime.InvokeVoidAsync("open", strURL, "_blank");
     }
 
-    private async Task DeleteClick(NhapXuatModel nhapxuat)
+    private async Task DeleteClick(PhieuNhapXuatAllModel nhapxuat)
     {
         var parameters = new DialogParameters { ["server"] = nhapxuat };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Large, FullWidth = true, DisableBackdropClick = true };
@@ -519,7 +535,7 @@
 
     private async Task CreateClickNhap()
     {
-        nhapxuat = new NhapXuatModel();
+        nhapxuat = new PhieuNhapXuatAllModel();
         var parameters = new DialogParameters { ["nhapxuat"] = nhapxuat, ["loaiNX"] = "nhap", ["Title"] = "Tạo Phiếu nhập" };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Large, FullWidth = true, DisableBackdropClick = true };
         var result = await DialogService.Show<NhapXuatsCreate>("Tạo mới", parameters, options).Result;
@@ -536,7 +552,7 @@
 
     private async Task CreateClickXuat()
     {
-        nhapxuat = new NhapXuatModel();
+        nhapxuat = new PhieuNhapXuatAllModel();
         var parameters = new DialogParameters { ["nhapxuat"] = nhapxuat, ["loaiNX"] = "xuat", ["Title"] = "Tạo Phiếu xuất" };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Large, FullWidth = true, DisableBackdropClick = true };
         var result = await DialogService.Show<NhapXuatsCreate>("Tạo mới", parameters, options).Result;
@@ -551,7 +567,7 @@
     }
     private async Task CreateClickNhapTra()
     {
-        nhapxuat = new NhapXuatModel();
+        nhapxuat = new PhieuNhapXuatAllModel();
         var parameters = new DialogParameters { ["nhapxuat"] = nhapxuat, ["loaiNX"] = "nhaptra", ["Title"] = "Tạo Phiếu nhập trả" };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Large, FullWidth = true, DisableBackdropClick = true };
         var result = await DialogService.Show<NhapXuatsCreate>("Tạo mới", parameters, options).Result;
@@ -566,7 +582,7 @@
     }
     private async Task CreateClickXuatTra()
     {
-        nhapxuat = new NhapXuatModel();
+        nhapxuat = new PhieuNhapXuatAllModel();
         var parameters = new DialogParameters { ["nhapxuat"] = nhapxuat, ["loaiNX"] = "xuattra", ["Title"] = "Tạo Phiếu xuất trả" };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Large, FullWidth = true, DisableBackdropClick = true };
         var result = await DialogService.Show<NhapXuatsCreate>("Tạo mới", parameters, options).Result;
@@ -689,7 +705,17 @@
                 int rowIndex = 2;
                 foreach (var item in listData.Items)
                 {
-                    workSheet.Cells[rowIndex, 1].Value = item.LoaiDisplay;
+                    var loaiDisplay = item.Loai?.ToLower() switch
+                    {
+                        "nhap" => "Phiếu nhập",
+                        "xuat" => "Phiếu xuất",
+                        "nhaptra" => "Phiếu nhập trả",
+                        "xuattra" => "Phiếu xuất trả",
+                        "dieuchuyen" => "Điều chuyển",
+                        "donhang" => "Đơn hàng",
+                        _ => item.Loai ?? ""
+                    };
+                    workSheet.Cells[rowIndex, 1].Value = loaiDisplay;
                     workSheet.Cells[rowIndex, 1].Style.Font.Size = 12;
                     workSheet.Cells[rowIndex, 1].Style.Font.Bold = false;
                     workSheet.Cells[rowIndex, 1].Style.Border.Top.Style = ExcelBorderStyle.Hair;
@@ -704,27 +730,27 @@
                     workSheet.Cells[rowIndex, 3].Style.Font.Bold = false;
                     workSheet.Cells[rowIndex, 3].Style.Border.Top.Style = ExcelBorderStyle.Hair;
 
-                    workSheet.Cells[rowIndex, 4].Value = item.MaDonVi;
+                    workSheet.Cells[rowIndex, 4].Value = item.MaDoiTuong;
                     workSheet.Cells[rowIndex, 4].Style.Font.Size = 12;
                     workSheet.Cells[rowIndex, 4].Style.Font.Bold = false;
                     workSheet.Cells[rowIndex, 4].Style.Border.Top.Style = ExcelBorderStyle.Hair;
 
-                    workSheet.Cells[rowIndex, 5].Value = item.TenDonVi;
+                    workSheet.Cells[rowIndex, 5].Value = item.TenDoiTuong;
                     workSheet.Cells[rowIndex, 5].Style.Font.Size = 12;
                     workSheet.Cells[rowIndex, 5].Style.Font.Bold = false;
                     workSheet.Cells[rowIndex, 5].Style.Border.Top.Style = ExcelBorderStyle.Hair;
 
-                    workSheet.Cells[rowIndex, 6].Value = item.DiaChi;
+                    workSheet.Cells[rowIndex, 6].Value = item.DiaChiDoiTuong;
                     workSheet.Cells[rowIndex, 6].Style.Font.Size = 12;
                     workSheet.Cells[rowIndex, 6].Style.Font.Bold = false;
                     workSheet.Cells[rowIndex, 6].Style.Border.Top.Style = ExcelBorderStyle.Hair;
 
-                    workSheet.Cells[rowIndex, 7].Value = item.NoiDungNhapXuats.Sum(s => s.SoTien).ToString("###,###");
+                    workSheet.Cells[rowIndex, 7].Value = (item.SoTien ?? 0).ToString("###,###");
                     workSheet.Cells[rowIndex, 7].Style.Font.Size = 12;
                     workSheet.Cells[rowIndex, 7].Style.Font.Bold = false;
                     workSheet.Cells[rowIndex, 7].Style.Border.Top.Style = ExcelBorderStyle.Hair;
 
-                    workSheet.Cells[rowIndex, 8].Value = item.DMLoaiTiens?.LoaiTien;
+                    workSheet.Cells[rowIndex, 8].Value = item.LoaiTien;
                     workSheet.Cells[rowIndex, 8].Style.Font.Size = 12;
                     workSheet.Cells[rowIndex, 8].Style.Font.Bold = false;
                     workSheet.Cells[rowIndex, 8].Style.Border.Top.Style = ExcelBorderStyle.Hair;
@@ -752,7 +778,7 @@
 
     }
     // style the cells according to the element's physical classification and the molar mass.
-    private Func<NhapXuatModel, string> _cellNumberStyleFunc => x =>
+    private Func<PhieuNhapXuatAllModel, string> _cellNumberStyleFunc => x =>
     {
         string style = "";
         style = "text-align: end";
