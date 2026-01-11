@@ -539,6 +539,12 @@ public class NhapXuatsController : ControllerBase
         {
             filter = filter.And(x => x.DonViTinh != null && x.DonViTinh.Contains(request.DonViTinh));
         }
+        // Tìm kiếm hàng hóa (mã hoặc tên)
+        if (!string.IsNullOrEmpty(request.HangHoaSearch))
+        {
+            filter = filter.And(x => (x.MaHangHoa != null && x.MaHangHoa.Contains(request.HangHoaSearch)) 
+                                   || (x.TenHangHoa != null && x.TenHangHoa.Contains(request.HangHoaSearch)));
+        }
 
         if (request.SoTienTT_From != null && request.SoTienTT_From > 0)
         {

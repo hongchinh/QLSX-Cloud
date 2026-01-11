@@ -39,6 +39,7 @@ namespace QLSX.Shared.Models
         public string MaHangHoa { get; set; }
         public string TenHangHoa { get; set; }
         public string DonViTinh { get; set; }
+        public string HangHoaSearch { get; set; }
 
         /// <summary>
         /// 0 - all

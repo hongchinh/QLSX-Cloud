@@ -92,6 +92,9 @@
                 <MudItem xs="12" sm="3" lg="2">
                     <MudDatePicker Margin="Margin.Dense" Label="Đến ngày" @bind-Date="@itemRequest.NgayLap_To" Variant="Variant.Outlined" Editable="true" DateFormat="dd/MM/yyyy"></MudDatePicker>
                 </MudItem>
+                <MudItem xs="12" sm="3" lg="2">
+                    <MudTextField @bind-Value="itemRequest.HangHoaSearch" Label="Mã/Tên hàng hóa" Margin="Margin.Dense" Variant="Variant.Outlined" Placeholder="Nhập mã hoặc tên hàng hóa"></MudTextField>
+                </MudItem>
 
                 <MudItem xs="12" sm="6" lg="4">
                     <MudButton Class="mt-3" ButtonType="ButtonType.Submit" Size="MudBlazor.Size.Large" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Search" Color="MudBlazor.Color.Primary">Tìm kiếm</MudButton>
@@ -170,6 +173,19 @@
             <PropertyColumn Property="x => x.TenDoiTuong" Title="Tên đơn vị" />
             <PropertyColumn Property="x => x.DiaChiDoiTuong" Title="Địa chỉ" />
             <PropertyColumn Property="x => x.DienGiai" Title="Ghi chú" />
+            <PropertyColumn Property="x => x.MaHangHoa" Title="Mã hàng hóa" />
+            <PropertyColumn Property="x => x.TenHangHoa" Title="Tên hàng hóa" />
+            <PropertyColumn Property="x => x.DonViTinh" Title="Đơn vị tính" />
+            <PropertyColumn Property="x => x.SoLuong" Title="Số lượng" CellStyleFunc="@_cellNumberStyleFunc">
+                <CellTemplate>
+                    <MudText>@(context.Item.SoLuong?.ToString("###,###.##") ?? "0")</MudText>
+                </CellTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.DonGia" Title="Đơn giá" CellStyleFunc="@_cellNumberStyleFunc">
+                <CellTemplate>
+                    <MudText>@(context.Item.DonGia?.ToString("###,###") ?? "0")</MudText>
+                </CellTemplate>
+            </PropertyColumn>
             <PropertyColumn Property="x => x.SoTien" Title="Số tiền" CellStyleFunc="@_cellNumberStyleFunc">
                 <CellTemplate>
                     <MudText>@(context.Item.SoTien?.ToString("###,###") ?? "0")</MudText>
@@ -508,7 +524,20 @@
 
     private async Task DeleteClick(PhieuNhapXuatAllModel nhapxuat)
     {
-        var parameters = new DialogParameters { ["server"] = nhapxuat };
+        // Convert PhieuNhapXuatAllModel to NhapXuatModel for Delete component
+        var nhapXuatModel = new NhapXuatModel
+        {
+            Id = nhapxuat.Id,
+            SoChungTu = nhapxuat.SoChungTu,
+            NgayCT = nhapxuat.NgayCT,
+            MaDonVi = nhapxuat.MaDoiTuong,
+            TenDonVi = nhapxuat.TenDoiTuong,
+            DiaChi = nhapxuat.DiaChiDoiTuong,
+            SoTienTT = nhapxuat.SoTienTT ?? 0,
+            NoiDungNhapXuats = new List<NoiDungNhapXuatModel>()
+        };
+        
+        var parameters = new DialogParameters { ["server"] = nhapXuatModel };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Large, FullWidth = true, DisableBackdropClick = true };
         var dialog = DialogService.Show<Delete>("Xóa", parameters, options);
         var result = await dialog.Result;
@@ -535,8 +564,8 @@
 
     private async Task CreateClickNhap()
     {
-        nhapxuat = new PhieuNhapXuatAllModel();
-        var parameters = new DialogParameters { ["nhapxuat"] = nhapxuat, ["loaiNX"] = "nhap", ["Title"] = "Tạo Phiếu nhập" };
+        var nhapxuatModel = new NhapXuatModel();
+        var parameters = new DialogParameters { ["nhapxuat"] = nhapxuatModel, ["loaiNX"] = "nhap", ["Title"] = "Tạo Phiếu nhập" };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Large, FullWidth = true, DisableBackdropClick = true };
         var result = await DialogService.Show<NhapXuatsCreate>("Tạo mới", parameters, options).Result;
         if (!result.Canceled)
@@ -552,8 +581,8 @@
 
     private async Task CreateClickXuat()
     {
-        nhapxuat = new PhieuNhapXuatAllModel();
-        var parameters = new DialogParameters { ["nhapxuat"] = nhapxuat, ["loaiNX"] = "xuat", ["Title"] = "Tạo Phiếu xuất" };
+        var nhapxuatModel = new NhapXuatModel();
+        var parameters = new DialogParameters { ["nhapxuat"] = nhapxuatModel, ["loaiNX"] = "xuat", ["Title"] = "Tạo Phiếu xuất" };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Large, FullWidth = true, DisableBackdropClick = true };
         var result = await DialogService.Show<NhapXuatsCreate>("Tạo mới", parameters, options).Result;
         if (!result.Canceled)
@@ -567,8 +596,8 @@
     }
     private async Task CreateClickNhapTra()
     {
-        nhapxuat = new PhieuNhapXuatAllModel();
-        var parameters = new DialogParameters { ["nhapxuat"] = nhapxuat, ["loaiNX"] = "nhaptra", ["Title"] = "Tạo Phiếu nhập trả" };
+        var nhapxuatModel = new NhapXuatModel();
+        var parameters = new DialogParameters { ["nhapxuat"] = nhapxuatModel, ["loaiNX"] = "nhaptra", ["Title"] = "Tạo Phiếu nhập trả" };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Large, FullWidth = true, DisableBackdropClick = true };
         var result = await DialogService.Show<NhapXuatsCreate>("Tạo mới", parameters, options).Result;
         if (!result.Canceled)
@@ -582,8 +611,8 @@
     }
     private async Task CreateClickXuatTra()
     {
-        nhapxuat = new PhieuNhapXuatAllModel();
-        var parameters = new DialogParameters { ["nhapxuat"] = nhapxuat, ["loaiNX"] = "xuattra", ["Title"] = "Tạo Phiếu xuất trả" };
+        var nhapxuatModel = new NhapXuatModel();
+        var parameters = new DialogParameters { ["nhapxuat"] = nhapxuatModel, ["loaiNX"] = "xuattra", ["Title"] = "Tạo Phiếu xuất trả" };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Large, FullWidth = true, DisableBackdropClick = true };
         var result = await DialogService.Show<NhapXuatsCreate>("Tạo mới", parameters, options).Result;
         if (!result.Canceled)
@@ -684,20 +713,45 @@
                 workSheet.Cells[1, 6].Style.Font.Bold = true;
                 workSheet.Cells[1, 6].Style.Border.Top.Style = ExcelBorderStyle.Hair;
 
-                workSheet.Cells[1, 7].Value = "Tổng tiền hàng";
+                workSheet.Cells[1, 7].Value = "Mã hàng hóa";
                 workSheet.Cells[1, 7].Style.Font.Size = 12;
                 workSheet.Cells[1, 7].Style.Font.Bold = true;
                 workSheet.Cells[1, 7].Style.Border.Top.Style = ExcelBorderStyle.Hair;
 
-                workSheet.Cells[1, 8].Value = "Loại tiền";
+                workSheet.Cells[1, 8].Value = "Tên hàng hóa";
                 workSheet.Cells[1, 8].Style.Font.Size = 12;
                 workSheet.Cells[1, 8].Style.Font.Bold = true;
                 workSheet.Cells[1, 8].Style.Border.Top.Style = ExcelBorderStyle.Hair;
 
-                workSheet.Cells[1, 9].Value = "Kho hàng";
+                workSheet.Cells[1, 9].Value = "Đơn vị tính";
                 workSheet.Cells[1, 9].Style.Font.Size = 12;
                 workSheet.Cells[1, 9].Style.Font.Bold = true;
                 workSheet.Cells[1, 9].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 10].Value = "Số lượng";
+                workSheet.Cells[1, 10].Style.Font.Size = 12;
+                workSheet.Cells[1, 10].Style.Font.Bold = true;
+                workSheet.Cells[1, 10].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 11].Value = "Đơn giá";
+                workSheet.Cells[1, 11].Style.Font.Size = 12;
+                workSheet.Cells[1, 11].Style.Font.Bold = true;
+                workSheet.Cells[1, 11].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 12].Value = "Số tiền";
+                workSheet.Cells[1, 12].Style.Font.Size = 12;
+                workSheet.Cells[1, 12].Style.Font.Bold = true;
+                workSheet.Cells[1, 12].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 13].Value = "Loại tiền";
+                workSheet.Cells[1, 13].Style.Font.Size = 12;
+                workSheet.Cells[1, 13].Style.Font.Bold = true;
+                workSheet.Cells[1, 13].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                workSheet.Cells[1, 14].Value = "Kho hàng";
+                workSheet.Cells[1, 14].Style.Font.Size = 12;
+                workSheet.Cells[1, 14].Style.Font.Bold = true;
+                workSheet.Cells[1, 14].Style.Border.Top.Style = ExcelBorderStyle.Hair;
 
                 #endregion
 
@@ -745,20 +799,45 @@
                     workSheet.Cells[rowIndex, 6].Style.Font.Bold = false;
                     workSheet.Cells[rowIndex, 6].Style.Border.Top.Style = ExcelBorderStyle.Hair;
 
-                    workSheet.Cells[rowIndex, 7].Value = (item.SoTien ?? 0).ToString("###,###");
+                    workSheet.Cells[rowIndex, 7].Value = item.MaHangHoa;
                     workSheet.Cells[rowIndex, 7].Style.Font.Size = 12;
                     workSheet.Cells[rowIndex, 7].Style.Font.Bold = false;
                     workSheet.Cells[rowIndex, 7].Style.Border.Top.Style = ExcelBorderStyle.Hair;
 
-                    workSheet.Cells[rowIndex, 8].Value = item.LoaiTien;
+                    workSheet.Cells[rowIndex, 8].Value = item.TenHangHoa;
                     workSheet.Cells[rowIndex, 8].Style.Font.Size = 12;
                     workSheet.Cells[rowIndex, 8].Style.Font.Bold = false;
                     workSheet.Cells[rowIndex, 8].Style.Border.Top.Style = ExcelBorderStyle.Hair;
 
-                    workSheet.Cells[rowIndex, 9].Value = item.TenKho;
+                    workSheet.Cells[rowIndex, 9].Value = item.DonViTinh;
                     workSheet.Cells[rowIndex, 9].Style.Font.Size = 12;
                     workSheet.Cells[rowIndex, 9].Style.Font.Bold = false;
                     workSheet.Cells[rowIndex, 9].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 10].Value = (item.SoLuong ?? 0).ToString("###,###.##");
+                    workSheet.Cells[rowIndex, 10].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 10].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 10].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 11].Value = (item.DonGia ?? 0).ToString("###,###");
+                    workSheet.Cells[rowIndex, 11].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 11].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 11].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 12].Value = (item.SoTien ?? 0).ToString("###,###");
+                    workSheet.Cells[rowIndex, 12].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 12].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 12].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 13].Value = item.LoaiTien;
+                    workSheet.Cells[rowIndex, 13].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 13].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 13].Style.Border.Top.Style = ExcelBorderStyle.Hair;
+
+                    workSheet.Cells[rowIndex, 14].Value = item.TenKho;
+                    workSheet.Cells[rowIndex, 14].Style.Font.Size = 12;
+                    workSheet.Cells[rowIndex, 14].Style.Font.Bold = false;
+                    workSheet.Cells[rowIndex, 14].Style.Border.Top.Style = ExcelBorderStyle.Hair;
 
 
                     rowIndex++;
