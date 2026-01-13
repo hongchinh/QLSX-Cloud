@@ -16,6 +16,7 @@
 @inject IDMMauSacService<DanhMucMauSacModel> mausacService
 
 @inject IDialogService DialogService
+@inject AppService AppService
 
 @namespace Dialogs
 <MudDialog DisableSidePadding="true" DefaultFocus="DefaultFocus.LastChild">
@@ -36,6 +37,10 @@
                     <MudTh>Mã Hàng Hóa</MudTh>
                     <MudTh>Tên hàng hóa</MudTh>
                     <MudTh>DVT</MudTh>
+                    @if (ShowSoLuongTon)
+                    {
+                        <MudTh>SL Tồn</MudTh>
+                    }
                     <MudTh>Giá nhập</MudTh>
                     <MudTh>Giá xuất</MudTh>
                 </HeaderContent>
@@ -58,6 +63,26 @@
                             @context.DonViTinh
                         </div>
                     </MudTd>
+                    @if (ShowSoLuongTon)
+                    {
+                        <MudTd DataLabel="SoLuongTon">
+                            <div @onclick:stopPropagation="true"
+                                 @ondblclick="@((x) => DoSelectedRow(context))">
+                                @if (_isLoadingSoLuongTon)
+                                {
+                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                                }
+                                else if (_soLuongTonCache.ContainsKey(context.MaHangHoa))
+                                {
+                                    @_soLuongTonCache[context.MaHangHoa].ToString("###,##0.##")
+                                }
+                                else
+                                {
+                                    <span>-</span>
+                                }
+                            </div>
+                        </MudTd>
+                    }
                     <MudTd DataLabel="GiaNhap">
                         <div @onclick:stopPropagation="true"
                              @ondblclick="@( (x) => DoSelectedRow(context))">
@@ -89,6 +114,15 @@
 </MudDialog>
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    // Parameters để tính số lượng tồn (optional - không ảnh hưởng các form khác)
+    [Parameter] public string MaKho { get; set; } = "";
+    [Parameter] public DateTime? NgayCT { get; set; }
+    [Parameter] public bool ShowSoLuongTon { get; set; } = false;
+
+    // Dictionary để lưu số lượng tồn
+    private Dictionary<string, double> _soLuongTonCache = new Dictionary<string, double>();
+    private bool _isLoadingSoLuongTon = false;
 
     public GetAllResponsePaged<DanhMucHangHoaModel> lsResponses { get; set; }
 
@@ -165,8 +199,64 @@
             data = new List<DanhMucHangHoaModel>();
         }
         pagedData = data;
+        
+        // Tính số lượng tồn cho trang hiện tại nếu có parameters
+        if (ShowSoLuongTon && data != null && data.Any())
+        {
+            await LoadSoLuongTonForCurrentPage(data);
+        }
+        
         Loading = false;
         return new TableData<DanhMucHangHoaModel>() { TotalItems = totalItems, Items = pagedData };
+    }
+
+    // Method tính số lượng tồn cho danh sách hàng hóa hiện tại
+    private async Task LoadSoLuongTonForCurrentPage(IEnumerable<DanhMucHangHoaModel> items)
+    {
+        if (!ShowSoLuongTon || string.IsNullOrEmpty(MaKho) || NgayCT == null)
+            return;
+
+        var maHangHoas = items
+            .Where(x => !string.IsNullOrEmpty(x.MaHangHoa))
+            .Select(x => x.MaHangHoa)
+            .Distinct()
+            .ToList();
+
+        if (!maHangHoas.Any())
+            return;
+
+        _isLoadingSoLuongTon = true;
+        StateHasChanged();
+        
+        try
+        {
+            var request = new GetSoDuHangHoaBatchRequest
+            {
+                MaKho = MaKho,
+                Ngay = NgayCT.Value,
+                MaHangHoas = maHangHoas
+            };
+
+            var result = await productServicece.GetSoDuHangHoaBatchAsync(request);
+
+            // Lưu vào cache
+            if (result != null)
+            {
+                foreach (var kvp in result)
+                {
+                    _soLuongTonCache[kvp.Key] = kvp.Value;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading SoLuongTon: {ex.Message}");
+        }
+        finally
+        {
+            _isLoadingSoLuongTon = false;
+            StateHasChanged();
+        }
     }
 
     private DanhMucHangHoaModel DoSelectedRow(DanhMucHangHoaModel ctx)

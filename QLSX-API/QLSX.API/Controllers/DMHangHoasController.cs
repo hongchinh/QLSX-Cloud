@@ -697,5 +697,143 @@ namespace SaleAPI.Controllers
             }
             return 0;
         }
+
+        // POST: api/DanhMucHangHoas/GetSoDuHangHoaBatch
+        [HttpPost("GetSoDuHangHoaBatch")]
+        public async Task<ActionResult<Dictionary<string, double>>> GetSoDuHangHoaBatch(GetSoDuHangHoaBatchRequest request)
+        {
+            var result = new Dictionary<string, double>();
+            
+            try
+            {
+                if (request.MaHangHoas == null || !request.MaHangHoas.Any())
+                {
+                    return result;
+                }
+
+                // Loại bỏ trùng lặp và null/empty
+                var distinctMaHangHoas = request.MaHangHoas
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct()
+                    .ToList();
+
+                if (!distinctMaHangHoas.Any())
+                {
+                    return result;
+                }
+
+                string sqlConn = _configuration.GetConnectionString("CRMConnectStrings");
+                
+                // Tạo XML từ danh sách mã hàng hóa
+                var xmlBuilder = new System.Text.StringBuilder();
+                xmlBuilder.Append("<items>");
+                foreach (var maHangHoa in distinctMaHangHoas)
+                {
+                    // Escape XML special characters
+                    var escapedMaHangHoa = maHangHoa.Replace("&", "&amp;")
+                                                   .Replace("<", "&lt;")
+                                                   .Replace(">", "&gt;")
+                                                   .Replace("\"", "&quot;")
+                                                   .Replace("'", "&apos;");
+                    xmlBuilder.Append($"<item>{escapedMaHangHoa}</item>");
+                }
+                xmlBuilder.Append("</items>");
+                string maHangHoasXML = xmlBuilder.ToString();
+
+                // Gọi stored procedure batch (nếu có) hoặc fallback về cách cũ
+                string storedProc;
+                bool useBatchProc = true; // Set to true sau khi đã tạo stored procedure batch trong DB
+                
+                if (useBatchProc)
+                {
+                    // Sử dụng stored procedure batch mới
+                    storedProc = string.Format(
+                        "exec dbo.GetSoDuHangHoaBatch '{0}', '{1}', '{2}', {3}",
+                        request.MaKho ?? "",
+                        maHangHoasXML.Replace("'", "''"), // Escape single quotes
+                        request.Ngay.ToString("MM/dd/yyyy"),
+                        _tenantProvider.TenantId
+                    );
+
+                    DataTable dt = new DataTable();
+                    using (SqlDataAdapter dataAdapter = new SqlDataAdapter(storedProc, sqlConn))
+                    {
+                        DataSet dataSet = new DataSet();
+                        dataAdapter.Fill(dataSet);
+                        dt = dataSet.Tables[0];
+                    }
+
+                    // Parse kết quả từ stored procedure batch
+                    foreach (DataRow row in dt.Rows)
+                    {
+                        if (row["MaHangHoa"] != DBNull.Value && row["SoLuong"] != DBNull.Value)
+                        {
+                            string maHangHoa = row["MaHangHoa"].ToString();
+                            double soLuong = double.Parse(row["SoLuong"].ToString());
+                            result[maHangHoa] = soLuong;
+                        }
+                    }
+
+                    // Đảm bảo tất cả mã hàng hóa đều có kết quả (set 0 nếu không có)
+                    foreach (var maHangHoa in distinctMaHangHoas)
+                    {
+                        if (!result.ContainsKey(maHangHoa))
+                        {
+                            result[maHangHoa] = 0;
+                        }
+                    }
+                }
+                else
+                {
+                    // Fallback: Gọi stored procedure cho từng hàng hóa (tối ưu hơn cách cũ bằng cách dùng connection pooling)
+                    using (SqlConnection connection = new SqlConnection(sqlConn))
+                    {
+                        await connection.OpenAsync();
+                        
+                        foreach (var maHangHoa in distinctMaHangHoas)
+                        {
+                            try
+                            {
+                                storedProc = string.Format(
+                                    "exec dbo.GetSoDuHangHoa {0}, '{1}', '{2}', {3}",
+                                    request.MaKho ?? "NULL",
+                                    maHangHoa.Replace("'", "''"), // Escape single quotes
+                                    request.Ngay.ToString("MM/dd/yyyy"),
+                                    _tenantProvider.TenantId
+                                );
+
+                                using (SqlCommand command = new SqlCommand(storedProc, connection))
+                                {
+                                    command.CommandTimeout = 30;
+                                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                                    {
+                                        if (await reader.ReadAsync() && reader["SoLuong"] != DBNull.Value)
+                                        {
+                                            result[maHangHoa] = reader.GetDouble(reader.GetOrdinal("SoLuong"));
+                                        }
+                                        else
+                                        {
+                                            result[maHangHoa] = 0;
+                                        }
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                // Nếu một hàng hóa lỗi, vẫn tiếp tục với các hàng hóa khác
+                                result[maHangHoa] = 0;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Trả về kết quả đã tính được, không throw exception
+                return result;
+            }
+            
+            return result;
+        }
     }
 }

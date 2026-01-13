@@ -34,6 +34,7 @@ namespace QLSX.Web.Services
         Task<Stream> GetImage();
 
         Task<double> GetSoDuHangHoaByCodeAsync(QLSX.Shared.Models.GetSoDuHangHoaRequest request);
+        Task<Dictionary<string, double>> GetSoDuHangHoaBatchAsync(QLSX.Shared.Models.GetSoDuHangHoaBatchRequest request);
 
     }
 
@@ -384,6 +385,36 @@ namespace QLSX.Web.Services
                 return await Task.FromResult(JsonConvert.DeserializeObject<double>(responseBody));
             }
             return 0;
+
+        }
+
+        public async Task<Dictionary<string, double>> GetSoDuHangHoaBatchAsync(GetSoDuHangHoaBatchRequest request)
+        {
+            request.DMDonViSuDungId = _appService.DMDonViSuDungId;
+            string serializedUser = JsonConvert.SerializeObject(request);
+
+            var requestMessage = new HttpRequestMessage(HttpMethod.Post, requestUri + "/GetSoDuHangHoaBatch");
+
+            var token = await _localStorageService.GetItemAsync<string>("accessToken");
+
+            requestMessage.Headers.Authorization
+                = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            requestMessage.Content = new StringContent(serializedUser);
+            requestMessage.Content.Headers.ContentType
+               = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+            _interceptor.MonitorEvent();
+            var response = await _httpClient.SendAsync(requestMessage);
+
+            var responseStatusCode = response.StatusCode;
+
+            if (responseStatusCode.ToString() == "OK")
+            {
+                var responseBody = await response.Content.ReadAsStringAsync();
+                var result = JsonConvert.DeserializeObject<Dictionary<string, double>>(responseBody);
+                return await Task.FromResult(result ?? new Dictionary<string, double>());
+            }
+            return new Dictionary<string, double>();
 
         }
     }

@@ -153,7 +153,14 @@
                                 </div>
                                 <div class="fieldParam">
                                     <ValidationMessage For="(() => nhapxuat.NgayCT)" />
-                                    <div><MudDatePicker ReadOnly="@IsReadOnly" Margin="Margin.Dense" Required="true" @bind-Date="nhapxuat.NgayCT" Culture="@CultureInfo.GetCultureInfo("vi-VN")" TitleDateFormat="dd/MM/yyyy" Editable="true" Variant="Variant.Outlined"></MudDatePicker></div>
+                                    <div><MudDatePicker ReadOnly="@IsReadOnly" Margin="Margin.Dense" Required="true" 
+                                                        Date="nhapxuat.NgayCT" 
+                                                        DateChanged="@(async (DateTime? value) => { 
+                                                            nhapxuat.NgayCT = value; 
+                                                            InvalidateSoLuongTonCache(ngay: value);
+                                                            await UpdateSoLuongTonForAllRows(); 
+                                                        })" 
+                                                        Culture="@CultureInfo.GetCultureInfo("vi-VN")" TitleDateFormat="dd/MM/yyyy" Editable="true" Variant="Variant.Outlined"></MudDatePicker></div>
                                 </div>
                             </MudItem>
                             <MudItem xs="12" sm="3" lg="3" Class="d-flex flex-grow-1 gap-2">
@@ -198,9 +205,9 @@
                                     <ValidationMessage For="(() => nhapxuat.MaDonVi)" />
                                     <MudAutocomplete T="DanhMucKhachHangModel" 
                                                      ReadOnly="@IsReadOnly"
-                                                     Value="@GetSelectedKhachHang()"
+                                                     Value="@selectedKhachHang"
                                                      SearchFunc="@SearchKhachHangAsync"
-                                                     ToStringFunc="@((DanhMucKhachHangModel x) => x != null ? $"{x.MaDonVi} - {x.TenDonVi}" : string.Empty)"
+                                                     ToStringFunc="@((DanhMucKhachHangModel x) => x != null ? x.MaDonVi : string.Empty)"
                                                      CoerceText="false"
                                                      ResetValueOnEmpty="true"
                                                      MaxItems="50"
@@ -210,7 +217,25 @@
                                                      Dense="true"
                                                      Variant="Variant.Outlined"
                                                      OnKeyDown="@(async (e) => await OnKeyDownKhachHang(e))"
-                                                     ValueChanged="@((DanhMucKhachHangModel value) => { _ = OnKhachHangSelectedAsync(value); })"
+                                                     ValueChanged="@(async (DanhMucKhachHangModel value) => { 
+                                                         selectedKhachHang = value;
+                                                         if (value != null)
+                                                         {
+                                                             nhapxuat.MaDonVi = value.MaDonVi;
+                                                             nhapxuat.TenDonVi = value.TenDonVi;
+                                                             nhapxuat.DiaChi = value.DiaChi;
+                                                             nhapxuat.DienThoai = value.DienThoai;
+                                                             await GetSoDuCongNo();
+                                                         }
+                                                         else
+                                                         {
+                                                             nhapxuat.MaDonVi = "";
+                                                             nhapxuat.TenDonVi = "";
+                                                             nhapxuat.DiaChi = "";
+                                                             nhapxuat.DienThoai = "";
+                                                         }
+                                                         StateHasChanged();
+                                                     })"
                                                      Adornment="Adornment.End"
                                                      AdornmentIcon="@Icons.Material.Filled.Search"
                                                      OnAdornmentClick="@(() => OpenDialogKhachHang())" />
@@ -262,7 +287,14 @@
                                     <label>Kho hàng</label>
                                 </div>
                                 <div class="fieldParam">
-                                    <MudSelect ReadOnly="@IsReadOnly" T="string" Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter" @bind-Value="@nhapxuat.MaKho" Variant="Variant.Outlined">
+                                    <MudSelect ReadOnly="@IsReadOnly" T="string" Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter" 
+                                               Value="@nhapxuat.MaKho" 
+                                               ValueChanged="@(async (string value) => { 
+                                                   nhapxuat.MaKho = value; 
+                                                   InvalidateSoLuongTonCache(maKho: value);
+                                                   await UpdateSoLuongTonForAllRows(); 
+                                               })" 
+                                               Variant="Variant.Outlined">
                                         @if (lstKhoHang != null)
                                         {
                                             @foreach (var cnt in lstKhoHang)
@@ -359,7 +391,18 @@
                     <MudTd DataLabel="MaHangHoa"><div class="cell-data">@ctx.MaHangHoa</div></MudTd>
                     <MudTd DataLabel="TenHangHoa"><div class="cell-data">@ctx.TenHangHoa</div></MudTd>
                     <MudTd DataLabel="DonViTinh"><div class="cell-data">@ctx.DonViTinh</div></MudTd>
-                    <MudTd DataLabel="SoLuongTon"><div class="cell-data">@ctx.SoLuongTon.ToString("###,##0.##")</div></MudTd>
+                    <MudTd DataLabel="SoLuongTon">
+                        <div class="cell-data">
+                            @if (_isUpdatingSoLuongTon && !string.IsNullOrEmpty(ctx.MaHangHoa))
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                            }
+                            else
+                            {
+                                @ctx.SoLuongTon.ToString("###,##0.##")
+                            }
+                        </div>
+                    </MudTd>
                     <MudTd DataLabel="SoLuong"><div class="cell-data" Style="text-align:right">@ctx.SoLuong.ToString("###,###.##")</div></MudTd>
                     @if (SanPhamTheoM2)
                     {
@@ -425,7 +468,14 @@
                         <MudTextField @bind-Value="@ctx1.DonViTinh" Immediate="true" OnKeyDown="@(async (e) => await OnKeyDownGrid(e, ctx1.Index, "DonViTinh"))" />
                     </MudTd>
                     <MudTd DataLabel="SoLuongTon" Class="@(cssReadOnly)">
-                        <MudTextField Disabled="true" @bind-Value="@ctx1.SoLuongTon" ReadOnly="true" />
+                        @if (_isUpdatingSoLuongTon && !string.IsNullOrEmpty(ctx1.MaHangHoa))
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                        }
+                        else
+                        {
+                            <MudTextField Disabled="true" Value="@ctx1.SoLuongTon.ToString("###,##0.##")" ReadOnly="true" />
+                        }
                     </MudTd>
                     <MudTd DataLabel="SoLuong" Style="text-align:right">
                         <MudNumericField @bind-Value="@ctx1.SoLuong" OnKeyDown="@(async (e) => await OnKeyDownGrid(e, ctx1.Index, "SoLuong"))" AutoFocus="@IsSoLuongFocus" InvertMouseWheel="true" Format="###,###.##" Culture="@_vi" HideSpinButtons="true" TextChanged="@((value) => ChangeValueRow(value, "SoLuong"))" Immediate="true" />
@@ -709,6 +759,16 @@
     // Biến để lưu selected khách hàng cho autocomplete MaDonVi
     private DanhMucKhachHangModel selectedKhachHang;
 
+    // Debounce timer để tránh gọi API quá nhiều
+    private System.Threading.Timer _debounceTimer;
+    private readonly TimeSpan _debounceDelay = TimeSpan.FromMilliseconds(500);
+    private bool _isUpdatingSoLuongTon = false;
+
+    // Cache để tránh gọi lại những giá trị không thay đổi
+    // Key: "MaKho_MaHangHoa_Ngay" (format: yyyyMMdd), Value: (SoLuongTon, Timestamp)
+    private Dictionary<string, (double value, DateTime timestamp)> _soLuongTonCache = new Dictionary<string, (double, DateTime)>();
+    private readonly TimeSpan _cacheExpiry = TimeSpan.FromMinutes(5); // Cache 5 phút
+
     public HangHoaSearchRequest itemRequest { get; set; } =
     new HangHoaSearchRequest
     {
@@ -748,6 +808,43 @@
     protected override async void OnInitialized()
     {
         base.OnInitialized();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Load selectedKhachHang khi nhapxuat.MaDonVi thay đổi (khi được set từ parent component)
+        if (!string.IsNullOrEmpty(nhapxuat?.MaDonVi))
+        {
+            // Chỉ load nếu chưa có hoặc không khớp
+            if (selectedKhachHang == null || selectedKhachHang.MaDonVi != nhapxuat.MaDonVi)
+            {
+                try
+                {
+                    var dmKH = await dmkhachhangService.GetByCodeAsync(nhapxuat.MaDonVi);
+                    if (dmKH != null && dmKH.Id > 0)
+                    {
+                        selectedKhachHang = dmKH;
+                        // Force update UI sau khi load
+                        await InvokeAsync(StateHasChanged);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error loading selectedKhachHang in OnParametersSetAsync: {ex.Message}");
+                }
+            }
+        }
+        else
+        {
+            // Nếu MaDonVi rỗng, clear selectedKhachHang
+            if (selectedKhachHang != null)
+            {
+                selectedKhachHang = null;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        
+        await base.OnParametersSetAsync();
     }
     public async Task OnInternalInputChanged(ChangeEventArgs e)
     {
@@ -910,10 +1007,19 @@
             noiDung.SoTien = noiDung.SoLuong * noiDung.DonGia;
         }
 
-        // Lấy số lượng tồn
-        noiDung.SoLuongTon = await GetSoLuongTonTheoCode(noiDung.MaHangHoa, nhapxuat.MaKho, nhapxuat.NgayCT ?? DateTime.Now);
+        // Lấy số lượng tồn - Gọi trực tiếp (không debounce) để hiển thị ngay
+        if (!string.IsNullOrEmpty(noiDung.MaHangHoa) && !string.IsNullOrEmpty(nhapxuat.MaKho))
+        {
+            // Gọi trực tiếp để hiển thị ngay, không debounce
+            await UpdateSoLuongTonForAllRowsInternal();
+        }
+        else
+        {
+            // Nếu thiếu thông tin, set về 0
+            noiDung.SoLuongTon = 0;
+        }
         
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
 
     public async Task MaHangHoaTextChanged(string mahh)
@@ -976,8 +1082,18 @@
                 selectedNoiDung.SoTien = selectedNoiDung.SoLuong * selectedNoiDung.DonGia;
             }
         }
-        selectedNoiDung.SoLuongTon = await GetSoLuongTonTheoCode(selectedNoiDung.MaHangHoa, nhapxuat.MaKho, nhapxuat.NgayCT ?? DateTime.Now);
-        StateHasChanged();
+        // Lấy số lượng tồn - Gọi trực tiếp (không debounce) để hiển thị ngay
+        if (!string.IsNullOrEmpty(selectedNoiDung.MaHangHoa) && !string.IsNullOrEmpty(nhapxuat.MaKho))
+        {
+            // Gọi trực tiếp để hiển thị ngay, không debounce
+            await UpdateSoLuongTonForAllRowsInternal();
+        }
+        else
+        {
+            // Nếu thiếu thông tin, set về 0
+            selectedNoiDung.SoLuongTon = 0;
+        }
+        await InvokeAsync(StateHasChanged);
     }
 
     // Method để lấy selected khách hàng từ NhapXuatModel
@@ -1125,12 +1241,18 @@
             nhapxuat.TenDonVi = dmKH.TenDonVi;
             nhapxuat.DiaChi = dmKH.DiaChi;
             nhapxuat.DienThoai = dmKH.DienThoai;
+            
+            // Đồng bộ selectedKhachHang khi tìm thấy
+            selectedKhachHang = dmKH;
         }
         else
         {
             nhapxuat.TenDonVi = "";
             nhapxuat.DiaChi = "";
             nhapxuat.DienThoai = "";
+            
+            // Clear selectedKhachHang nếu không tìm thấy
+            selectedKhachHang = null;
         }
         await GetSoDuCongNo();
 
@@ -1222,7 +1344,32 @@
             var hgrid = await JSRuntime.InvokeAsync<WindowDimensions>("setElementSizeByClass", "clsFormNX");
             HeightGrid = hgrid.Height;
             await GetSoDuCongNo();
-            StateHasChanged();
+            
+            // Load selectedKhachHang nếu có MaDonVi nhưng chưa được load (fallback nếu OnParametersSetAsync chưa load)
+            if (!string.IsNullOrEmpty(nhapxuat.MaDonVi) && selectedKhachHang == null)
+            {
+                try
+                {
+                    var dmKH = await dmkhachhangService.GetByCodeAsync(nhapxuat.MaDonVi);
+                    if (dmKH != null && dmKH.Id > 0)
+                    {
+                        selectedKhachHang = dmKH;
+                        // Force update UI sau khi load
+                        await InvokeAsync(StateHasChanged);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error loading selectedKhachHang in OnAfterRenderAsync: {ex.Message}");
+                }
+            }
+            
+            // Cập nhật số lượng tồn khi load dữ liệu ban đầu (nếu có dữ liệu)
+            if (nhapxuat.NoiDungNhapXuats != null && nhapxuat.NoiDungNhapXuats.Any(x => !string.IsNullOrEmpty(x.MaHangHoa)) && !string.IsNullOrEmpty(nhapxuat.MaKho))
+            {
+                await UpdateSoLuongTonForAllRows();
+            }
+            await InvokeAsync(StateHasChanged);
         }
         await base.OnAfterRenderAsync(firstRender);
     }
@@ -1284,9 +1431,17 @@
 
     async Task OpenDialogHangHoa()
     {
-
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var result = await DialogService.Show<DialogHangHoa>("Danh sách hàng hóa", options).Result;
+        
+        // Truyền parameters để tính số lượng tồn trong dialog
+        var parameters = new DialogParameters
+        {
+            ["MaKho"] = nhapxuat.MaKho ?? "",
+            ["NgayCT"] = nhapxuat.NgayCT ?? DateTime.Now,
+            ["ShowSoLuongTon"] = true // Flag để hiển thị cột số lượng tồn
+        };
+        
+        var result = await DialogService.Show<DialogHangHoa>("Danh sách hàng hóa", parameters, options).Result;
         if (!result.Canceled)
         {
             var itemSelected = (DanhMucHangHoaModel)(result.Data ?? null);
@@ -1341,10 +1496,30 @@
             nhapxuat.TenDonVi = donhang.TenDonVi;
             nhapxuat.DiaChi = donhang.DiaChi;
             nhapxuat.MaDonHang = donhang.SoCT;
+            
+            // Load selectedKhachHang khi MaDonVi thay đổi từ đơn đặt hàng
+            if (!string.IsNullOrEmpty(nhapxuat.MaDonVi))
+            {
+                try
+                {
+                    var dmKH = await dmkhachhangService.GetByCodeAsync(nhapxuat.MaDonVi);
+                    if (dmKH != null && dmKH.Id > 0)
+                    {
+                        selectedKhachHang = dmKH;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error loading selectedKhachHang: {ex.Message}");
+                }
+            }
+            
             foreach (var item in donhang.NoiDungDonDatHangs)
             {
                 nhapxuat.NoiDungNhapXuats.Add(mapper.Map<NoiDungNhapXuatModel>(item));
             }
+            // Cập nhật số lượng tồn cho tất cả các dòng bằng Batch API
+            await UpdateSoLuongTonForAllRows();
         }
         StateHasChanged();
     }
@@ -1365,12 +1540,32 @@
                 nhapxuat.TenDonVi = donhang.TenDonVi;
                 nhapxuat.DiaChi = donhang.DiaChi;
                 nhapxuat.MaDonHang = donhang.SoCT;
+                
+                // Load selectedKhachHang khi MaDonVi thay đổi từ đơn đặt hàng
+                if (!string.IsNullOrEmpty(nhapxuat.MaDonVi))
+                {
+                    try
+                    {
+                        var dmKH = await dmkhachhangService.GetByCodeAsync(nhapxuat.MaDonVi);
+                        if (dmKH != null && dmKH.Id > 0)
+                        {
+                            selectedKhachHang = dmKH;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error loading selectedKhachHang: {ex.Message}");
+                    }
+                }
+                
                 foreach (var item in donhang.NoiDungDonDatHangs)
                 {
                     var ndnx = mapper.Map<NoiDungNhapXuatModel>(item);
                     ndnx.Id = 0;
                     nhapxuat.NoiDungNhapXuats.Add(ndnx);
                 }
+                // Cập nhật số lượng tồn cho tất cả các dòng bằng Batch API
+                await UpdateSoLuongTonForAllRows();
             }
             else
             {
@@ -1394,10 +1589,30 @@
             {
                 nhapxuat = mapper.Map<NhapXuatModel>(itemSelected);
                 nhapxuat.MaDonHang = itemSelected.SoCT;
+                
+                // Load selectedKhachHang khi MaDonVi thay đổi từ đơn đặt hàng
+                if (!string.IsNullOrEmpty(nhapxuat.MaDonVi))
+                {
+                    try
+                    {
+                        var dmKH = await dmkhachhangService.GetByCodeAsync(nhapxuat.MaDonVi);
+                        if (dmKH != null && dmKH.Id > 0)
+                        {
+                            selectedKhachHang = dmKH;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error loading selectedKhachHang: {ex.Message}");
+                    }
+                }
+                
                 foreach (var item in itemSelected.NoiDungDonDatHangs)
                 {
                     nhapxuat.NoiDungNhapXuats.Add(mapper.Map<NoiDungNhapXuatModel>(item));
                 }
+                // Cập nhật số lượng tồn cho tất cả các dòng bằng Batch API
+                await UpdateSoLuongTonForAllRows();
 
             }
         }
@@ -1475,7 +1690,39 @@
             request.Id = nhapxuat.Id;
             request.DMDonViSuDungId = nhapxuat.DMDonViSuDungId;
             var nhapxuatnew = await nhapxuatService.GetNhapXuatByIDAsync(request);
+            
+            // Lưu MaDonVi cũ để so sánh
+            var oldMaDonVi = nhapxuat.MaDonVi;
             nhapxuat = mapper.Map<NhapXuatModel>(nhapxuatnew);
+            
+            // Reset selectedKhachHang nếu MaDonVi thay đổi hoặc không khớp
+            if (selectedKhachHang != null && 
+                (oldMaDonVi != nhapxuat.MaDonVi || selectedKhachHang.MaDonVi != nhapxuat.MaDonVi))
+            {
+                selectedKhachHang = null;
+            }
+            
+            // Load selectedKhachHang nếu có MaDonVi nhưng chưa được load
+            if (!string.IsNullOrEmpty(nhapxuat.MaDonVi) && selectedKhachHang == null)
+            {
+                try
+                {
+                    var dmKH = await dmkhachhangService.GetByCodeAsync(nhapxuat.MaDonVi);
+                    if (dmKH != null && dmKH.Id > 0)
+                    {
+                        selectedKhachHang = dmKH;
+                        // Force update UI sau khi load để MudAutocomplete hiển thị
+                        await InvokeAsync(StateHasChanged);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error loading selectedKhachHang: {ex.Message}");
+                }
+            }
+            
+            // Cập nhật số lượng tồn khi load dữ liệu ban đầu
+            await UpdateSoLuongTonForAllRows();
         }
         IsReadOnly = isRead;
         StateHasChanged();
@@ -1653,6 +1900,174 @@
         return await dmhanghoaService.GetSoDuHangHoaByCodeAsync(request);
     }
 
+    // Method tối ưu: Cập nhật số lượng tồn cho tất cả các dòng bằng Batch API (với debounce)
+    private async Task UpdateSoLuongTonForAllRows()
+    {
+        // Hủy timer cũ nếu có
+        _debounceTimer?.Dispose();
+        
+        // Tạo timer mới để debounce
+        _debounceTimer = new System.Threading.Timer(async _ =>
+        {
+            await UpdateSoLuongTonForAllRowsInternal();
+            _debounceTimer?.Dispose();
+            _debounceTimer = null;
+        }, null, _debounceDelay, TimeSpan.FromMilliseconds(-1));
+    }
+
+    // Method thực sự thực hiện cập nhật số lượng tồn (với cache)
+    private async Task UpdateSoLuongTonForAllRowsInternal()
+    {
+        // Tránh gọi đồng thời nhiều lần
+        if (_isUpdatingSoLuongTon)
+            return;
+
+        if (nhapxuat.NoiDungNhapXuats == null || !nhapxuat.NoiDungNhapXuats.Any())
+            return;
+
+        if (string.IsNullOrEmpty(nhapxuat.MaKho))
+        {
+            // Nếu không có kho, set tất cả về 0
+            foreach (var noiDung in nhapxuat.NoiDungNhapXuats)
+            {
+                noiDung.SoLuongTon = 0;
+            }
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        var ngay = nhapxuat.NgayCT ?? DateTime.Now;
+        var now = DateTime.Now;
+        var itemsToFetch = new List<string>();
+        var cacheKeyPrefix = $"{nhapxuat.MaKho}_{ngay:yyyyMMdd}_";
+
+        // Bước 1: Kiểm tra cache và cập nhật những cái đã có
+        foreach (var noiDung in nhapxuat.NoiDungNhapXuats)
+        {
+            if (string.IsNullOrEmpty(noiDung.MaHangHoa))
+            {
+                noiDung.SoLuongTon = 0;
+                continue;
+            }
+
+            string cacheKey = $"{cacheKeyPrefix}{noiDung.MaHangHoa}";
+
+            // Kiểm tra cache
+            if (_soLuongTonCache.ContainsKey(cacheKey))
+            {
+                var (value, timestamp) = _soLuongTonCache[cacheKey];
+                if (now - timestamp < _cacheExpiry)
+                {
+                    // Có trong cache và chưa hết hạn
+                    noiDung.SoLuongTon = value;
+                    continue;
+                }
+                else
+                {
+                    // Cache đã hết hạn, xóa khỏi cache
+                    _soLuongTonCache.Remove(cacheKey);
+                }
+            }
+
+            // Cần fetch từ API
+            itemsToFetch.Add(noiDung.MaHangHoa);
+        }
+
+        // Bước 2: Chỉ gọi API cho những cái chưa có trong cache hoặc đã hết hạn
+        if (itemsToFetch.Any())
+        {
+            _isUpdatingSoLuongTon = true;
+            try
+            {
+                // Gọi Batch API - MỘT LẦN DUY NHẤT cho những hàng hóa cần fetch
+                var request = new GetSoDuHangHoaBatchRequest
+                {
+                    MaKho = nhapxuat.MaKho,
+                    Ngay = ngay,
+                    MaHangHoas = itemsToFetch.Distinct().ToList()
+                };
+
+                var soLuongTonDict = await dmhanghoaService.GetSoDuHangHoaBatchAsync(request);
+
+                // Cập nhật số lượng tồn và cache
+                foreach (var noiDung in nhapxuat.NoiDungNhapXuats)
+                {
+                    if (string.IsNullOrEmpty(noiDung.MaHangHoa))
+                        continue;
+
+                    string cacheKey = $"{cacheKeyPrefix}{noiDung.MaHangHoa}";
+
+                    // Chỉ cập nhật những cái đã fetch
+                    if (itemsToFetch.Contains(noiDung.MaHangHoa))
+                    {
+                        if (soLuongTonDict != null && soLuongTonDict.ContainsKey(noiDung.MaHangHoa))
+                        {
+                            noiDung.SoLuongTon = soLuongTonDict[noiDung.MaHangHoa];
+                            // Lưu vào cache
+                            _soLuongTonCache[cacheKey] = (noiDung.SoLuongTon, now);
+                        }
+                        else
+                        {
+                            // Nếu không tìm thấy trong kết quả, set về 0 và cache
+                            noiDung.SoLuongTon = 0;
+                            _soLuongTonCache[cacheKey] = (0, now);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log error nếu cần, nhưng không throw để không làm crash ứng dụng
+                Console.WriteLine($"Error updating SoLuongTon: {ex.Message}");
+                // Set về 0 cho những cái fetch lỗi
+                foreach (var maHangHoa in itemsToFetch)
+                {
+                    var noiDung = nhapxuat.NoiDungNhapXuats.FirstOrDefault(x => x.MaHangHoa == maHangHoa);
+                    if (noiDung != null)
+                    {
+                        noiDung.SoLuongTon = 0;
+                    }
+                }
+            }
+            finally
+            {
+                _isUpdatingSoLuongTon = false;
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // Method để invalidate cache khi cần (ví dụ: khi thay đổi kho hoặc ngày)
+    private void InvalidateSoLuongTonCache(string maKho = null, DateTime? ngay = null)
+    {
+        if (maKho != null || ngay != null)
+        {
+            var keysToRemove = _soLuongTonCache.Keys
+                .Where(k =>
+                {
+                    var parts = k.Split('_');
+                    if (parts.Length < 3) return false;
+                    
+                    bool matchKho = maKho == null || parts[0] == maKho;
+                    bool matchNgay = ngay == null || parts[1] == ngay.Value.ToString("yyyyMMdd");
+                    
+                    return matchKho && matchNgay;
+                })
+                .ToList();
+
+            foreach (var key in keysToRemove)
+            {
+                _soLuongTonCache.Remove(key);
+            }
+        }
+        else
+        {
+            // Clear all cache
+            _soLuongTonCache.Clear();
+        }
+    }
+
     private IEnumerable<NhatKyModel> pagedData;
     private int totalItems;
     public GetAllResponsePaged<NhatKyModel> lsResponsesNK { get; set; }
@@ -1697,6 +2112,13 @@
 
     public async ValueTask DisposeAsync()
     {
+        // Cleanup debounce timer
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+
+        // Clear cache
+        _soLuongTonCache.Clear();
+
         if (_filePasteFunctionReference != null)
         {
             await _filePasteFunctionReference.InvokeVoidAsync("dispose");
