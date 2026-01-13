@@ -169,10 +169,6 @@
                     }
                 </CellTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.MaDoiTuong" Title="Mã đơn vị" />
-            <PropertyColumn Property="x => x.TenDoiTuong" Title="Tên đơn vị" />
-            <PropertyColumn Property="x => x.DiaChiDoiTuong" Title="Địa chỉ" />
-            <PropertyColumn Property="x => x.DienGiai" Title="Ghi chú" />
             <PropertyColumn Property="x => x.MaHangHoa" Title="Mã hàng hóa" />
             <PropertyColumn Property="x => x.TenHangHoa" Title="Tên hàng hóa" />
             <PropertyColumn Property="x => x.DonViTinh" Title="Đơn vị tính" />
@@ -194,12 +190,22 @@
                     <MudText Style="font-weight: bold;text-align: end;"> @SumSoTien.ToString("###,###") </MudText>
                 </FooterTemplate>
             </PropertyColumn>
-
+            <PropertyColumn Property="x => x.MaDoiTuong" Title="Mã đơn vị" />
+            <PropertyColumn Property="x => x.TenDoiTuong" Title="Tên đơn vị" />
+            <PropertyColumn Property="x => x.DiaChiDoiTuong" Title="Địa chỉ" />
+            <PropertyColumn Property="x => x.DienGiai" Title="Ghi chú" />
             <PropertyColumn Property="x => x.TenKho" Title="Tên kho" />
             <TemplateColumn StickyRight="true">
                 <CellTemplate>
                     @if (context.Item.Loai?.ToLower() == "nhap")
                     {
+                        <MudIconButton Style="min-width:30px;width:30px"
+                                       Variant="Variant.Text"
+                                       Color="MudBlazor.Color.Info"
+                                       OnClick="@(async ()=> await ViewClick(context.Item.Loai, context.Item.Id))"
+                                       Icon="@Icons.Material.Filled.Visibility" Size="MudBlazor.Size.Small"
+                                       Title="Xem chi tiết">
+                        </MudIconButton>
                         @if (quyenSuDungNhap.XemIn)
                         {
                             <MudIconButton Style="min-width:30px;width:30px"
@@ -222,6 +228,13 @@
                     }
                     @if (context.Item.Loai?.ToLower() == "xuat")
                     {
+                        <MudIconButton Style="min-width:30px;width:30px"
+                                       Variant="Variant.Text"
+                                       Color="MudBlazor.Color.Info"
+                                       OnClick="@(async ()=> await ViewClick(context.Item.Loai, context.Item.Id))"
+                                       Icon="@Icons.Material.Filled.Visibility" Size="MudBlazor.Size.Small"
+                                       Title="Xem chi tiết">
+                        </MudIconButton>
                         @if (quyenSuDungXuat.XemIn)
                         {
                             <MudIconButton Style="min-width:30px;width:30px"
@@ -244,6 +257,13 @@
                     }
                     @if (context.Item.Loai?.ToLower() == "nhaptra")
                     {
+                        <MudIconButton Style="min-width:30px;width:30px"
+                                       Variant="Variant.Text"
+                                       Color="MudBlazor.Color.Info"
+                                       OnClick="@(async ()=> await ViewClick(context.Item.Loai, context.Item.Id))"
+                                       Icon="@Icons.Material.Filled.Visibility" Size="MudBlazor.Size.Small"
+                                       Title="Xem chi tiết">
+                        </MudIconButton>
                         @if (quyenSuDungNhapTra.XemIn)
                         {
                             <MudIconButton Style="min-width:30px;width:30px"
@@ -266,6 +286,13 @@
                     }
                     @if (context.Item.Loai?.ToLower() == "xuattra")
                     {
+                        <MudIconButton Style="min-width:30px;width:30px"
+                                       Variant="Variant.Text"
+                                       Color="MudBlazor.Color.Info"
+                                       OnClick="@(async ()=> await ViewClick(context.Item.Loai, context.Item.Id))"
+                                       Icon="@Icons.Material.Filled.Visibility" Size="MudBlazor.Size.Small"
+                                       Title="Xem chi tiết">
+                        </MudIconButton>
                         @if (quyenSuDungXuatTra.XemIn)
                         {
                             <MudIconButton Style="min-width:30px;width:30px"
@@ -630,6 +657,38 @@
         IsGridViewFiltered = true;
         await table.ReloadServerData();
         isLoading = false;
+    }
+
+    private async Task ViewClick(string loai, int id)
+    {
+        string title = "Xem";
+        if (loai == "nhap")
+        {
+            title = "Xem Phiếu nhập";
+        }
+        else if (loai == "xuat")
+        {
+            title = "Xem Phiếu xuất";
+        }
+        else if (loai == "nhaptra")
+        {
+            title = "Xem Phiếu nhập trả";
+        }
+        else if (loai == "xuattra")
+        {
+            title = "Xem Phiếu xuất trả";
+        }
+        var parameters = new DialogParameters { ["NhapXuatId"] = id, ["loaiNX"] = loai, ["Title"] = title };
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.ExtraExtraLarge, FullScreen = true, FullWidth = true };
+        var result = await DialogService.Show<NhapXuatEdit>("Xem", parameters, options).Result;
+        if (!result.Canceled)
+        {
+            var itemSelected = (NhapXuatModel)(result.Data ?? null);
+            if (itemSelected != null)
+            {
+                await table.ReloadServerData();
+            }
+        }
     }
 
     private async Task SuaClick(string loai, int id)

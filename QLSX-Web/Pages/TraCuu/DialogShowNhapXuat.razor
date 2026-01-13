@@ -9,6 +9,7 @@
 @inject ITraCuuService listService
 @inject IDialogService DialogService
 @inject IToastService toastService
+@inject AppService AppService
 
 @namespace QLSX.Web.Pages.TraCuuSoDu
 <MudDialog DisableSidePadding="true">
@@ -24,6 +25,11 @@
                     <MudTh><MudTableSortLabel SortLabel="MaDoiTuong" T="ViewNhapXuat">Mã Đơn vị</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortLabel="TenDoiTuong" T="ViewNhapXuat">Tên Đơn vị</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortLabel="DiaChiDoiTuong" T="ViewNhapXuat">Địa chỉ</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="MaHangHoa" T="ViewNhapXuat">Mã hàng hóa</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="TenHangHoa" T="ViewNhapXuat">Tên hàng hóa</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="DonViTinh" T="ViewNhapXuat">Đơn vị tính</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="SoLuong" T="ViewNhapXuat">Số lượng</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortLabel="DonGia" T="ViewNhapXuat">Đơn giá</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortLabel="SoTien" T="ViewNhapXuat">Số tiền</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortLabel="DienGiai" T="ViewNhapXuat">Diễn giải</MudTableSortLabel></MudTh>
                 </HeaderContent>
@@ -43,8 +49,23 @@
                     <MudTd DataLabel="DiaChi">
                         <MudText> @context.DiaChiDoiTuong</MudText>
                     </MudTd>
-                    <MudTd DataLabel="SoTien">
-                        <MudText Style="text-align:right"> @context.SoTien.ToString("###,###") </MudText>
+                    <MudTd DataLabel="MaHangHoa">
+                        <MudText> @context.MaHangHoa</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="TenHangHoa">
+                        <MudText> @context.TenHangHoa</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="DonViTinh">
+                        <MudText> @context.DonViTinh</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="SoLuong" Style="text-align:right">
+                        <MudText> @context.SoLuong.ToString("###,##0.##")</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="DonGia" Style="text-align:right">
+                        <MudText> @context.DonGia.ToString("###,###")</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="SoTien" Style="text-align:right">
+                        <MudText> @context.SoTien.ToString("###,###") </MudText>
                     </MudTd>
                     <MudTd DataLabel="DienGiai">
                         <MudText> @context.DienGiai</MudText>
@@ -59,7 +80,12 @@
                 </LoadingContent>
                 <FooterContent>
                     <MudTd colspan="5" Style=" font-weight:bold"> TỔNG CỘNG</MudTd>
-                    <MudTd Style=" font-weight:bold">@pagedData?.Sum(x=> x.SoTien).ToString("###,###") </MudTd>
+                    <MudTd></MudTd>
+                    <MudTd></MudTd>
+                    <MudTd></MudTd>
+                    <MudTd Style=" font-weight:bold;text-align:right">@(pagedData != null ? pagedData.Sum(x=> x.SoLuong).ToString("###,##0.##") : "0")</MudTd>
+                    <MudTd></MudTd>
+                    <MudTd Style=" font-weight:bold;text-align:right">@(pagedData != null ? pagedData.Sum(x=> x.SoTien).ToString("###,###") : "0") </MudTd>
                     <MudTd></MudTd>
                 </FooterContent>
             </MudTable>
@@ -121,8 +147,9 @@
         itemRequest.Loai = Loai;
         itemRequest.TuNgay = TuNgay;
         itemRequest.DenNgay = DenNgay;
-        itemRequest.MaHangHoa = mahanghoa;
-        itemRequest.MaKho = makho;
+        itemRequest.MaHangHoa = mahanghoa ?? "";
+        itemRequest.MaKho = makho ?? "";
+        itemRequest.DMDonViSuDungId = AppService.DMDonViSuDungId;
 
         itemRequest.Page = state.Page;
         itemRequest.PageSize = state.PageSize;

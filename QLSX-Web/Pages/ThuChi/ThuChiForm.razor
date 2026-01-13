@@ -5,6 +5,8 @@
 @using System.Globalization
 @using Blazored.LocalStorage;
 @using QLSX.Shared.Models;
+@using System.Linq
+@using System.Threading
 
 @inject IDMKhachHangService<DanhMucKhachHangModel> dmkhachhangService
 @inject IReportService reportService
@@ -52,14 +54,25 @@
                                         Color="Color.Error"
                                         Arrow="true"
                                         Disabled="@string.IsNullOrEmpty(maDoiTuongError)">
-                                <MudTextField ReadOnly="@IsReadOnly" Label="Mã đơn vị" @bind-Value="@thuchi.MaDoiTuong" Variant="Variant.Outlined" Margin="Margin.Dense"
-                                              Error="@(!string.IsNullOrEmpty(maDoiTuongError))"
-                                              TextChanged="@((input) => MaDonViTextChanged(input))"
-                                              Adornment="Adornment.End"
-                                              AdornmentIcon="@Icons.Material.Filled.Search"
-                                              OnKeyDown="@(async (e) => await OnKeyDownMaDonVi(e))"
-                                              OnAdornmentClick="@(() => OpenDialogKhachHang())"
-                                              Immediate="true" />
+                                <MudAutocomplete T="DanhMucKhachHangModel" 
+                                                 ReadOnly="@IsReadOnly"
+                                                 Value="@GetSelectedKhachHang()"
+                                                 SearchFunc="@SearchKhachHangAsync"
+                                                 ToStringFunc="@((DanhMucKhachHangModel x) => x != null ? $"{x.MaDonVi} - {x.TenDonVi}" : string.Empty)"
+                                                 CoerceText="false"
+                                                 ResetValueOnEmpty="true"
+                                                 MaxItems="50"
+                                                 MinCharacters="0"
+                                                 DebounceInterval="300"
+                                                 Margin="Margin.Dense"
+                                                 Dense="true"
+                                                 Variant="Variant.Outlined"
+                                                 Error="@(!string.IsNullOrEmpty(maDoiTuongError))"
+                                                 OnKeyDown="@(async (e) => await OnKeyDownMaDonVi(e))"
+                                                 ValueChanged="@((DanhMucKhachHangModel value) => { _ = OnKhachHangSelectedAsync(value); })"
+                                                 Adornment="Adornment.End"
+                                                 AdornmentIcon="@Icons.Material.Filled.Search"
+                                                 OnAdornmentClick="@(() => OpenDialogKhachHang())" />
                             </MudTooltip>
                         </MudItem>
                         <MudItem xs="12" sm="3" lg="5" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
@@ -237,6 +250,7 @@
     MudForm form;
     MudSelect<int> mySwitch;
     private string maDoiTuongError = string.Empty;
+    private DanhMucKhachHangModel selectedKhachHang;
     /// <summary>
     /// Here we simulate getting the paged, filtered and ordered data from the server
     /// </summary>
@@ -555,12 +569,111 @@
         StateHasChanged();
     }
 
+    private DanhMucKhachHangModel GetSelectedKhachHang()
+    {
+        if (selectedKhachHang != null && !string.IsNullOrEmpty(thuchi.MaDoiTuong))
+        {
+            if (selectedKhachHang.MaDonVi == thuchi.MaDoiTuong)
+            {
+                return selectedKhachHang;
+            }
+        }
+        return null;
+    }
+
+    private async Task<IEnumerable<DanhMucKhachHangModel>> SearchKhachHangAsync(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return new List<DanhMucKhachHangModel>();
+        }
+
+        try
+        {
+            var tasks = new List<Task<GetAllResponsePaged<DanhMucKhachHangModel>>>();
+            
+            var searchRequestMa = new KhachHangSearchRequest
+            {
+                MaDonVi = value,
+                Page = 0,
+                PageSize = 50,
+                DMDonViSuDungId = AppService.DMDonViSuDungId
+            };
+            tasks.Add(dmkhachhangService.GetAllPagedDialogAsync(searchRequestMa));
+            
+            var searchRequestTen = new KhachHangSearchRequest
+            {
+                TenDonVi = value,
+                Page = 0,
+                PageSize = 50,
+                DMDonViSuDungId = AppService.DMDonViSuDungId
+            };
+            tasks.Add(dmkhachhangService.GetAllPagedDialogAsync(searchRequestTen));
+            
+            var results = await Task.WhenAll(tasks);
+            
+            var allItems = new List<DanhMucKhachHangModel>();
+            foreach (var result in results)
+            {
+                if (result != null && result.Items != null)
+                {
+                    allItems.AddRange(result.Items);
+                }
+            }
+            
+            var uniqueItems = allItems
+                .GroupBy(x => x.Id)
+                .Select(g => g.First())
+                .Where(x => 
+                    (x.MaDonVi != null && x.MaDonVi.Contains(value, StringComparison.OrdinalIgnoreCase)) ||
+                    (x.TenDonVi != null && x.TenDonVi.Contains(value, StringComparison.OrdinalIgnoreCase))
+                )
+                .Take(50)
+                .ToList();
+            
+            return uniqueItems;
+        }
+        catch (Exception)
+        {
+            return new List<DanhMucKhachHangModel>();
+        }
+    }
+
+    private async Task OnKhachHangSelectedAsync(DanhMucKhachHangModel selectedKhachHangModel)
+    {
+        if (selectedKhachHangModel == null)
+        {
+            return;
+        }
+
+        selectedKhachHang = selectedKhachHangModel;
+        thuchi.DMKhachHangId = selectedKhachHangModel.Id;
+        thuchi.MaDoiTuong = selectedKhachHangModel.MaDonVi;
+        thuchi.TenDoiTuong = selectedKhachHangModel.TenDonVi;
+        thuchi.DiaChi = selectedKhachHangModel.DiaChi;
+        thuchi.DienThoai = selectedKhachHangModel.DienThoai;
+
+        maDoiTuongError = string.Empty;
+        await GetSoDuCongNo();
+        await table.ReloadServerData();
+        StateHasChanged();
+    }
+
     private async Task OnKeyDownMaDonVi(KeyboardEventArgs e)
     {
         if (IsReadOnly) return;
-        if (e.Key == "F3")
+        
+        if (e.Key == "Enter")
+        {
+            if (!string.IsNullOrEmpty(thuchi.MaDoiTuong))
+            {
+                StateHasChanged();
+            }
+        }
+        else if (e.Key == "F3")
         {
             await OpenDialogKhachHang();
+            StateHasChanged();
         }
     }
     private void ShowCongNo()

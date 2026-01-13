@@ -334,23 +334,20 @@
     {
         string loai = "";
         string tungay = "";
-        string denngay = string.Format("{0:MM/dd/yyyy}", itemRequest.TuNgay, DateTime.Now);
-        string mahanghoa;
-        string makho = itemRequest.MaKho;
-        var item = table.SelectedItem;
-        mahanghoa = mahh ?? "";
-        var parameters = new DialogParameters { ["Loai"] = loai, ["TuNgay"] = tungay, ["DenNgay"] = denngay, ["MaHangHoa"] = mahanghoa, ["MaKho"] = makho };
+        string denngay = itemRequest.TuNgay?.ToString("MM/dd/yyyy") ?? DateTime.Now.ToString("MM/dd/yyyy");
+        string mahanghoa = mahh ?? "";
+        string makho = itemRequest.MaKho ?? "";
+        var parameters = new DialogParameters { ["Loai"] = loai, ["TuNgay"] = tungay, ["DenNgay"] = denngay, ["mahanghoa"] = mahanghoa, ["makho"] = makho };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
         var dialog = DialogService.Show<DialogShowNhapXuat>("View danh sách", parameters, options);
     }
     private void OpenShowNhap(string? mahh)
     {
         string loai = "nhap";
-        string tungay = string.Format("{0:MM/dd/yyyy}", itemRequest.TuNgay ?? DateTime.Now.AddMonths(-1));
-        string denngay = string.Format("{0:MM/dd/yyyy}", itemRequest.DenNgay, DateTime.Now);
-        string mahanghoa;
-        string makho = itemRequest.MaKho;
-        mahanghoa = mahh ?? "";
+        string tungay = (itemRequest.TuNgay ?? DateTime.Now.AddMonths(-1)).ToString("MM/dd/yyyy");
+        string denngay = (itemRequest.DenNgay ?? DateTime.Now).ToString("MM/dd/yyyy");
+        string mahanghoa = mahh ?? "";
+        string makho = itemRequest.MaKho ?? "";
         var parameters = new DialogParameters { ["Loai"] = loai, ["TuNgay"] = tungay, ["DenNgay"] = denngay, ["mahanghoa"] = mahanghoa, ["makho"] = makho };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
         var dialog = DialogService.Show<DialogShowNhapXuat>("View danh sách", parameters, options);
@@ -358,12 +355,11 @@
     private void OpenShowXuat(string? mahh)
     {
         string loai = "xuat";
-        string tungay = string.Format("{0:MM/dd/yyyy}", itemRequest.TuNgay ?? DateTime.Now.AddMonths(-1));
-        string denngay = string.Format("{0:MM/dd/yyyy}", itemRequest.DenNgay, DateTime.Now);
-        string mahanghoa;
-        string makho = itemRequest.MaKho;
-        mahanghoa = mahh ?? "";
-        var parameters = new DialogParameters { ["Loai"] = loai, ["TuNgay"] = tungay, ["DenNgay"] = denngay, ["MaHangHoa"] = mahanghoa, ["MaKho"] = makho };
+        string tungay = (itemRequest.TuNgay ?? DateTime.Now.AddMonths(-1)).ToString("MM/dd/yyyy");
+        string denngay = (itemRequest.DenNgay ?? DateTime.Now).ToString("MM/dd/yyyy");
+        string mahanghoa = mahh ?? "";
+        string makho = itemRequest.MaKho ?? "";
+        var parameters = new DialogParameters { ["Loai"] = loai, ["TuNgay"] = tungay, ["DenNgay"] = denngay, ["mahanghoa"] = mahanghoa, ["makho"] = makho };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
         var dialog = DialogService.Show<DialogShowNhapXuat>("View danh sách", parameters, options);
     }
@@ -372,12 +368,10 @@
     {
         string loai = "";
         string tungay = "";
-        string denngay = string.Format("{0:MM/dd/yyyy}", itemRequest.DenNgay, DateTime.Now);
-        string mahanghoa;
-        string makho = itemRequest.MaKho;
-        var item = table.SelectedItem;
-        mahanghoa = mahh ?? "";
-        var parameters = new DialogParameters { ["Loai"] = loai, ["TuNgay"] = tungay, ["DenNgay"] = denngay, ["MaHangHoa"] = mahanghoa, ["MaKho"] = makho };
+        string denngay = (itemRequest.DenNgay ?? DateTime.Now).ToString("MM/dd/yyyy");
+        string mahanghoa = mahh ?? "";
+        string makho = itemRequest.MaKho ?? "";
+        var parameters = new DialogParameters { ["Loai"] = loai, ["TuNgay"] = tungay, ["DenNgay"] = denngay, ["mahanghoa"] = mahanghoa, ["makho"] = makho };
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
         var dialog = DialogService.Show<DialogShowNhapXuat>("View danh sách", parameters, options);
     }

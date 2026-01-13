@@ -10,6 +10,8 @@ using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
+using QLSX.Shared.Ultils;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -139,7 +141,38 @@ namespace SaleAPI.Controllers
                     request.TenHangHoa,
                     request.DonViTinh,
                     "ZZZTEMPABCZXY");
-                var items = await _context.ViewNhapXuats.FromSqlRaw(storeExec).ToListAsync();
+                
+                // Use SqlDataAdapter to handle duplicate column names
+                DataTable dt = new DataTable();
+                DataSet ds = new DataSet();
+                string connectionString = _configuration.GetConnectionString("CRMConnectStrings");
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    SqlDataAdapter adapter = new SqlDataAdapter();
+                    adapter.SelectCommand = new SqlCommand(storeExec, connection);
+                    adapter.Fill(ds);
+                    if (ds.Tables.Count > 0)
+                    {
+                        dt = ds.Tables[0];
+                    }
+                }
+                
+                // Remove duplicate columns by keeping only the first occurrence
+                var seenColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var columnsToRemove = new List<DataColumn>();
+                foreach (DataColumn column in dt.Columns)
+                {
+                    if (!seenColumns.Add(column.ColumnName))
+                    {
+                        columnsToRemove.Add(column);
+                    }
+                }
+                foreach (var column in columnsToRemove)
+                {
+                    dt.Columns.Remove(column);
+                }
+                
+                var items = ConvertDatatableToList.ConvertToList<ViewNhapXuat>(dt);
                 if (request.SortDirection != QLSX.Shared.Enums.SortDirection.None)
                 {
                     if (request.SortLable == "SoCT")
@@ -289,7 +322,38 @@ namespace SaleAPI.Controllers
                     _tenantProvider.TenantId,
                     request.MaDonVi
                    );
-                var items = await _context.ViewNhapXuats.FromSqlRaw(storeExec).ToListAsync();
+                
+                // Use SqlDataAdapter to handle duplicate column names
+                DataTable dt = new DataTable();
+                DataSet ds = new DataSet();
+                string connectionString = _configuration.GetConnectionString("CRMConnectStrings");
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    SqlDataAdapter adapter = new SqlDataAdapter();
+                    adapter.SelectCommand = new SqlCommand(storeExec, connection);
+                    adapter.Fill(ds);
+                    if (ds.Tables.Count > 0)
+                    {
+                        dt = ds.Tables[0];
+                    }
+                }
+                
+                // Remove duplicate columns by keeping only the first occurrence
+                var seenColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var columnsToRemove = new List<DataColumn>();
+                foreach (DataColumn column in dt.Columns)
+                {
+                    if (!seenColumns.Add(column.ColumnName))
+                    {
+                        columnsToRemove.Add(column);
+                    }
+                }
+                foreach (var column in columnsToRemove)
+                {
+                    dt.Columns.Remove(column);
+                }
+                
+                var items = ConvertDatatableToList.ConvertToList<ViewNhapXuat>(dt);
                 if (request.SortDirection != QLSX.Shared.Enums.SortDirection.None)
                 {
                     if (request.SortLable == "SoCT")

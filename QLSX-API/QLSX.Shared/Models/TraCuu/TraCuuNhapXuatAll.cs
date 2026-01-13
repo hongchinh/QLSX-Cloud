@@ -32,7 +32,14 @@ namespace QLSX.Shared.Models
         public string TenDoiTuong { get; set; }
         public string DiaChiDoiTuong { get; set; }
         public string DienGiai { get; set; }
+        public string MaHangHoa { get; set; }
+        public string TenHangHoa{ get; set; }
+        public string DonViTinh { get; set; }
         public Double SoTien { get; set; }
-       
+
+        public Double SoLuong { get; set; }
+        public Double DonGia { get; set; }
+
+
     }
 }
