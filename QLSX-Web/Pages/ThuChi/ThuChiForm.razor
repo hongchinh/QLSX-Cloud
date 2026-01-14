@@ -56,9 +56,9 @@
                                         Disabled="@string.IsNullOrEmpty(maDoiTuongError)">
                                 <MudAutocomplete T="DanhMucKhachHangModel" 
                                                  ReadOnly="@IsReadOnly"
-                                                 Value="@GetSelectedKhachHang()"
+                                                 Value="@selectedKhachHang"
                                                  SearchFunc="@SearchKhachHangAsync"
-                                                 ToStringFunc="@((DanhMucKhachHangModel x) => x != null ? $"{x.MaDonVi} - {x.TenDonVi}" : string.Empty)"
+                                                 ToStringFunc="@((DanhMucKhachHangModel x) => x != null ? x.MaDonVi : string.Empty)"
                                                  CoerceText="false"
                                                  ResetValueOnEmpty="true"
                                                  MaxItems="50"
@@ -69,10 +69,14 @@
                                                  Variant="Variant.Outlined"
                                                  Error="@(!string.IsNullOrEmpty(maDoiTuongError))"
                                                  OnKeyDown="@(async (e) => await OnKeyDownMaDonVi(e))"
-                                                 ValueChanged="@((DanhMucKhachHangModel value) => { _ = OnKhachHangSelectedAsync(value); })"
+                                                 ValueChanged="@(async (DanhMucKhachHangModel value) => { await OnKhachHangSelectedAsync(value); })"
                                                  Adornment="Adornment.End"
                                                  AdornmentIcon="@Icons.Material.Filled.Search"
-                                                 OnAdornmentClick="@(() => OpenDialogKhachHang())" />
+                                                 OnAdornmentClick="@(() => OpenDialogKhachHang())">
+                                    <ItemTemplate Context="item">
+                                        <div>@item.MaDonVi - @item.TenDonVi</div>
+                                    </ItemTemplate>
+                                </MudAutocomplete>
                             </MudTooltip>
                         </MudItem>
                         <MudItem xs="12" sm="3" lg="5" Class="pd-left-0 pd-right-0 pd-top-1 pd-bottom-1">
@@ -302,6 +306,43 @@
     {
     }
 
+    protected override async Task OnParametersSetAsync()
+    {
+        // Load selectedKhachHang khi thuchi.MaDoiTuong thay đổi (khi được set từ parent component)
+        if (!string.IsNullOrEmpty(thuchi?.MaDoiTuong))
+        {
+            // Chỉ load nếu chưa có hoặc không khớp
+            if (selectedKhachHang == null || selectedKhachHang.MaDonVi != thuchi.MaDoiTuong)
+            {
+                try
+                {
+                    var dmKH = await dmkhachhangService.GetByCodeAsync(thuchi.MaDoiTuong);
+                    if (dmKH != null && dmKH.Id > 0)
+                    {
+                        selectedKhachHang = dmKH;
+                        // Force update UI sau khi load
+                        await InvokeAsync(StateHasChanged);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error loading selectedKhachHang in OnParametersSetAsync: {ex.Message}");
+                }
+            }
+        }
+        else
+        {
+            // Nếu MaDoiTuong rỗng, clear selectedKhachHang
+            if (selectedKhachHang != null)
+            {
+                selectedKhachHang = null;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+
+        await base.OnParametersSetAsync();
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -328,6 +369,26 @@
             };
             hostReport = configuration.GetValue<string>("AppSettings:ReportUrl");
             saveAndCreate = await localStorageService.GetItemAsync<bool>($"{thuchi.Loai}-SaveStatus");
+            
+            // Load selectedKhachHang nếu có MaDoiTuong nhưng chưa được load (fallback nếu OnParametersSetAsync chưa load)
+            if (!string.IsNullOrEmpty(thuchi.MaDoiTuong) && selectedKhachHang == null)
+            {
+                try
+                {
+                    var dmKH = await dmkhachhangService.GetByCodeAsync(thuchi.MaDoiTuong);
+                    if (dmKH != null && dmKH.Id > 0)
+                    {
+                        selectedKhachHang = dmKH;
+                        // Force update UI sau khi load
+                        await InvokeAsync(StateHasChanged);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error loading selectedKhachHang in OnAfterRenderAsync: {ex.Message}");
+                }
+            }
+            
             StateHasChanged();
         }
         await base.OnAfterRenderAsync(firstRender);
@@ -345,6 +406,9 @@
         DanhMucKhachHangModel dmKH = await dmkhachhangService.GetByCodeAsync(madv);
         if (dmKH != null && dmKH.Id > 0)
         {
+            // Đồng bộ selectedKhachHang khi tìm thấy
+            selectedKhachHang = dmKH;
+            
             thuchi.DMKhachHangId = dmKH.Id;
             thuchi.MaDoiTuong = dmKH.MaDonVi;
             thuchi.TenDoiTuong = dmKH.TenDonVi;
@@ -353,12 +417,16 @@
         }
         else
         {
+            // Clear selectedKhachHang nếu không tìm thấy
+            selectedKhachHang = null;
+            
             thuchi.MaDoiTuong = "";
             thuchi.TenDoiTuong = "";
             thuchi.DiaChi = "";
             thuchi.DienThoai = "";
         }
         await GetSoDuCongNo();
+        StateHasChanged();
     }
     private async Task SetKhachHangCallBack(DanhMucKhachHangModel pro)
     {
@@ -481,6 +549,30 @@
             request.Id = thuchi.Id;
             var thuchinew = await thuchitService.GetThuChiById(request);
             thuchi = mapper.Map<ThuChiModel>(thuchinew);
+            
+            // Load selectedKhachHang khi vào chế độ edit
+            if (!string.IsNullOrEmpty(thuchi.MaDoiTuong))
+            {
+                try
+                {
+                    var dmKH = await dmkhachhangService.GetByCodeAsync(thuchi.MaDoiTuong);
+                    if (dmKH != null && dmKH.Id > 0)
+                    {
+                        selectedKhachHang = dmKH;
+                        // Force update UI sau khi load để MudAutocomplete hiển thị
+                        await InvokeAsync(StateHasChanged);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error loading selectedKhachHang in SuaClickCallBack: {ex.Message}");
+                }
+            }
+            else
+            {
+                // Nếu MaDoiTuong rỗng, clear selectedKhachHang
+                selectedKhachHang = null;
+            }
         }
         IsReadOnly = isRead;
         StateHasChanged();
@@ -513,14 +605,17 @@
             {
                 // Clear error khi chọn khách hàng từ dialog
                 maDoiTuongError = string.Empty;
-
+                
                 thuchi.DMKhachHangId = itemSelected.Id;
                 thuchi.MaDoiTuong = itemSelected.MaDonVi;
                 thuchi.TenDoiTuong = itemSelected.TenDonVi;
                 thuchi.DiaChi = itemSelected.DiaChi;
                 thuchi.DienThoai = itemSelected.DienThoai;
 
+                // Cập nhật selectedKhachHang để MudAutocomplete hiển thị đúng
+                selectedKhachHang = itemSelected;
                 //await table.ReloadServerData();
+                StateHasChanged();
             }
         }
     }
@@ -663,18 +758,16 @@
     {
         if (IsReadOnly) return;
         
-        if (e.Key == "Enter")
-        {
-            if (!string.IsNullOrEmpty(thuchi.MaDoiTuong))
-            {
-                StateHasChanged();
-            }
-        }
-        else if (e.Key == "F3")
+        // Xử lý F3: mở dialog chọn khách hàng
+        if (e.Key == "F3")
         {
             await OpenDialogKhachHang();
             StateHasChanged();
         }
+        // Enter: Để MudAutocomplete tự xử lý việc chọn item đang highlight trong dropdown
+        // MudAutocomplete sẽ tự động trigger ValueChanged khi Enter được nhấn và có item được highlight
+        // Up/Down: Để MudAutocomplete tự xử lý navigation trong dropdown
+        // Không cần xử lý Enter và Up/Down ở đây để MudAutocomplete có thể tự xử lý
     }
     private void ShowCongNo()
     {

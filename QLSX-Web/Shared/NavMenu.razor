@@ -4,21 +4,29 @@
 @inject INhapXuatsService<NhapXuatModel> nhapxuatService
 @inject IDieuChuyensService<QLSX.Shared.Models.DieuChuyen> dieuchuyenService
 @inject INhapXuatTonCuonsService<NhapXuatTonCuonModel> nhapxuattonService
+@inject ISettingService<QLSX.Shared.Models.SettingModel> itemService
+@inject AppService AppService
 
 <MudNavMenu Class="mudblazor-navmenu" Dense="true" Color="Color.Info">
     <div class="docs-nav-fader"></div>
     <MudNavGroup Title="Thu chi" HideExpandIcon="true" @onclick="@(() => {navigationManager.NavigateTo("thuchis?rid=" + Guid.NewGuid(), isReLoad );} )"
                  Icon="@Icons.Material.Filled.Money">
     </MudNavGroup>
-    <MudNavGroup Title="Đơn đặt hàng" HideExpandIcon="true" @onclick="@(() => {navigationManager.NavigateTo("dondathangs?rid=" + Guid.NewGuid(), isReLoad );} )"
-                 Icon="@Icons.Material.Filled.AddHomeWork">
-    </MudNavGroup>
+    @if (isHangHoaTheoM2)
+    {
+        <MudNavGroup Title="Đơn đặt hàng" HideExpandIcon="true" @onclick="@(() => {navigationManager.NavigateTo("dondathangs?rid=" + Guid.NewGuid(), isReLoad );} )"
+                     Icon="@Icons.Material.Filled.AddHomeWork">
+        </MudNavGroup>
+    }
     <MudNavGroup Title="Nhập xuất" HideExpandIcon="true" @onclick="@(() => {navigationManager.NavigateTo("nhapxuats?rid=" + Guid.NewGuid(), isReLoad );} )"
                  Icon="@Icons.Material.Filled.Warehouse">
     </MudNavGroup>
-    <MudNavGroup Title="Tôn cuộn"  HideExpandIcon = "true" @onclick="@(() => {navigationManager.NavigateTo("nhapxuattoncuons?rid=" + Guid.NewGuid(), isReLoad );} )"
-                 Icon="@Icons.Material.Filled.Adjust">
-    </MudNavGroup>
+    @if (isHangHoaTheoM2)
+    {
+        <MudNavGroup Title="Tôn cuộn"  HideExpandIcon = "true" @onclick="@(() => {navigationManager.NavigateTo("nhapxuattoncuons?rid=" + Guid.NewGuid(), isReLoad );} )"
+                     Icon="@Icons.Material.Filled.Adjust">
+        </MudNavGroup>
+    }
     <MudNavGroup Title="Điều chuyển" HideExpandIcon="true" @onclick="@(() => {navigationManager.NavigateTo("dieuchuyens?rid=" + Guid.NewGuid(), isReLoad );} )"
                  Icon="@Icons.Material.Filled.PublishedWithChanges">
     </MudNavGroup>
@@ -82,8 +90,11 @@
 
 
 @code {
+    [CascadingParameter] private Task<AuthenticationState> authenticationStateTask { get; set; }
+    
     private bool collapseNavMenu = true;
     private bool isReLoad = false;
+    private bool isHangHoaTheoM2 = false;
 
     private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
@@ -101,5 +112,39 @@
     {
         int id = await thuchitService.GetIdLastest("chitm");
         navigationManager.NavigateTo($"thuchis/chi/edit/{id}?rid=" + Guid.NewGuid(), isReLoad);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var user = (await authenticationStateTask).User;
+                var UserId = user.FindFirst(c => c.Type == "UserId")?.Value;
+                UserId = string.IsNullOrEmpty(UserId) ? "0" : UserId;
+                
+                var itemSetting = await itemService.GetByIdAsync(int.Parse(UserId));
+                
+                // Kiểm tra nếu LoaiNhapXuat == 2 hoặc == 3 thì hàng hóa theo m2
+                if (itemSetting != null && (itemSetting.LoaiNhapXuat == 2 || itemSetting.LoaiNhapXuat == 3))
+                {
+                    isHangHoaTheoM2 = true;
+                }
+                else
+                {
+                    isHangHoaTheoM2 = false;
+                }
+                
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading setting in NavMenu: {ex.Message}");
+                // Mặc định không ẩn menu nếu có lỗi
+                isHangHoaTheoM2 = false;
+            }
+        }
+        await base.OnAfterRenderAsync(firstRender);
     }
 }

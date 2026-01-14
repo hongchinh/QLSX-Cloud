@@ -238,7 +238,11 @@
                                                      })"
                                                      Adornment="Adornment.End"
                                                      AdornmentIcon="@Icons.Material.Filled.Search"
-                                                     OnAdornmentClick="@(() => OpenDialogKhachHang())" />
+                                                     OnAdornmentClick="@(() => OpenDialogKhachHang())">
+                                        <ItemTemplate Context="item">
+                                            <div>@item.MaDonVi - @item.TenDonVi</div>
+                                        </ItemTemplate>
+                                    </MudAutocomplete>
                                 </div>
                             </MudItem>
                             <MudItem xs="12" sm="3" lg="5" Class="d-flex flex-grow-1 gap-2">
@@ -445,9 +449,10 @@
                 <RowEditingTemplate Context="ctx1">
                     <MudTd DataLabel="MaHangHoa">
                         <MudAutocomplete T="DanhMucHangHoaModel" 
+                                         @key="@($"hanghoa_{ctx1.Index}_{ctx1.MaHangHoa}")"
                                          Value="@GetSelectedHangHoa(ctx1)"
                                          SearchFunc="@SearchHangHoaAsync"
-                                         ToStringFunc="@((DanhMucHangHoaModel x) => x != null ? $"{x.MaHangHoa} - {x.TenHangHoa}" : string.Empty)"
+                                         ToStringFunc="@((DanhMucHangHoaModel x) => x != null ? x.MaHangHoa : string.Empty)"
                                          CoerceText="false"
                                          ResetValueOnEmpty="true"
                                          MaxItems="50"
@@ -456,10 +461,14 @@
                                          Dense="true"
                                          Variant="Variant.Outlined"
                                          OnKeyDown="@(async (e) => await OnKeyDownAutocomplete(e, ctx1.Index, ctx1))"
-                                         ValueChanged="@((DanhMucHangHoaModel value) => { _ = OnHangHoaSelectedAsync(value, ctx1); })"
+                                         ValueChanged="@(async (DanhMucHangHoaModel value) => { await OnHangHoaSelectedAsync(value, ctx1); })"
                                          Adornment="Adornment.End"
                                          AdornmentIcon="@Icons.Material.Filled.Search"
-                                         OnAdornmentClick="@(() => OpenDialogHangHoa())" />
+                                         OnAdornmentClick="@(() => OpenDialogHangHoa())">
+                            <ItemTemplate Context="hangHoaItem">
+                                <div>@hangHoaItem.MaHangHoa - @hangHoaItem.TenHangHoa</div>
+                            </ItemTemplate>
+                        </MudAutocomplete>
                     </MudTd>
                     <MudTd DataLabel="TenHangHoa">
                         <MudTextField @bind-Value="@ctx1.TenHangHoa" Immediate="true" OnKeyDown="@(async (e) => await OnKeyDownGrid(e, ctx1.Index, "TenHangHoa"))" />
@@ -752,10 +761,10 @@
     private MudTable<NoiDungNhapXuatModel> table;
 
     private MudTable<NhatKyModel> tableNhatKy;
-    
+
     // Dictionary để lưu mapping giữa NoiDungNhapXuatModel và DanhMucHangHoaModel cho autocomplete
     private Dictionary<NoiDungNhapXuatModel, DanhMucHangHoaModel> hangHoaMapping = new Dictionary<NoiDungNhapXuatModel, DanhMucHangHoaModel>();
-    
+
     // Biến để lưu selected khách hàng cho autocomplete MaDonVi
     private DanhMucKhachHangModel selectedKhachHang;
 
@@ -843,7 +852,7 @@
                 await InvokeAsync(StateHasChanged);
             }
         }
-        
+
         await base.OnParametersSetAsync();
     }
     public async Task OnInternalInputChanged(ChangeEventArgs e)
@@ -864,7 +873,7 @@
         {
             return hangHoaMapping[noiDung];
         }
-        
+
         // Nếu có MaHangHoa, tìm trong mapping hoặc trả về null
         if (!string.IsNullOrEmpty(noiDung.MaHangHoa))
         {
@@ -876,7 +885,7 @@
                 return cached;
             }
         }
-        
+
         return null;
     }
 
@@ -894,7 +903,7 @@
             // Gọi API 2 lần: một lần tìm theo mã, một lần tìm theo tên
             // Sau đó merge kết quả và loại bỏ trùng lặp
             var tasks = new List<Task<GetAllResponsePaged<DanhMucHangHoaModel>>>();
-            
+
             // Tìm theo mã hàng hóa
             var searchRequestMa = new HangHoaSearchRequest
             {
@@ -904,7 +913,7 @@
                 DMDonViSuDungId = AppService.DMDonViSuDungId
             };
             tasks.Add(dmhanghoaService.GetAllPagedDialogAsync(searchRequestMa));
-            
+
             // Tìm theo tên hàng hóa
             var searchRequestTen = new HangHoaSearchRequest
             {
@@ -914,10 +923,10 @@
                 DMDonViSuDungId = AppService.DMDonViSuDungId
             };
             tasks.Add(dmhanghoaService.GetAllPagedDialogAsync(searchRequestTen));
-            
+
             // Chờ cả 2 task hoàn thành
             var results = await Task.WhenAll(tasks);
-            
+
             // Merge kết quả và loại bỏ trùng lặp theo Id
             var allItems = new List<DanhMucHangHoaModel>();
             foreach (var result in results)
@@ -927,7 +936,7 @@
                     allItems.AddRange(result.Items);
                 }
             }
-            
+
             // Loại bỏ trùng lặp và filter lại để đảm bảo chính xác
             var uniqueItems = allItems
                 .GroupBy(x => x.Id)
@@ -938,7 +947,7 @@
                 )
                 .Take(50)
                 .ToList();
-            
+
             return uniqueItems;
         }
         catch (Exception)
@@ -955,60 +964,75 @@
             return;
         }
 
-        // Lưu mapping
+        // Đảm bảo noiDung là object trong nhapxuat.NoiDungNhapXuats (nếu có)
+        // Tìm object thực tế trong list để đảm bảo cập nhật đúng
+        var actualNoiDung = nhapxuat.NoiDungNhapXuats.FirstOrDefault(x => x.Index == noiDung.Index);
+        if (actualNoiDung == null)
+        {
+            actualNoiDung = noiDung;
+        }
+
+        // Lưu mapping cho cả hai object (ctx1 và actualNoiDung)
         hangHoaMapping[noiDung] = selectedHangHoa;
+        hangHoaMapping[actualNoiDung] = selectedHangHoa;
 
         // Cập nhật thông tin vào NoiDungNhapXuatModel
-        noiDung.MaHangHoa = selectedHangHoa.MaHangHoa;
-        noiDung.TenHangHoa = selectedHangHoa.TenHangHoa;
-        noiDung.DonViTinh = selectedHangHoa.DonViTinh;
-        noiDung.DonGia = selectedHangHoa.GiaXuat;
-        noiDung.KhoRongTon = selectedHangHoa.KhoRongTon;
-        noiDung.ChieuDai = selectedHangHoa.ChieuDai;
-        noiDung.DMHangHoaId = selectedHangHoa.Id;
-        noiDung.DMDonViSuDungId = nhapxuat.DMDonViSuDungId;
-        noiDung.DMKhoHangId = nhapxuat?.DMKhoHangId ?? 0;
-        noiDung.MaNhom = selectedHangHoa.MaNhomHang;
-        noiDung.TenNhom = selectedHangHoa.TenNhomHang;
+        actualNoiDung.MaHangHoa = selectedHangHoa.MaHangHoa;
+        actualNoiDung.TenHangHoa = selectedHangHoa.TenHangHoa;
+        actualNoiDung.DonViTinh = selectedHangHoa.DonViTinh;
+        actualNoiDung.DonGia = selectedHangHoa.GiaXuat;
+        actualNoiDung.KhoRongTon = selectedHangHoa.KhoRongTon;
+        actualNoiDung.ChieuDai = selectedHangHoa.ChieuDai;
+        actualNoiDung.DMHangHoaId = selectedHangHoa.Id;
+        actualNoiDung.DMDonViSuDungId = nhapxuat.DMDonViSuDungId;
+        actualNoiDung.DMKhoHangId = nhapxuat?.DMKhoHangId ?? 0;
+        actualNoiDung.MaNhom = selectedHangHoa.MaNhomHang;
+        actualNoiDung.TenNhom = selectedHangHoa.TenNhomHang;
 
-        noiDung.KieuSong = selectedHangHoa.KieuSong;
-        noiDung.MaKieuSong = selectedHangHoa.MaKieuSong;
-        noiDung.LoaiTon = selectedHangHoa.LoaiTon;
-        noiDung.MaLoaiTon = selectedHangHoa.MaLoaiTon;
-        noiDung.DoDay = selectedHangHoa.DoDay;
-        noiDung.ChungLoai = selectedHangHoa.ChungLoai;
-        noiDung.MaChungLoai = selectedHangHoa.MaChungLoai;
-        noiDung.MauSac = selectedHangHoa.MauSac;
-        noiDung.MaMauSac = selectedHangHoa.MaMauSac;
+        actualNoiDung.KieuSong = selectedHangHoa.KieuSong;
+        actualNoiDung.MaKieuSong = selectedHangHoa.MaKieuSong;
+        actualNoiDung.LoaiTon = selectedHangHoa.LoaiTon;
+        actualNoiDung.MaLoaiTon = selectedHangHoa.MaLoaiTon;
+        actualNoiDung.DoDay = selectedHangHoa.DoDay;
+        actualNoiDung.ChungLoai = selectedHangHoa.ChungLoai;
+        actualNoiDung.MaChungLoai = selectedHangHoa.MaChungLoai;
+        actualNoiDung.MauSac = selectedHangHoa.MauSac;
+        actualNoiDung.MaMauSac = selectedHangHoa.MaMauSac;
 
-        noiDung.IsM2 = false;
-        noiDung.IsMD = false;
-        noiDung.IsSoLuong = false;
+        actualNoiDung.IsM2 = false;
+        actualNoiDung.IsMD = false;
+        actualNoiDung.IsSoLuong = false;
 
         if (selectedHangHoa.MaNhomHang == "01")
         {
-            noiDung.IsM2 = true;
-            noiDung.TongChieuDai = Math.Round(noiDung.SoLuong * noiDung.ChieuDai, 2);
-            noiDung.TongDienTich = Math.Round(noiDung.SoLuong * noiDung.KhoRongTon * noiDung.ChieuDai, 2);
-            noiDung.SoTien = selectedHangHoa.ChieuDai * selectedHangHoa.KhoRongTon * noiDung.SoLuong * noiDung.DonGia;
+            actualNoiDung.IsM2 = true;
+            actualNoiDung.TongChieuDai = Math.Round(actualNoiDung.SoLuong * actualNoiDung.ChieuDai, 2);
+            actualNoiDung.TongDienTich = Math.Round(actualNoiDung.SoLuong * actualNoiDung.KhoRongTon * actualNoiDung.ChieuDai, 2);
+            actualNoiDung.SoTien = selectedHangHoa.ChieuDai * selectedHangHoa.KhoRongTon * actualNoiDung.SoLuong * actualNoiDung.DonGia;
         }
         else if (selectedHangHoa.MaNhomHang == "02")
         {
-            noiDung.IsMD = true;
-            noiDung.TongChieuDai = Math.Round(noiDung.SoLuong * noiDung.ChieuDai, 2);
-            noiDung.TongDienTich = 0;
-            noiDung.SoTien = selectedHangHoa.ChieuDai * noiDung.SoLuong * noiDung.DonGia;
+            actualNoiDung.IsMD = true;
+            actualNoiDung.TongChieuDai = Math.Round(actualNoiDung.SoLuong * actualNoiDung.ChieuDai, 2);
+            actualNoiDung.TongDienTich = 0;
+            actualNoiDung.SoTien = selectedHangHoa.ChieuDai * actualNoiDung.SoLuong * actualNoiDung.DonGia;
         }
         else
         {
-            noiDung.IsSoLuong = true;
-            noiDung.TongChieuDai = 0;
-            noiDung.TongDienTich = 0;
-            noiDung.SoTien = noiDung.SoLuong * noiDung.DonGia;
+            actualNoiDung.IsSoLuong = true;
+            actualNoiDung.TongChieuDai = 0;
+            actualNoiDung.TongDienTich = 0;
+            actualNoiDung.SoTien = actualNoiDung.SoLuong * actualNoiDung.DonGia;
+        }
+
+        // Cập nhật selectedNoiDung nếu đang edit row này
+        if (selectedNoiDung != null && selectedNoiDung.Index == actualNoiDung.Index)
+        {
+            selectedNoiDung = actualNoiDung;
         }
 
         // Lấy số lượng tồn - Gọi trực tiếp (không debounce) để hiển thị ngay
-        if (!string.IsNullOrEmpty(noiDung.MaHangHoa) && !string.IsNullOrEmpty(nhapxuat.MaKho))
+        if (!string.IsNullOrEmpty(actualNoiDung.MaHangHoa) && !string.IsNullOrEmpty(nhapxuat.MaKho))
         {
             // Gọi trực tiếp để hiển thị ngay, không debounce
             await UpdateSoLuongTonForAllRowsInternal();
@@ -1016,9 +1040,10 @@
         else
         {
             // Nếu thiếu thông tin, set về 0
-            noiDung.SoLuongTon = 0;
+            actualNoiDung.SoLuongTon = 0;
         }
-        
+
+        // Force re-render để MudAutocomplete cập nhật giá trị
         await InvokeAsync(StateHasChanged);
     }
 
@@ -1107,7 +1132,7 @@
                 return selectedKhachHang;
             }
         }
-        
+
         return null;
     }
 
@@ -1125,7 +1150,7 @@
             // Gọi API 2 lần: một lần tìm theo mã, một lần tìm theo tên
             // Sau đó merge kết quả và loại bỏ trùng lặp
             var tasks = new List<Task<GetAllResponsePaged<DanhMucKhachHangModel>>>();
-            
+
             // Tìm theo mã đơn vị
             var searchRequestMa = new KhachHangSearchRequest
             {
@@ -1135,7 +1160,7 @@
                 DMDonViSuDungId = AppService.DMDonViSuDungId
             };
             tasks.Add(dmkhachhangService.GetAllPagedDialogAsync(searchRequestMa));
-            
+
             // Tìm theo tên đơn vị
             var searchRequestTen = new KhachHangSearchRequest
             {
@@ -1145,10 +1170,10 @@
                 DMDonViSuDungId = AppService.DMDonViSuDungId
             };
             tasks.Add(dmkhachhangService.GetAllPagedDialogAsync(searchRequestTen));
-            
+
             // Chờ cả 2 task hoàn thành
             var results = await Task.WhenAll(tasks);
-            
+
             // Merge kết quả và loại bỏ trùng lặp theo Id
             var allItems = new List<DanhMucKhachHangModel>();
             foreach (var result in results)
@@ -1158,7 +1183,7 @@
                     allItems.AddRange(result.Items);
                 }
             }
-            
+
             // Loại bỏ trùng lặp và filter lại để đảm bảo chính xác
             var uniqueItems = allItems
                 .GroupBy(x => x.Id)
@@ -1169,7 +1194,7 @@
                 )
                 .Take(50)
                 .ToList();
-            
+
             return uniqueItems;
         }
         catch (Exception)
@@ -1197,7 +1222,7 @@
 
         // Lấy số dư công nợ
         await GetSoDuCongNo();
-        
+
         StateHasChanged();
     }
 
@@ -1205,25 +1230,17 @@
     private async Task OnKeyDownKhachHang(KeyboardEventArgs e)
     {
         if (IsReadOnly) return;
-        
-        // Xử lý Enter: confirm selection và di chuyển đến cột tiếp theo
-        if (e.Key == "Enter")
-        {
-            // Nếu đã có đơn vị được chọn, có thể di chuyển đến cột tiếp theo nếu cần
-            if (!string.IsNullOrEmpty(nhapxuat.MaDonVi))
-            {
-                StateHasChanged();
-            }
-        }
-        // Xử lý Tab: di chuyển đến cột tiếp theo (MudAutocomplete tự xử lý)
+
         // Xử lý F3: mở dialog chọn khách hàng
-        else if (e.Key == "F3")
+        if (e.Key == "F3")
         {
             await OpenDialogKhachHang();
             StateHasChanged();
         }
-        // Up/Down: để MudAutocomplete tự xử lý navigation trong dropdown
-        // Không cần xử lý ở đây
+        // Enter: Để MudAutocomplete tự xử lý việc chọn item đang highlight trong dropdown
+        // MudAutocomplete sẽ tự động trigger ValueChanged khi Enter được nhấn và có item được highlight
+        // Up/Down: Để MudAutocomplete tự xử lý navigation trong dropdown
+        // Không cần xử lý Enter và Up/Down ở đây để MudAutocomplete có thể tự xử lý
     }
 
     public async Task MaDonViTextChanged(string madv)
@@ -1241,7 +1258,7 @@
             nhapxuat.TenDonVi = dmKH.TenDonVi;
             nhapxuat.DiaChi = dmKH.DiaChi;
             nhapxuat.DienThoai = dmKH.DienThoai;
-            
+
             // Đồng bộ selectedKhachHang khi tìm thấy
             selectedKhachHang = dmKH;
         }
@@ -1250,7 +1267,7 @@
             nhapxuat.TenDonVi = "";
             nhapxuat.DiaChi = "";
             nhapxuat.DienThoai = "";
-            
+
             // Clear selectedKhachHang nếu không tìm thấy
             selectedKhachHang = null;
         }
@@ -1344,7 +1361,7 @@
             var hgrid = await JSRuntime.InvokeAsync<WindowDimensions>("setElementSizeByClass", "clsFormNX");
             HeightGrid = hgrid.Height;
             await GetSoDuCongNo();
-            
+
             // Load selectedKhachHang nếu có MaDonVi nhưng chưa được load (fallback nếu OnParametersSetAsync chưa load)
             if (!string.IsNullOrEmpty(nhapxuat.MaDonVi) && selectedKhachHang == null)
             {
@@ -1363,7 +1380,7 @@
                     Console.WriteLine($"Error loading selectedKhachHang in OnAfterRenderAsync: {ex.Message}");
                 }
             }
-            
+
             // Cập nhật số lượng tồn khi load dữ liệu ban đầu (nếu có dữ liệu)
             if (nhapxuat.NoiDungNhapXuats != null && nhapxuat.NoiDungNhapXuats.Any(x => !string.IsNullOrEmpty(x.MaHangHoa)) && !string.IsNullOrEmpty(nhapxuat.MaKho))
             {
@@ -1374,28 +1391,59 @@
         await base.OnAfterRenderAsync(firstRender);
     }
 
-    private void BackupItem(object element)
+    private async void BackupItem(object element)
     {
+        var noiDung = (NoiDungNhapXuatModel)element;
         selectedNoiDung.IsEditing = true;
         selectedNoiDungBeforeEdit = new NoiDungNhapXuatModel()
         {
-            DMHangHoaId = ((NoiDungNhapXuatModel)element).DMHangHoaId,
-            MaHangHoa = ((NoiDungNhapXuatModel)element).MaHangHoa,
-            TenHangHoa = ((NoiDungNhapXuatModel)element).TenHangHoa,
-            DonViTinh = ((NoiDungNhapXuatModel)element).DonViTinh,
-            SoLuong = ((NoiDungNhapXuatModel)element).SoLuong,
-            ChieuDai = ((NoiDungNhapXuatModel)element).ChieuDai,
-            KhoRongTon = ((NoiDungNhapXuatModel)element).KhoRongTon,
-            TongChieuDai = ((NoiDungNhapXuatModel)element).TongChieuDai,
-            TongDienTich = ((NoiDungNhapXuatModel)element).TongDienTich,
-            DonGia = ((NoiDungNhapXuatModel)element).DonGia,
-            SoTien = ((NoiDungNhapXuatModel)element).SoTien,
-            GhiChu = ((NoiDungNhapXuatModel)element).GhiChu,
-            IsM2 = ((NoiDungNhapXuatModel)element).IsM2,
-            IsMD = ((NoiDungNhapXuatModel)element).IsMD,
-            DMDonViSuDungId = ((NoiDungNhapXuatModel)element).DMDonViSuDungId,
-            DMKhoHangId = ((NoiDungNhapXuatModel)element).DMKhoHangId,
+            DMHangHoaId = noiDung.DMHangHoaId,
+            MaHangHoa = noiDung.MaHangHoa,
+            TenHangHoa = noiDung.TenHangHoa,
+            DonViTinh = noiDung.DonViTinh,
+            SoLuong = noiDung.SoLuong,
+            ChieuDai = noiDung.ChieuDai,
+            KhoRongTon = noiDung.KhoRongTon,
+            TongChieuDai = noiDung.TongChieuDai,
+            TongDienTich = noiDung.TongDienTich,
+            DonGia = noiDung.DonGia,
+            SoTien = noiDung.SoTien,
+            GhiChu = noiDung.GhiChu,
+            IsM2 = noiDung.IsM2,
+            IsMD = noiDung.IsMD,
+            DMDonViSuDungId = noiDung.DMDonViSuDungId,
+            DMKhoHangId = noiDung.DMKhoHangId,
         };
+
+        // Load hangHoaMapping nếu chưa có nhưng có MaHangHoa
+        if (!hangHoaMapping.ContainsKey(noiDung) && !string.IsNullOrEmpty(noiDung.MaHangHoa))
+        {
+            try
+            {
+                // Kiểm tra xem đã có trong cache chưa (theo MaHangHoa)
+                var cached = hangHoaMapping.Values.FirstOrDefault(x => x.MaHangHoa == noiDung.MaHangHoa);
+                if (cached != null)
+                {
+                    // Nếu đã có trong cache, sử dụng lại
+                    hangHoaMapping[noiDung] = cached;
+                }
+                else
+                {
+                    // Nếu chưa có, load từ API
+                    var hangHoa = await dmhanghoaService.GetByCodeAsync(noiDung.MaHangHoa);
+                    if (hangHoa != null && hangHoa.Id > 0)
+                    {
+                        hangHoaMapping[noiDung] = hangHoa;
+                        // Force update UI để MudAutocomplete hiển thị đúng
+                        await InvokeAsync(StateHasChanged);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading hangHoa in BackupItem: {ex.Message}");
+            }
+        }
     }
 
     private void ItemHasBeenCommitted(object element)
@@ -1432,7 +1480,7 @@
     async Task OpenDialogHangHoa()
     {
         var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        
+
         // Truyền parameters để tính số lượng tồn trong dialog
         var parameters = new DialogParameters
         {
@@ -1440,7 +1488,7 @@
             ["NgayCT"] = nhapxuat.NgayCT ?? DateTime.Now,
             ["ShowSoLuongTon"] = true // Flag để hiển thị cột số lượng tồn
         };
-        
+
         var result = await DialogService.Show<DialogHangHoa>("Danh sách hàng hóa", parameters, options).Result;
         if (!result.Canceled)
         {
@@ -1496,7 +1544,7 @@
             nhapxuat.TenDonVi = donhang.TenDonVi;
             nhapxuat.DiaChi = donhang.DiaChi;
             nhapxuat.MaDonHang = donhang.SoCT;
-            
+
             // Load selectedKhachHang khi MaDonVi thay đổi từ đơn đặt hàng
             if (!string.IsNullOrEmpty(nhapxuat.MaDonVi))
             {
@@ -1513,7 +1561,7 @@
                     Console.WriteLine($"Error loading selectedKhachHang: {ex.Message}");
                 }
             }
-            
+
             foreach (var item in donhang.NoiDungDonDatHangs)
             {
                 nhapxuat.NoiDungNhapXuats.Add(mapper.Map<NoiDungNhapXuatModel>(item));
@@ -1540,7 +1588,7 @@
                 nhapxuat.TenDonVi = donhang.TenDonVi;
                 nhapxuat.DiaChi = donhang.DiaChi;
                 nhapxuat.MaDonHang = donhang.SoCT;
-                
+
                 // Load selectedKhachHang khi MaDonVi thay đổi từ đơn đặt hàng
                 if (!string.IsNullOrEmpty(nhapxuat.MaDonVi))
                 {
@@ -1557,7 +1605,7 @@
                         Console.WriteLine($"Error loading selectedKhachHang: {ex.Message}");
                     }
                 }
-                
+
                 foreach (var item in donhang.NoiDungDonDatHangs)
                 {
                     var ndnx = mapper.Map<NoiDungNhapXuatModel>(item);
@@ -1589,7 +1637,7 @@
             {
                 nhapxuat = mapper.Map<NhapXuatModel>(itemSelected);
                 nhapxuat.MaDonHang = itemSelected.SoCT;
-                
+
                 // Load selectedKhachHang khi MaDonVi thay đổi từ đơn đặt hàng
                 if (!string.IsNullOrEmpty(nhapxuat.MaDonVi))
                 {
@@ -1606,7 +1654,7 @@
                         Console.WriteLine($"Error loading selectedKhachHang: {ex.Message}");
                     }
                 }
-                
+
                 foreach (var item in itemSelected.NoiDungDonDatHangs)
                 {
                     nhapxuat.NoiDungNhapXuats.Add(mapper.Map<NoiDungNhapXuatModel>(item));
@@ -1632,6 +1680,7 @@
                 nhapxuat.TenDonVi = itemSelected.TenDonVi;
                 nhapxuat.DiaChi = itemSelected.DiaChi;
                 nhapxuat.DienThoai = itemSelected.DienThoai;
+                selectedKhachHang = itemSelected;
                 // nhapxuat.MaNhanVienId = itemSelected.UserId;
                 //MaNhanVienId = itemSelected.UserId ?? 0;
 
@@ -1695,6 +1744,59 @@
             var oldMaDonVi = nhapxuat.MaDonVi;
             nhapxuat = mapper.Map<NhapXuatModel>(nhapxuatnew);
             
+            // Clear và load lại hangHoaMapping khi vào chế độ edit
+            hangHoaMapping.Clear();
+            if (nhapxuat.NoiDungNhapXuats != null && nhapxuat.NoiDungNhapXuats.Any())
+            {
+                try
+                {
+                    // Lấy danh sách MaHangHoa duy nhất
+                    var maHangHoas = nhapxuat.NoiDungNhapXuats
+                        .Where(x => !string.IsNullOrEmpty(x.MaHangHoa))
+                        .Select(x => x.MaHangHoa)
+                        .Distinct()
+                        .ToList();
+                    
+                    // Load tất cả hàng hóa song song
+                    var loadTasks = maHangHoas.Select(async maHangHoa =>
+                    {
+                        try
+                        {
+                            var hangHoa = await dmhanghoaService.GetByCodeAsync(maHangHoa);
+                            return new { MaHangHoa = maHangHoa, HangHoa = hangHoa };
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error loading hang hoa {maHangHoa}: {ex.Message}");
+                            return new { MaHangHoa = maHangHoa, HangHoa = (DanhMucHangHoaModel)null };
+                        }
+                    });
+                    
+                    var results = await Task.WhenAll(loadTasks);
+                    
+                    // Populate hangHoaMapping cho tất cả các dòng có cùng MaHangHoa
+                    foreach (var result in results)
+                    {
+                        if (result.HangHoa != null && result.HangHoa.Id > 0)
+                        {
+                            // Tìm tất cả các dòng có cùng MaHangHoa và populate mapping
+                            var noiDungs = nhapxuat.NoiDungNhapXuats
+                                .Where(x => x.MaHangHoa == result.MaHangHoa)
+                                .ToList();
+                            
+                            foreach (var noiDung in noiDungs)
+                            {
+                                hangHoaMapping[noiDung] = result.HangHoa;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error loading hangHoaMapping: {ex.Message}");
+                }
+            }
+            
             // Reset selectedKhachHang nếu MaDonVi thay đổi hoặc không khớp
             if (selectedKhachHang != null && 
                 (oldMaDonVi != nhapxuat.MaDonVi || selectedKhachHang.MaDonVi != nhapxuat.MaDonVi))
@@ -1743,16 +1845,16 @@
         if (IsReadOnly) return;
         
         // Xử lý Enter: confirm selection và di chuyển đến cột Số lượng
-        if (e.Key == "Enter")
-        {
-            // Nếu đã có hàng hóa được chọn, di chuyển đến cột Số lượng
-            if (!string.IsNullOrEmpty(noiDung.MaHangHoa))
-            {
-                IsSoLuongFocus = true;
-                await SetForcusInGrid("SoLuong");
-                StateHasChanged();
-            }
-        }
+        // if (e.Key == "Enter")
+        // {
+        //     // Nếu đã có hàng hóa được chọn, di chuyển đến cột Số lượng
+        //     if (!string.IsNullOrEmpty(noiDung.MaHangHoa))
+        //     {
+        //         IsSoLuongFocus = true;
+        //         await SetForcusInGrid("SoLuong");
+        //         StateHasChanged();
+        //     }
+        // }
         // Xử lý Tab: di chuyển đến cột tiếp theo
         else if (e.Key == "Tab")
         {
