@@ -129,12 +129,12 @@
         string urlPrint = @"{0}/Reports/Viewer?ReportFileName={1}&id={2}&mdvsd={3}";
         if (thuchi.Loai == "thutm")
         {
-            urlPrint = string.Format(urlPrint, hostReport, "rptPhieuThu", thuchi.Id, thuchi.DMDonViSuDungId);
+            urlPrint = string.Format(urlPrint, hostReport, "PhieuThu", thuchi.Id, thuchi.DMDonViSuDungId);
 
         }
         else
         {
-            urlPrint = string.Format(urlPrint, hostReport, "rptPhieuChi", thuchi.Id, thuchi.DMDonViSuDungId);
+            urlPrint = string.Format(urlPrint, hostReport, "PhieuChi", thuchi.Id, thuchi.DMDonViSuDungId);
         }
         await JSRuntime.InvokeAsync<WindowDimensions>("printReport", urlPrint);
     }
