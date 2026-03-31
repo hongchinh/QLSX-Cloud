@@ -1,4 +1,4 @@
-﻿@using Newtonsoft.Json
+@using Newtonsoft.Json
 @using Dialogs
 @using AutoMapper
 @using Microsoft.Extensions.Configuration;
@@ -57,6 +57,8 @@
                                 <MudAutocomplete T="DanhMucKhachHangModel" 
                                                  ReadOnly="@IsReadOnly"
                                                  Value="@selectedKhachHang"
+                                                 Text="@maDonViText"
+                                                 TextChanged="@(async (text) => { maDonViText = text ?? ""; await MaDonViTextChanged(text ?? ""); })"
                                                  SearchFunc="@SearchKhachHangAsync"
                                                  ToStringFunc="@((DanhMucKhachHangModel x) => x != null ? x.MaDonVi : string.Empty)"
                                                  CoerceText="false"
@@ -69,7 +71,7 @@
                                                  Variant="Variant.Outlined"
                                                  Error="@(!string.IsNullOrEmpty(maDoiTuongError))"
                                                  OnKeyDown="@(async (e) => await OnKeyDownMaDonVi(e))"
-                                                 ValueChanged="@(async (DanhMucKhachHangModel value) => { await OnKhachHangSelectedAsync(value); })"
+                                                 ValueChanged="@(async (DanhMucKhachHangModel value) => { maDonViText = value?.MaDonVi ?? ""; await OnKhachHangSelectedAsync(value); })"
                                                  Adornment="Adornment.End"
                                                  AdornmentIcon="@Icons.Material.Filled.Search"
                                                  OnAdornmentClick="@(() => OpenDialogKhachHang())">
@@ -255,35 +257,46 @@
     MudSelect<int> mySwitch;
     private string maDoiTuongError = string.Empty;
     private DanhMucKhachHangModel selectedKhachHang;
+    private string maDonViText = "";
     /// <summary>
     /// Here we simulate getting the paged, filtered and ordered data from the server
     /// </summary>
     private async Task<TableData<TraCuuNhapXuatAll>> ServerReload(TableState state)
     {
-        isLoading = true;
-        itemRequest.SortLable = state.SortLabel;
-        itemRequest.SortDirection = (QLSX.Shared.Enums.SortDirection)state.SortDirection;
-        itemRequest.Page = state.Page;
-        itemRequest.PageSize = state.PageSize;
-        itemRequest.MaDonVi = thuchi.MaDoiTuong;
-        itemRequest.Id = itemRequest.Id ?? 0;
-        lsResponses = new GetAllResponsePaged<TraCuuNhapXuatAll>();
-        IEnumerable<TraCuuNhapXuatAll> data = new List<TraCuuNhapXuatAll>();
-        if (!string.IsNullOrEmpty(thuchi.MaDoiTuong))
+
+        if (itemRequest != null)
         {
-            lsResponses = await thuchitService.GetHistoryPagedAsync(itemRequest);
-            data = lsResponses.Items;
-            totalItems = lsResponses.TotalRecords;
+            isLoading = true;
+            itemRequest.SortLable = state.SortLabel;
+            itemRequest.SortDirection = (QLSX.Shared.Enums.SortDirection)state.SortDirection;
+            itemRequest.Page = state.Page;
+            itemRequest.PageSize = state.PageSize;
+            itemRequest.MaDonVi = thuchi.MaDoiTuong;
+            itemRequest.Id = itemRequest.Id ?? 0;
+            lsResponses = new GetAllResponsePaged<TraCuuNhapXuatAll>();
+            IEnumerable<TraCuuNhapXuatAll> data = new List<TraCuuNhapXuatAll>();
+            if (!string.IsNullOrEmpty(thuchi.MaDoiTuong))
+            {
+                lsResponses = await thuchitService.GetHistoryPagedAsync(itemRequest);
+                data = lsResponses.Items;
+                totalItems = lsResponses.TotalRecords;
+            }
+
+            if (data == null)
+            {
+                data = new List<TraCuuNhapXuatAll>();
+            }
+            pagedData = data;
+            isLoading = false;
+            StateHasChanged();
+            return new TableData<TraCuuNhapXuatAll>() { TotalItems = totalItems, Items = pagedData };
+        }
+        else
+        {
+            pagedData = new List<TraCuuNhapXuatAll>();
+            return new TableData<TraCuuNhapXuatAll>() { TotalItems = 0, Items = pagedData };
         }
 
-        if (data == null)
-        {
-            data = new List<TraCuuNhapXuatAll>();
-        }
-        pagedData = data;
-        isLoading = false;
-        StateHasChanged();
-        return new TableData<TraCuuNhapXuatAll>() { TotalItems = totalItems, Items = pagedData };
     }
     private async Task OnSearch(string text)
     {
@@ -311,6 +324,9 @@
         // Load selectedKhachHang khi thuchi.MaDoiTuong thay đổi (khi được set từ parent component)
         if (!string.IsNullOrEmpty(thuchi?.MaDoiTuong))
         {
+            // Đồng bộ maDonViText với thuchi.MaDoiTuong
+            maDonViText = thuchi.MaDoiTuong;
+            
             // Chỉ load nếu chưa có hoặc không khớp
             if (selectedKhachHang == null || selectedKhachHang.MaDonVi != thuchi.MaDoiTuong)
             {
@@ -336,6 +352,7 @@
             if (selectedKhachHang != null)
             {
                 selectedKhachHang = null;
+                maDonViText = "";
                 await InvokeAsync(StateHasChanged);
             }
         }
@@ -373,6 +390,7 @@
             // Load selectedKhachHang nếu có MaDoiTuong nhưng chưa được load (fallback nếu OnParametersSetAsync chưa load)
             if (!string.IsNullOrEmpty(thuchi.MaDoiTuong) && selectedKhachHang == null)
             {
+                maDonViText = thuchi.MaDoiTuong;
                 try
                 {
                     var dmKH = await dmkhachhangService.GetByCodeAsync(thuchi.MaDoiTuong);
@@ -401,13 +419,33 @@
         // Clear error khi user thay đổi giá trị
         maDoiTuongError = string.Empty;
 
-        await table.ReloadServerData();
+        if (table != null)
+        {
+            await table.ReloadServerData();
+        }
         if (IsReadOnly) return;
+        
+        // Xử lý trường hợp text rỗng
+        if (string.IsNullOrWhiteSpace(madv))
+        {
+            selectedKhachHang = null;
+            maDonViText = "";
+            thuchi.MaDoiTuong = "";
+            thuchi.TenDoiTuong = "";
+            thuchi.DiaChi = "";
+            thuchi.DienThoai = "";
+            thuchi.DMKhachHangId = 0;
+            await GetSoDuCongNo();
+            StateHasChanged();
+            return;
+        }
+        
         DanhMucKhachHangModel dmKH = await dmkhachhangService.GetByCodeAsync(madv);
         if (dmKH != null && dmKH.Id > 0)
         {
             // Đồng bộ selectedKhachHang khi tìm thấy
             selectedKhachHang = dmKH;
+            maDonViText = dmKH.MaDonVi;
             
             thuchi.DMKhachHangId = dmKH.Id;
             thuchi.MaDoiTuong = dmKH.MaDonVi;
@@ -419,6 +457,7 @@
         {
             // Clear selectedKhachHang nếu không tìm thấy
             selectedKhachHang = null;
+            maDonViText = "";
             
             thuchi.MaDoiTuong = "";
             thuchi.TenDoiTuong = "";
@@ -430,6 +469,9 @@
     }
     private async Task SetKhachHangCallBack(DanhMucKhachHangModel pro)
     {
+        selectedKhachHang = pro;
+        maDonViText = pro.MaDonVi;
+        
         thuchi.DMKhachHangId = pro.Id;
         thuchi.MaDoiTuong = pro.MaDonVi;
         thuchi.TenDoiTuong = pro.TenDonVi;
@@ -553,6 +595,7 @@
             // Load selectedKhachHang khi vào chế độ edit
             if (!string.IsNullOrEmpty(thuchi.MaDoiTuong))
             {
+                maDonViText = thuchi.MaDoiTuong;
                 try
                 {
                     var dmKH = await dmkhachhangService.GetByCodeAsync(thuchi.MaDoiTuong);
@@ -572,6 +615,7 @@
             {
                 // Nếu MaDoiTuong rỗng, clear selectedKhachHang
                 selectedKhachHang = null;
+                maDonViText = "";
             }
         }
         IsReadOnly = isRead;
@@ -605,6 +649,9 @@
             {
                 // Clear error khi chọn khách hàng từ dialog
                 maDoiTuongError = string.Empty;
+                
+                // Đồng bộ maDonViText
+                maDonViText = itemSelected.MaDonVi;
                 
                 thuchi.DMKhachHangId = itemSelected.Id;
                 thuchi.MaDoiTuong = itemSelected.MaDonVi;
@@ -742,6 +789,8 @@
         }
 
         selectedKhachHang = selectedKhachHangModel;
+        maDonViText = selectedKhachHangModel.MaDonVi;
+        
         thuchi.DMKhachHangId = selectedKhachHangModel.Id;
         thuchi.MaDoiTuong = selectedKhachHangModel.MaDonVi;
         thuchi.TenDoiTuong = selectedKhachHangModel.TenDonVi;
